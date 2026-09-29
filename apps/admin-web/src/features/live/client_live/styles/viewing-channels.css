@@ -1,0 +1,49 @@
+/* إدارة قنوات صفحة المشاهدة (لوحة التحكم) */
+.viewing-channels {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.viewing-channels-base {
+  margin: 0;
+  word-break: break-all;
+}
+
+.viewing-channels-section h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+}
+
+.viewing-channels-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.viewing-channels-row {
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.viewing-channels-meta {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.viewing-channels-meta strong {
+  font-size: 0.95rem;
+}
+
+.viewing-channels-meta small {
+  color: var(--muted, #64748b);
+}
+
+.viewing-channels-url {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

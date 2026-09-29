@@ -1,0 +1,29 @@
+/* ─────────────────────────────────────────────
+   الحركة السينمائية — keyframes فقط
+   ───────────────────────────────────────────── */
+@keyframes cl-spin { to { transform: rotate(360deg); } }
+
+@keyframes cl-signal {
+  from { transform: scaleY(0.45); opacity: 0.7; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes cl-mark-shine {
+  0%, 55% { transform: rotate(28deg) translateX(-44px); }
+  80%, 100% { transform: rotate(28deg) translateX(56px); }
+}
+
+@keyframes cl-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes cl-loading {
+  from { opacity: 0.35; transform: translateY(4px) scale(0.9); }
+  to { opacity: 1; transform: translateY(-4px) scale(1); }
+}
+
+@keyframes cl-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.86); }
+}

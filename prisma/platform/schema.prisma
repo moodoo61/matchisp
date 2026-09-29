@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/api/generated/platform"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PLATFORM")
+}
+
+model SectionMeta {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now())
+
+  @@map("_section_meta")
+}

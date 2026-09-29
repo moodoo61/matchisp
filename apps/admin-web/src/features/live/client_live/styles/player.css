@@ -1,0 +1,187 @@
+/* ─────────────────────────────────────────────
+   المشغّل — أدوات فقط، بدون نصوص مكررة
+   ───────────────────────────────────────────── */
+.client-live-player,
+.client-live-video,
+.client-live-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.client-live-player {
+  isolation: isolate;
+  overflow: hidden;
+  background: #000;
+  user-select: none;
+}
+
+.client-live-poster {
+  object-fit: cover;
+  filter: blur(22px) brightness(0.55);
+  transform: scale(1.06);
+  opacity: 0.5;
+  transition: opacity 0.6s ease;
+}
+
+.client-live-poster.is-blank {
+  background: #0d1329;
+  filter: none;
+  transform: none;
+}
+
+.client-live-video {
+  z-index: 1;
+  display: block;
+  object-fit: contain;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.client-live-player.is-ready .client-live-video { opacity: 1; }
+.client-live-player.is-ready .client-live-poster { opacity: 0; }
+
+.cl-player-shade {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 24%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent 36%);
+  transition: opacity 0.3s ease;
+}
+
+.client-live-player:hover .cl-player-shade,
+.client-live-player:focus-within .cl-player-shade {
+  opacity: 1;
+}
+
+.client-live-buffer {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.8rem;
+  color: rgba(247, 243, 232, 0.85);
+  font-size: 0.78rem;
+  font-weight: 600;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.client-live-buffer-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  animation: cl-spin 0.95s linear infinite;
+}
+
+.cl-player-controls {
+  position: absolute;
+  z-index: 5;
+  inset-inline: 0.9rem;
+  bottom: 0.9rem;
+  padding: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(10, 15, 32, 0.68);
+  backdrop-filter: blur(18px);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.26s var(--cl-ease-lux), transform 0.26s var(--cl-ease-lux);
+}
+
+.client-live-player:hover .cl-player-controls,
+.client-live-player:focus-within .cl-player-controls,
+.client-live-player.is-loading .cl-player-controls {
+  opacity: 1;
+  transform: none;
+}
+
+.cl-player-controls-main,
+.cl-player-controls-side {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.cl-player-button {
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  cursor: pointer;
+  transition: background var(--cl-dur-fast) ease, transform var(--cl-dur-fast) ease;
+}
+
+.cl-player-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.cl-player-button.is-primary {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--cl-gold-gradient);
+  color: #241b08;
+  box-shadow: var(--cl-shadow-gold);
+}
+
+.cl-player-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cl-quality select {
+  height: 42px;
+  padding: 0 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cl-quality select option {
+  background: #1a2340;
+  color: #fff;
+}
+
+.client-live-player-error {
+  position: absolute;
+  z-index: 8;
+  inset-inline: 1rem;
+  bottom: 5.2rem;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 84, 112, 0.4);
+  background: rgba(70, 12, 24, 0.9);
+  color: #ffd9e0;
+  font-size: 0.82rem;
+  text-align: center;
+}

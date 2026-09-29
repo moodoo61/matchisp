@@ -1,0 +1,48 @@
+/* شارات الحالة */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.badge.ok {
+  background: rgba(47, 158, 143, 0.2);
+  color: #8ee0d4;
+}
+
+.badge.progress {
+  background: rgba(212, 160, 23, 0.2);
+  color: #f0d28a;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.status-ok {
+  color: #9be7b0;
+  border-color: rgba(155, 231, 176, 0.35);
+  background: rgba(155, 231, 176, 0.12);
+}
+
+.status-degraded {
+  color: #f0d28a;
+  border-color: rgba(240, 210, 138, 0.35);
+  background: rgba(240, 210, 138, 0.12);
+}
+
+.status-missing,
+.status-error {
+  color: #ffb4b4;
+  border-color: rgba(255, 180, 180, 0.35);
+  background: rgba(255, 180, 180, 0.12);
+}

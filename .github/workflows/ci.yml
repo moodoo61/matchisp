@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install
+
+      - name: Build shared
+        run: pnpm --filter @isp/shared build
+
+      - name: Generate Prisma clients
+        run: pnpm --filter @isp/api prisma:generate
+        env:
+          DATABASE_URL_CORE: postgresql://isp:isp@localhost:5432/db_core
+          DATABASE_URL_NETWORK_PAGES: postgresql://isp:isp@localhost:5432/db_network_pages
+          DATABASE_URL_LIVE: postgresql://isp:isp@localhost:5432/db_live
+          DATABASE_URL_BREAK: postgresql://isp:isp@localhost:5432/db_break
+          DATABASE_URL_COMMS: postgresql://isp:isp@localhost:5432/db_comms
+          DATABASE_URL_MAGAZINE: postgresql://isp:isp@localhost:5432/db_magazine
+          DATABASE_URL_MAINTENANCE: postgresql://isp:isp@localhost:5432/db_maintenance
+          DATABASE_URL_PARTNERS: postgresql://isp:isp@localhost:5432/db_partners
+          DATABASE_URL_INVENTORY: postgresql://isp:isp@localhost:5432/db_inventory
+          DATABASE_URL_ORDERS: postgresql://isp:isp@localhost:5432/db_orders
+          DATABASE_URL_SUPPORT: postgresql://isp:isp@localhost:5432/db_support
+          DATABASE_URL_EXPENSES: postgresql://isp:isp@localhost:5432/db_expenses
+          DATABASE_URL_PLATFORM: postgresql://isp:isp@localhost:5432/db_platform
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build apps
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001

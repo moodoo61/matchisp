@@ -1,0 +1,23 @@
+import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
+import { DnsController } from './dns/controller/dns.controller';
+import { DnsService } from './dns/service/dns.service';
+import { InterfacesController } from './interfaces/controller/interfaces.controller';
+import { AddressesService } from './interfaces/service/addresses.service';
+import { InterfacesControlService } from './interfaces/service/interfaces-control.service';
+import { InterfacesInventoryService } from './interfaces/service/interfaces-inventory.service';
+import { RoutesController } from './routes/controller/routes.controller';
+import { RoutesService } from './routes/service/routes.service';
+
+@Module({
+  imports: [AuditModule],
+  controllers: [InterfacesController, RoutesController, DnsController],
+  providers: [
+    InterfacesInventoryService,
+    InterfacesControlService,
+    AddressesService,
+    RoutesService,
+    DnsService,
+  ],
+})
+export class NetworkModule {}

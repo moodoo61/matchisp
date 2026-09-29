@@ -1,0 +1,109 @@
+/* ─────────────────────────────────────────────
+   الترويسة الذهبية المطفية — بدون لمعة وبدون توهج
+   ───────────────────────────────────────────── */
+.cl-header {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 40;
+  background: linear-gradient(180deg, #e2cd94 0%, #c8a45d 100%);
+  border-bottom: 1px solid #6f5626;
+}
+
+.cl-header-inner {
+  width: min(var(--cl-max), calc(100% - 2rem));
+  min-height: 68px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cl-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+/* مونوغرام داكن مسطح بدون لمعة متحركة */
+.cl-monogram {
+  position: relative;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  overflow: hidden;
+  color: var(--cl-gold-100);
+  font-family: var(--cl-font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: #1a2340;
+  border: 1px solid rgba(43, 30, 7, 0.6);
+}
+
+.cl-monogram-shine {
+  display: none;
+}
+
+.cl-monogram-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(241, 222, 168, 0.3);
+  pointer-events: none;
+}
+
+/* نصوص محفورة على الذهب */
+.cl-brand-wrap {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.cl-brand {
+  margin: 0;
+  font-family: var(--cl-font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #2a1e05;
+  text-shadow: 0 1px 0 rgba(255, 248, 225, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-brand-sub {
+  margin: 0;
+  color: #4a3510;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-shadow: 0 1px 0 rgba(255, 248, 225, 0.5);
+}
+
+/* نبضة البث */
+.cl-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.48rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(43, 30, 7, 0.55);
+  background: #1c1305;
+  color: var(--cl-gold-100);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.cl-live-pill i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff5470;
+  animation: cl-pulse 1.8s ease-in-out infinite;
+}

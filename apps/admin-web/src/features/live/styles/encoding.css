@@ -1,0 +1,225 @@
+/* أنماط صفحة الجودة والترميز */
+.runtime-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.runtime-status-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.runtime-status-item header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.runtime-status-item p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.runtime-status-item small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.runtime-meta {
+  direction: ltr;
+  text-align: left;
+}
+
+.runtime-checked {
+  margin-top: 0.75rem;
+}
+
+.encoding-source-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.encoding-source-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.9rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: inherit;
+  text-align: right;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.encoding-source-option:hover:not(:disabled) {
+  border-color: var(--accent, #2563eb);
+}
+
+.encoding-source-option.is-selected {
+  border-color: var(--accent, #2563eb);
+  background: color-mix(in srgb, var(--accent, #2563eb) 8%, var(--bg));
+}
+
+.encoding-source-option:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.encoding-source-radio {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.2rem;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+}
+
+.encoding-source-option.is-selected .encoding-source-radio {
+  border-color: var(--accent, #2563eb);
+  box-shadow: inset 0 0 0 3px var(--accent, #2563eb);
+}
+
+.encoding-source-text {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.encoding-source-text strong {
+  font-size: 0.95rem;
+}
+
+.encoding-source-text small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.encoding-source-option.is-unavailable {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.encoding-source-hint {
+  margin-top: 0.75rem;
+}
+
+.channel-source-mode-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.channel-source-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.channel-source-mode-chip:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-soft);
+}
+
+.channel-source-mode-chip.is-selected {
+  background: var(--accent);
+  border-color: transparent;
+  color: #041411;
+  font-weight: 600;
+}
+
+.channel-source-mode-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.channel-source-mode-chip span {
+  white-space: nowrap;
+}
+
+.encoding-quality-list {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.5rem 0.35rem;
+}
+
+.encoding-quality-row {
+  align-items: flex-end;
+  gap: 0.55rem;
+}
+
+.encoding-quality-row.is-disabled {
+  opacity: 0.55;
+}
+
+.encoding-quality-name {
+  flex: 0 0 3.75rem;
+  padding-bottom: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.encoding-quality-field {
+  display: grid;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.encoding-quality-field input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 0.55rem 0.65rem;
+}
+
+.encoding-quality-row .card-enable {
+  flex-shrink: 0;
+  align-self: end;
+}
+
+@media (max-width: 960px) {
+  .runtime-status-grid,
+  .encoding-source-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .encoding-quality-row {
+    flex-wrap: wrap;
+  }
+
+  .encoding-quality-name {
+    flex: 1 1 auto;
+    padding-bottom: 0;
+  }
+}

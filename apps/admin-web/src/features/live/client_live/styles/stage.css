@@ -1,0 +1,144 @@
+/* ─────────────────────────────────────────────
+   المسرح — ي shrink ليناسب الشاشة + سطر سفلي مثبت
+   ───────────────────────────────────────────── */
+.cl-feature {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  overflow: hidden;
+}
+
+.cl-screen-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 1px;
+  border-radius: var(--cl-radius-xl);
+  border: 1px solid rgba(200, 164, 93, 0.25);
+  background: #0a0f22;
+  box-shadow: var(--cl-shadow-screen);
+  overflow: hidden;
+}
+
+.cl-screen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: calc(var(--cl-radius-xl) - 1px);
+  background: #000;
+}
+
+.cl-frame-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(247, 243, 232, 0.6);
+  font-family: var(--cl-font-display);
+  font-size: 1.4rem;
+}
+
+/* السطر السفلي مثبت — لا يختفي أبداً */
+.cl-program {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--cl-card-line-soft);
+  border-radius: var(--cl-radius-lg);
+  background: rgba(20, 27, 51, 0.95);
+  box-shadow: var(--cl-shadow-card);
+}
+
+.cl-program-channel {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.cl-program-mark {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  border: 1px solid rgba(200, 164, 93, 0.3);
+  background: #101839;
+  color: var(--cl-gold-100);
+  font-family: var(--cl-font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.cl-program-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.cl-program h1 {
+  margin: 0;
+  font-family: var(--cl-font-display);
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: var(--cl-ivory);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-program-sub {
+  margin: 0.1rem 0 0;
+  color: var(--cl-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-program-state {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.cl-program-state.is-live {
+  border: 1px solid rgba(255, 84, 112, 0.4);
+  background: rgba(255, 84, 112, 0.12);
+  color: #ffc2cd;
+}
+
+.cl-program-state:not(.is-live) {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--cl-muted);
+}
+
+.cl-program-state i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.cl-program-state.is-live i {
+  animation: cl-pulse 1.8s ease-in-out infinite;
+}

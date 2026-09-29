@@ -1,0 +1,24 @@
+/* تجميع أنماط الواجهة — كل ملف مسؤولية واحدة */
+@import '../styles/base.css';
+@import '../styles/shell.css';
+@import '../styles/buttons.css';
+@import '../styles/cards.css';
+@import '../styles/table.css';
+@import '../styles/forms.css';
+@import '../styles/modal.css';
+@import '../styles/task-card.css';
+@import '../styles/status.css';
+@import '../styles/toast.css';
+@import '../styles/login.css';
+
+/* أقسام النظام */
+@import '../features/live/styles/channels.css';
+@import '../features/live/styles/encoding.css';
+@import '../features/live/sports_events/styles/matches.css';
+@import '../features/live/client_live/styles/index.css';
+@import '../features/live/client_live/styles/viewing-channels.css';
+@import '../features/page_management/styles/ticker.css';
+@import '../features/page_management/styles/contacts.css';
+@import '../features/settings/disks/styles/disks.css';
+@import '../features/settings/databases/styles/databases.css';
+@import '../features/settings/network/styles/network.css';

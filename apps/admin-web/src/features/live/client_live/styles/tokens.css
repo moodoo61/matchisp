@@ -1,0 +1,50 @@
+/* ─────────────────────────────────────────────
+   هوية Silk Evening — نسخة مطفية بدون إضاءة ذهبية
+   ───────────────────────────────────────────── */
+.cl-app {
+  --cl-bg-0: #1a2340;
+  --cl-bg-1: #212c4e;
+  --cl-bg-2: #2a3759;
+  --cl-bg-3: #33436a;
+
+  --cl-card: rgba(255, 255, 255, 0.055);
+  --cl-card-solid: #232f52;
+  --cl-card-line: rgba(200, 164, 93, 0.22);
+  --cl-card-line-soft: rgba(255, 255, 255, 0.11);
+
+  /* ذهبي مطفي مسطح — بدون توهج */
+  --cl-gold-50: #faf3e0;
+  --cl-gold-100: #f1dea8;
+  --cl-gold-300: #ddbe7e;
+  --cl-gold-500: #c8a45d;
+  --cl-gold-700: #8a6a2f;
+  --cl-gold-gradient: linear-gradient(180deg, #e2cd94 0%, #c8a45d 100%);
+  --cl-gold-glow: none;
+
+  --cl-ivory: #f7f3e8;
+  --cl-ivory-dim: #ddd6c4;
+  --cl-muted: #b6bdd0;
+  --cl-faint: #8b94ad;
+
+  --cl-live: #ff5470;
+  --cl-live-deep: #c22746;
+  --cl-ok: #3ddc97;
+
+  --cl-font-display: var(--cl-font-brand), "El Messiri", serif;
+  --cl-font-body: var(--cl-font-body), "Tajawal", system-ui, sans-serif;
+
+  --cl-max: 1680px;
+  --cl-radius-sm: 10px;
+  --cl-radius-md: 16px;
+  --cl-radius-lg: 22px;
+  --cl-radius-xl: 26px;
+
+  /* ظلال محايدة بدون أي توهج ذهبي */
+  --cl-shadow-screen: 0 18px 44px rgba(9, 13, 28, 0.45);
+  --cl-shadow-card: 0 10px 26px rgba(9, 13, 28, 0.3);
+  --cl-shadow-gold: 0 6px 14px rgba(20, 14, 4, 0.3);
+
+  --cl-ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
+  --cl-dur-fast: 0.18s;
+  --cl-dur-med: 0.3s;
+}

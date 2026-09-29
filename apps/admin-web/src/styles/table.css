@@ -1,0 +1,53 @@
+/* جداول البيانات */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  text-align: right;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table-empty {
+  margin: 0.85rem 1rem;
+  color: var(--muted);
+}
+
+.table-thumb {
+  width: 64px;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: block;
+}
+
+.col-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.link-cell {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.88rem;
+}

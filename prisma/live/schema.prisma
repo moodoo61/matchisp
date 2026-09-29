@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/api/generated/live"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_LIVE")
+}
+
+model SectionMeta {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now())
+
+  @@map("_section_meta")
+}
+
+/// قسم قنوات البث (خادم)
+model ChannelSection {
+  id        String    @id @default(uuid()) @db.Uuid
+  /// معرّف إنجليزي فريد للربط مع الأنظمة
+  name      String    @unique
+  /// اسم العرض (أي لغة)
+  label     String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  channels  Channel[]
+
+  @@index([sortOrder])
+  @@map("channel_sections")
+}
+
+enum ChannelType {
+  IPTV
+  HDMI
+}
+
+/// وضع التعامل مع مصدر القناة عند المزامنة مع MistServer
+enum EncodingSourceMode {
+  passthrough
+  passthrough_ffmpeg
+  encode_cpu
+  encode_gpu
+}
+
+/// قناة بث مباشر (خادم)
+model Channel {
+  id          String             @id @default(uuid()) @db.Uuid
+  sectionId   String             @db.Uuid
+  section     ChannelSection     @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+  /// معرّف إنجليزي فريد للربط مع الأنظمة
+  name        String             @unique
+  /// اسم العرض (أي لغة)
+  label       String             @unique
+  type        ChannelType
+  /// مصدر IPTV (رابط / مسار تدفق)
+  sourceUrl   String?
+  /// مسار جهاز الفيديو HDMI (مثل /dev/video0)
+  videoDevice String?
+  /// مسار/معرّف جهاز الصوت HDMI
+  audioDevice String?
+  /// طريقة التعامل مع المصدر (خيارات المصدر في الجودة والترميز)
+  sourceMode  EncodingSourceMode @default(passthrough)
+  /// معرّفات جودات ABR المفعّلة لهذه القناة (encode_gpu) — فارغ = السكربت العام
+  qualityRungIds String[]          @default([])
+  /// مفتاح ملف ABR المخصص (null = السكربت العام)
+  abrProfileKey String?
+  imageUrl    String?
+  /// تشغيل دائم على MistServer (always_on)
+  alwaysOn    Boolean            @default(false)
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  sportMatches SportMatch[]
+
+  @@index([sectionId, sortOrder])
+  @@index([isActive, sortOrder])
+  @@map("channels")
+}
+
+enum SportTeamType {
+  CLUB
+  NATIONAL
+}
+
+/// فريق رياضي (نادي أو منتخب)
+model SportTeam {
+  id        String         @id @default(uuid()) @db.Uuid
+  name      String
+  type      SportTeamType
+  logoUrl   String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  homeMatches SportMatch[] @relation("HomeTeam")
+  awayMatches SportMatch[] @relation("AwayTeam")
+
+  @@unique([name, type])
+  @@index([type, name])
+  @@map("sport_teams")
+}
+
+/// مباراة ضمن أحداث اليوم / الجدول
+model SportMatch {
+  id          String    @id @default(uuid()) @db.Uuid
+  /// اسم البطولة
+  tournament  String
+  homeTeamId  String    @db.Uuid
+  homeTeam    SportTeam @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeamId  String    @db.Uuid
+  awayTeam    SportTeam @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+  /// موعد المباراة
+  kickoffAt   DateTime
+  channelId   String    @db.Uuid
+  channel     Channel   @relation(fields: [channelId], references: [id], onDelete: Restrict)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([kickoffAt])
+  @@index([channelId])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@map("sport_matches")
+}

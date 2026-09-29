@@ -1,0 +1,36 @@
+.db-cell-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.db-desc {
+  font-size: 0.82rem;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.db-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.db-upload-btn {
+  cursor: pointer;
+  margin: 0;
+}
+
+.db-backup-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+}

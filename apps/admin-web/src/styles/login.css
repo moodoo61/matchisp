@@ -1,0 +1,26 @@
+/* صفحة تسجيل الدخول */
+.login-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: min(420px, 100%);
+  background: rgba(26, 34, 44, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.login-card h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.7rem;
+}
+
+.login-card p {
+  margin: 0 0 1.4rem;
+  color: var(--muted);
+}

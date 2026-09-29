@@ -1,0 +1,15 @@
+---
+description: تنظيم الكود — مجلد لكل قسم وملفات حسب الدور بدون تكديس
+globs:
+  - apps/**/*
+  - packages/**/*
+  - prisma/**/*
+alwaysApply: true
+---
+
+# تنظيم المشروع
+
+- كل قسم رئيسي له مجلد باسمه: `apps/api/src/modules/<section>/`, `prisma/<section>/`, `apps/admin-web/src/features/<section>/`
+- داخل القسم قسّم حسب الدور: `controller/`, `service/`, `dto/` — ملف واحد ≈ مسؤولية واحدة
+- ممنوع تكديس منطق أقسام أو مهام غير مترابطة في ملف واحد
+- التفاصيل الكاملة: `docs/CODING_ORGANIZATION.md` و `docs/ADDING_A_MODULE.md`

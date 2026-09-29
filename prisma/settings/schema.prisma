@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/api/generated/settings"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_SETTINGS")
+}
+
+model SectionMeta {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now())
+
+  @@map("_section_meta")
+}
+
+/// ملاحظة/تسمية اختيارية لجهاز قرص على الخادم
+model DiskNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// مسار الجهاز مثل /dev/sdb1
+  devicePath String  @unique
+  label     String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("disk_notes")
+}

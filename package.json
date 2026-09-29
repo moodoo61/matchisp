@@ -1,0 +1,21 @@
+{
+  "name": "isp-admin",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @isp/api --filter @isp/admin-web dev",
+    "build": "pnpm -r --filter @isp/shared build && pnpm -r --filter @isp/api --filter @isp/admin-web build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --filter @isp/api test",
+    "db:generate": "pnpm --filter @isp/api prisma:generate",
+    "db:migrate": "pnpm --filter @isp/api prisma:migrate",
+    "db:seed": "pnpm --filter @isp/api prisma:seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

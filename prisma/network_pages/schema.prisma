@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/api/generated/network_pages"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_NETWORK_PAGES")
+}
+
+/// إعلان صورة — صفحة تسجيل الدخول
+model ImageAd {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String?
+  imageUrl  String
+  linkUrl   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("advertisements")
+}
+
+/// إعلان نص / شريط — صفحة تسجيل الدخول
+model TextAd {
+  id        String   @id @default(uuid()) @db.Uuid
+  text      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("news_tickers")
+}
+
+/// أرقام التواصل القديمة — يُستبدل بـ ContactMethod (يُبقى للتوافق)
+model LoginContacts {
+  id          String   @id @default("default")
+  adminPhone  String   @default("")
+  repairPhone String   @default("")
+  updatedAt   DateTime @updatedAt
+
+  @@map("login_contacts")
+}
+
+/// طريقة تواصل — صفحة تسجيل الدخول (متوافق مع سكربت العميل)
+model ContactMethod {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// phone | whatsapp | email | facebook | tiktok | twitter | instagram | youtube | other
+  contactType String
+  /// العنوان الظاهر للعميل (contact_type_display)
+  displayName String
+  value       String
+  notes       String   @default("")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("contact_methods")
+}
+
+/// خدمة سريعة — صفحة تسجيل الدخول (الاسم + الصورة + الرابط)
+model LoginService {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  imageUrl  String
+  linkUrl   String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("login_services")
+}
+
+/// خدمة / زر — صفحة الحالة (الاسم + الصورة + الرابط)
+model StatusService {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  imageUrl  String
+  linkUrl   String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("status_services")
+}
+
+/// باقة اشتراك — صفحة تسجيل الدخول
+model LoginPackage {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  time      String
+  download  String
+  validity  String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("packages")
+}
+
+/// مفتاح تفعيل/تعطيل لكل بطاقة محتوى (بدون مسح عناصرها)
+model PageCardFlag {
+  key       String   @id
+  isEnabled Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@map("page_card_flags")
+}

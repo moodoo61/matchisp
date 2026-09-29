@@ -1,0 +1,11 @@
+:80 {
+	encode gzip
+
+	handle_path /api* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy admin-web:3000
+	}
+}

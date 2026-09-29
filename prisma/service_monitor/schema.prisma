@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/api/generated/service_monitor"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_SERVICE_MONITOR")
+}
+
+model SectionMeta {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now())
+
+  @@map("_section_meta")
+}
+
+/// خدمة خارجية تُراقب من لوحة الإدارة
+model MonitoredService {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// معرّف ثابت: mistserver | librenms | asterisk
+  key         String   @unique
+  /// اسم العرض
+  label       String
+  /// وصف مختصر
+  description String   @default("")
+  /// عنوان أساسي للفحص (URL)
+  baseUrl     String   @default("")
+  /// تفعيل المتابعة
+  isEnabled   Boolean  @default(true)
+  /// ملاحظات تشغيل
+  notes       String   @default("")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@map("monitored_services")
+}

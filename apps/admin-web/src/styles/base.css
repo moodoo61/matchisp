@@ -1,0 +1,78 @@
+/* أساسيات الواجهة: متغيرات وإعادة ضبط */
+:root {
+  --bg: #0f1419;
+  --bg-elevated: #1a222c;
+  --bg-soft: #243040;
+  --border: #314155;
+  --text: #e8eef5;
+  --muted: #93a4b8;
+  --accent: #2f9e8f;
+  --accent-strong: #1f7a6e;
+  --danger: #d46565;
+  --warning: #d4a017;
+  --radius: 12px;
+  --font-display: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(47, 158, 143, 0.18), transparent 55%),
+    radial-gradient(900px 500px at -10% 100%, rgba(49, 65, 85, 0.45), transparent 50%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.page-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.6rem;
+}
+
+.page-sub {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+}
+
+.error {
+  color: #ffb4b4;
+  background: rgba(212, 101, 101, 0.15);
+  border: 1px solid rgba(212, 101, 101, 0.35);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}

@@ -1,0 +1,8 @@
+/* جذر صفحة المشاهدة — يعزل الهوية المضيئة عن لوحة التحكم */
+html:has(.cl-app),
+body:has(.cl-app) {
+  margin: 0;
+  background: #1a2340 !important;
+  color: #f7f3e8;
+  color-scheme: dark;
+}

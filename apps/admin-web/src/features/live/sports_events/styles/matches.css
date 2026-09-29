@@ -1,0 +1,12 @@
+/* موعد المباراة — تاريخ ووقت أصليان جنباً إلى جنب */
+.match-kickoff-field {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .match-kickoff-field {
+    grid-template-columns: 1fr;
+  }
+}

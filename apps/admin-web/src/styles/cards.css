@@ -1,0 +1,50 @@
+/* بطاقات وإحصائيات عامة */
+.card {
+  background: rgba(26, 34, 44, 0.85);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem;
+}
+
+.grid-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.grid-stats.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0.35rem 0 0;
+}
+
+.stat-suffix {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stat-ok {
+  color: #6ee7b7;
+}
+
+.stat-bad {
+  color: #fca5a5;
+}
+
+.stat-label {
+  color: var(--muted);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 960px) {
+  .grid-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

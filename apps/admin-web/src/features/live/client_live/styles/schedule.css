@@ -1,0 +1,232 @@
+/* ─────────────────────────────────────────────
+   جدول المباريات — زر + نافذة
+   ───────────────────────────────────────────── */
+.cl-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 0 0 auto;
+}
+
+.cl-schedule-btn {
+  appearance: none;
+  border: 1px solid rgba(43, 30, 7, 0.55);
+  background: rgba(28, 19, 5, 0.92);
+  color: var(--cl-gold-100);
+  font-family: var(--cl-font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 0.48rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background var(--cl-dur-fast) var(--cl-ease-lux),
+    border-color var(--cl-dur-fast) var(--cl-ease-lux),
+    transform var(--cl-dur-fast) var(--cl-ease-lux);
+}
+
+.cl-schedule-btn:hover {
+  background: #2a1e0a;
+  border-color: rgba(241, 222, 168, 0.45);
+}
+
+.cl-schedule-btn:active {
+  transform: translateY(1px);
+}
+
+.cl-schedule-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(8, 11, 22, 0.72);
+  backdrop-filter: blur(4px);
+  animation: cl-schedule-fade 0.22s var(--cl-ease-lux);
+}
+
+.cl-schedule-modal {
+  width: min(720px, 100%);
+  max-height: min(78dvh, 640px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--cl-radius-lg);
+  border: 1px solid var(--cl-card-line);
+  background: linear-gradient(180deg, #273457 0%, #1c2644 100%);
+  box-shadow: var(--cl-shadow-screen);
+  overflow: hidden;
+  animation: cl-schedule-rise 0.28s var(--cl-ease-lux);
+}
+
+.cl-schedule-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--cl-gold-gradient);
+  border-bottom: 1px solid #6f5626;
+}
+
+.cl-schedule-head h2 {
+  margin: 0;
+  font-family: var(--cl-font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2a1e05;
+  text-shadow: 0 1px 0 rgba(255, 248, 225, 0.55);
+}
+
+.cl-schedule-close {
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(43, 30, 7, 0.45);
+  background: #1c1305;
+  color: var(--cl-gold-100);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cl-schedule-body {
+  overflow: auto;
+  padding: 0.85rem;
+}
+
+.cl-schedule-hint {
+  margin: 1.5rem 0;
+  text-align: center;
+  color: var(--cl-muted);
+  font-size: 0.92rem;
+}
+
+.cl-schedule-hint.is-error {
+  color: #ff8fa3;
+}
+
+.cl-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cl-schedule-row {
+  width: 100%;
+  appearance: none;
+  text-align: start;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  gap: 0.55rem 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--cl-radius-md);
+  border: 1px solid var(--cl-card-line-soft);
+  background: var(--cl-card);
+  color: var(--cl-ivory);
+  font-family: var(--cl-font-body);
+  transition:
+    border-color var(--cl-dur-fast) var(--cl-ease-lux),
+    background var(--cl-dur-fast) var(--cl-ease-lux);
+}
+
+.cl-schedule-row:hover {
+  border-color: var(--cl-card-line);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cl-schedule-time {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--cl-gold-100);
+  align-self: center;
+}
+
+.cl-schedule-fixture {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.55rem;
+  min-width: 0;
+}
+
+.cl-schedule-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.cl-schedule-logo {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  flex: 0 0 auto;
+}
+
+.cl-schedule-logo.is-empty {
+  display: inline-block;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+}
+
+.cl-schedule-vs {
+  color: var(--cl-faint);
+  font-weight: 700;
+}
+
+.cl-schedule-meta {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--cl-muted);
+}
+
+.cl-schedule-channel {
+  color: var(--cl-gold-300);
+}
+
+@keyframes cl-schedule-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cl-schedule-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .cl-schedule-row {
+    grid-template-columns: 3.4rem minmax(0, 1fr);
+    padding: 0.65rem 0.7rem;
+  }
+
+  .cl-header-actions {
+    gap: 0.4rem;
+  }
+
+  .cl-schedule-btn {
+    padding: 0.42rem 0.7rem;
+    font-size: 0.72rem;
+  }
+}

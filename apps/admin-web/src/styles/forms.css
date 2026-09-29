@@ -1,0 +1,97 @@
+/* نماذج وحقول مشتركة */
+.form {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 420px;
+}
+
+.form label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.form input,
+.form select,
+.form textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 0.7rem 0.8rem;
+  resize: vertical;
+}
+
+.check-row {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  flex-direction: row !important;
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.field-row .field-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row > .btn {
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  height: 2.65rem;
+}
+
+.field-caption {
+  display: block;
+}
+
+.field-error {
+  margin: 0;
+  color: #ffb4b4;
+  font-size: 0.85rem;
+}
+
+.image-upload-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.image-upload-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.image-upload-row .btn.icon-only {
+  min-width: 2.65rem;
+  width: 2.65rem;
+  height: 2.65rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-upload-row input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 0.7rem 0.8rem;
+  min-width: 0;
+}
+
+.image-upload-preview {
+  width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}

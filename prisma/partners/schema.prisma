@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/api/generated/partners"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PARTNERS")
+}
+
+model SectionMeta {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now())
+
+  @@map("_section_meta")
+}
+
+/// وكيل / محل توزيع
+model Agent {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// اسم الوكيل
+  name      String
+  /// اسم المحل
+  shopName  String
+  /// المنطقة (للتجميع في واجهة العميل)
+  region    String   @default("أخرى")
+  /// العنوان
+  address   String
+  /// رقم الهاتف
+  phone     String
+  /// خط العرض من لوكيشن الجهاز
+  latitude  Float?
+  /// خط الطول من لوكيشن الجهاز
+  longitude Float?
+  /// ترتيب العرض في الـ API
+  sortOrder Int      @default(0)
+  /// هل يظهر في نقطة النهاية العامة
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([shopName])
+  @@index([isPublic, sortOrder])
+  @@index([region])
+  @@map("agents")
+}

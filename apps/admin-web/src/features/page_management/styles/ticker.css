@@ -1,0 +1,69 @@
+/* معاينة شريط النص المتحرك */
+.ticker-preview {
+  position: relative;
+  overflow: hidden;
+  container-type: inline-size;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0c1218;
+  color: #f2f6fa;
+  min-height: 2.6rem;
+}
+
+.ticker-track {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  width: max-content;
+  animation-name: ticker-ltr;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.ticker-chunk {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.75rem;
+  white-space: nowrap;
+}
+
+.ticker-sep {
+  color: rgba(242, 246, 250, 0.45);
+  font-weight: 400;
+}
+
+.ticker-item {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+@keyframes ticker-ltr {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100cqi);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+    position: relative;
+    inset: auto;
+    left: auto;
+    max-width: 100%;
+    padding-inline: 0.75rem;
+    overflow: hidden;
+  }
+}
+
+.ticker-preview.compact {
+  margin: 0.5rem 0.5rem 0.75rem;
+  border-radius: 8px;
+}

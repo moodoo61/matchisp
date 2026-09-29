@@ -1,0 +1,71 @@
+/* ─────────────────────────────────────────────
+   الاستجابة — الشاشات الكبيرة مقفلة، الصغيرة تتمرر
+   ───────────────────────────────────────────── */
+@media (max-width: 1080px) {
+  .cl-app {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .cl-main {
+    overflow: visible;
+  }
+
+  .cl-layout {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .cl-feature {
+    overflow: visible;
+  }
+
+  .cl-screen-shell {
+    min-height: 320px;
+  }
+
+  .cl-screen {
+    aspect-ratio: 16 / 9;
+    min-height: 320px;
+  }
+
+  .cl-playlist {
+    height: auto;
+    max-height: 60dvh;
+  }
+}
+
+@media (max-width: 640px) {
+  .cl-main,
+  .cl-header-inner,
+  .cl-footer {
+    width: min(100% - 1rem, var(--cl-max));
+  }
+
+  .cl-header-inner { min-height: 64px; }
+  .cl-monogram { width: 44px; height: 44px; border-radius: 13px; font-size: 1.35rem; }
+  .cl-brand { font-size: 1.2rem; }
+  .cl-brand-sub { letter-spacing: 0.2em; }
+
+  .cl-program {
+    padding: 0.7rem 0.8rem;
+  }
+
+  .cl-program-mark { width: 44px; height: 44px; }
+  .cl-program h1 { font-size: 1.1rem; }
+
+  .cl-player-controls {
+    inset-inline: 0.6rem;
+    bottom: 0.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-app *, .cl-app *::before, .cl-app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

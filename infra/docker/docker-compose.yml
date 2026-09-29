@@ -1,0 +1,124 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-isp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-isp_secret}
+      POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-isp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      DATABASE_URL_CORE: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_core?schema=public
+      DATABASE_URL_NETWORK_PAGES: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_network_pages?schema=public
+      DATABASE_URL_LIVE: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_live?schema=public
+      DATABASE_URL_BREAK: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_break?schema=public
+      DATABASE_URL_COMMS: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_comms?schema=public
+      DATABASE_URL_MAGAZINE: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_magazine?schema=public
+      DATABASE_URL_MAINTENANCE: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_maintenance?schema=public
+      DATABASE_URL_PARTNERS: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_partners?schema=public
+      DATABASE_URL_INVENTORY: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_inventory?schema=public
+      DATABASE_URL_ORDERS: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_orders?schema=public
+      DATABASE_URL_SUPPORT: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_support?schema=public
+      DATABASE_URL_EXPENSES: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_expenses?schema=public
+      DATABASE_URL_PLATFORM: postgresql://${POSTGRES_USER:-isp}:${POSTGRES_PASSWORD:-isp_secret}@postgres:5432/db_platform?schema=public
+      REDIS_URL: redis://redis:6379
+      ADMIN_WEB_URL: http://localhost:4010
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  admin-web:
+    build:
+      context: ../..
+      dockerfile: apps/admin-web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      PORT: "4010"
+    ports:
+      - "4010:4010"
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      API_HOST: localhost
+    depends_on:
+      - api
+      - admin-web
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["monitoring"]
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: ["monitoring"]
+    ports:
+      - "3100:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
