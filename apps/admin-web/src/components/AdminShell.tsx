@@ -171,6 +171,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       canAny([
         PERMISSIONS.SETTINGS_READ,
         PERMISSIONS.SETTINGS_MANAGE,
+        PERMISSIONS.SETTINGS_GENERAL_READ,
+        PERMISSIONS.SETTINGS_GENERAL_MANAGE,
         PERMISSIONS.SETTINGS_DISKS_READ,
         PERMISSIONS.SETTINGS_DISKS_MANAGE,
         PERMISSIONS.SETTINGS_DISKS_MOUNT,
@@ -189,6 +191,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       ])
     ) {
       const settingsChildren: NonNullable<NavItem['children']> = [];
+      if (
+        canAny([
+          PERMISSIONS.SETTINGS_READ,
+          PERMISSIONS.SETTINGS_MANAGE,
+          PERMISSIONS.SETTINGS_GENERAL_READ,
+          PERMISSIONS.SETTINGS_GENERAL_MANAGE,
+        ])
+      ) {
+        settingsChildren.push({
+          href: '/settings/general',
+          label: 'عامة',
+        });
+      }
       if (
         canAny([
           PERMISSIONS.SETTINGS_READ,

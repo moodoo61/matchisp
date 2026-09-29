@@ -3,16 +3,27 @@
 تأسيس المرحلة **أ**: Modular Monolith + قاعدة بيانات مستقلة لكل قسم + RBAC + تدقيق + فريق + لوحة نظرة عامة.
 
 ## مرجع النهج (مهم)
+- [المتطلبات والتثبيت](docs/REQUIREMENTS.md) — ما يجب تنزيله وتثبيته ليعمل المشروع
 - [خطة المرحلة أ](docs/PHASE_A_PLAN.md) — النهج المعتمد داخل المشروع
 - [المعمارية](docs/ARCHITECTURE.md)
 - [تنظيم الكود](docs/CODING_ORGANIZATION.md) — مجلد لكل قسم + ملفات حسب الدور (ممنوع التكديس)
 - [إضافة قسم جديد](docs/ADDING_A_MODULE.md)
 
 ## المتطلبات (تشغيل أصلي على السيرفر)
+التفاصيل الكاملة وأوامر `apt` في **[docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)**.
+
+ملخص سريع:
 - Linux Server (الوضع الافتراضي)
 - Node.js 22+ و pnpm 9+
 - PostgreSQL 16+ و Redis 7+ مثبتان على السيرفر
+- حزم نظام مستحسنة: `iproute2`, `smartmontools`, `postgresql-client`, `ffmpeg`, …
 - Docker اختياري فقط إن رغبت بعزل الخدمات
+
+تثبيت حزم النظام دفعة واحدة (Ubuntu/Debian):
+
+```bash
+sudo bash infra/scripts/install-system-deps.sh
+```
 
 > السيرفر القوي عندكم يكفي للتشغيل المباشر (Native). Docker ليس شرطاً.
 
@@ -36,6 +47,8 @@ cd /opt/match
 ./dev.sh stop         # إيقاف المنافذ
 ./dev.sh restart      # إيقاف ثم تشغيل
 ```
+
+خدمة systemd مؤقتة للتطوير على خادم آخر (`tsetisp`): انظر [docs/TSETISP_SERVICE.md](docs/TSETISP_SERVICE.md) — **لا تُفعَّل هنا افتراضياً**.
 
 | الخدمة | الأمر | الرابط |
 | --- | --- | --- |

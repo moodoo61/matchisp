@@ -10,11 +10,20 @@ import { DisksInventoryService } from './disks/service/disks-inventory.service';
 import { DisksMountService } from './disks/service/disks-mount.service';
 import { DisksNotesService } from './disks/service/disks-notes.service';
 import { DisksSmartService } from './disks/service/disks-smart.service';
+import { GeneralSettingsController } from './general/controller/general-settings.controller';
+import { GeneralLogoUploadService } from './general/service/general-logo-upload.service';
+import { GeneralSettingsService } from './general/service/general-settings.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [DisksController, DatabasesController],
+  controllers: [
+    GeneralSettingsController,
+    DisksController,
+    DatabasesController,
+  ],
   providers: [
+    GeneralSettingsService,
+    GeneralLogoUploadService,
     DisksInventoryService,
     DisksMountService,
     DisksNotesService,

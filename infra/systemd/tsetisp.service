@@ -1,0 +1,39 @@
+[Unit]
+Description=ISP Admin (تطوير مؤقت) — tsetisp عبر dev.sh
+Documentation=file:///opt/match/docs/REQUIREMENTS.md
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+# إن وُجدت خدمات Postgres/Redis المحلية لا تنتظر الفشل إن كانت بأسماء مختلفة
+After=postgresql.service redis-server.service redis.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/match
+# عدّل User/Group عند التثبيت عبر install-tsetisp-service.sh
+User=root
+Group=root
+
+# مسار أدوات Node/pnpm الشائع
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=NODE_ENV=development
+# يمنع تداخل طرفيات تفاعلية
+Environment=CI=true
+
+# تشغيل مشروع التطوير (API + الواجهة) كما في ./dev.sh
+ExecStart=/opt/match/dev.sh start
+ExecStop=/opt/match/dev.sh stop
+
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=120
+TimeoutStopSec=45
+KillMode=control-group
+KillSignal=SIGTERM
+
+# سجلات journalctl -u tsetisp
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tsetisp
+
+[Install]
+WantedBy=multi-user.target

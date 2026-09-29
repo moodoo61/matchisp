@@ -81,6 +81,10 @@ export const PERMISSIONS = {
   SETTINGS_READ: 'settings:read',
   SETTINGS_MANAGE: 'settings:manage',
 
+  /** إعدادات عامة */
+  SETTINGS_GENERAL_READ: 'settings.general:read',
+  SETTINGS_GENERAL_MANAGE: 'settings.general:manage',
+
   /** إدارة الأقراص */
   SETTINGS_DISKS_READ: 'settings.disks:read',
   SETTINGS_DISKS_MANAGE: 'settings.disks:manage',
@@ -163,6 +167,8 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'service_monitor:update': 'تعديل إعدادات الخدمة المراقبة',
   'settings:read': 'عرض الإعدادات (الكل)',
   'settings:manage': 'إدارة الإعدادات (الكل)',
+  'settings.general:read': 'عرض الإعدادات العامة',
+  'settings.general:manage': 'تعديل الإعدادات العامة',
   'settings.disks:read': 'عرض إدارة الأقراص',
   'settings.disks:manage': 'إدارة الأقراص (ملاحظات وضبط)',
   'settings.disks:mount': 'تركيب قرص',
@@ -309,6 +315,20 @@ export function hasPermission(
         userPermissions.includes(PERMISSIONS.SERVICE_MONITOR_MANAGE) ||
         userPermissions.includes(PERMISSIONS.SERVICE_MONITOR_UPDATE)
       );
+    }
+  }
+
+  if (required.startsWith('settings.general:')) {
+    const action = required.slice('settings.general:'.length);
+    if (action === 'read') {
+      return (
+        userPermissions.includes(PERMISSIONS.SETTINGS_READ) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_GENERAL_MANAGE)
+      );
+    }
+    if (action === 'manage') {
+      return userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE);
     }
   }
 
