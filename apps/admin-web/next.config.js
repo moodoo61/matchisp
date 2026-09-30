@@ -1,3 +1,31 @@
+const fs = require('fs');
+const path = require('path');
+
+/** تحميل .env من جذر المونوريبو إن لم تُمرَّر المتغيرات من الصدفة */
+function loadRootEnv() {
+  const rootEnv = path.join(__dirname, '../../.env');
+  if (!fs.existsSync(rootEnv)) return;
+  for (const line of fs.readFileSync(rootEnv, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq < 1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) continue;
+    if (process.env[key] !== undefined) continue;
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
+
+loadRootEnv();
+
 /** @type {import('next').NextConfig} */
 const apiInternal =
   process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:3001';
@@ -25,18 +53,13 @@ const allowAllOrigins =
   process.env.CORS_ALLOW_ALL === 'true' ||
   process.env.CORS_ORIGINS?.trim() === '*';
 
+/**
+ * عند السماح للكل: لا نعرّف allowedDevOrigins أصلاً.
+ * Next في وضع التطوير عند عدم التعريف يحذّر فقط ولا يحجب (mode=warn).
+ * أي مصفوفة — حتى بالأنماط — تفعّل mode=block وقد تحجب IP مثل 172.x.
+ */
 const allowedDevOrigins = allowAllOrigins
-  ? [
-      // مؤقت: أنماط واسعة لـ Next dev (IP وعدة مستويات نطاق)
-      '*',
-      '*.*',
-      '*.*.*',
-      '*.*.*.*',
-      '*.*.*.*.*',
-      'localhost',
-      '127.0.0.1',
-      ...hostnamesFromCsv(process.env.ALLOWED_DEV_ORIGINS),
-    ]
+  ? undefined
   : [
       ...new Set(
         [
@@ -45,7 +68,7 @@ const allowedDevOrigins = allowAllOrigins
           'mo.zerolag.live',
           '170.101.111.184',
           ...hostnamesFromCsv(process.env.ALLOWED_DEV_ORIGINS),
-          ...hostnamesFromCsv(process.env.CORS_ORIGINS),
+          ...hostnamesFromCsv(process.env.CORS_ORIGINS).filter((h) => h !== '*'),
           hostnameOf(process.env.ADMIN_WEB_URL),
           hostnameOf(process.env.API_URL),
           hostnameOf(process.env.NEXT_PUBLIC_API_URL),
@@ -56,8 +79,7 @@ const allowedDevOrigins = allowAllOrigins
 const nextConfig = {
   transpilePackages: ['@isp/shared'],
   output: 'standalone',
-  // يسمح بفتح واجهة التطوير عبر IP/دومين بعيد (ليس localhost فقط)
-  allowedDevOrigins,
+  ...(allowedDevOrigins ? { allowedDevOrigins } : {}),
   // المتصفح يستدعي /api على نفس الأصل → Next يمرّرها للـ Nest (بدون CORS/mixed content)
   async rewrites() {
     return [

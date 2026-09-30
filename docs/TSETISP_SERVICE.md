@@ -12,13 +12,16 @@
 ```bash
 cd /opt/match
 # تأكد من .env و pnpm install مسبقاً — راجع REQUIREMENTS.md
+cp -n .env.example .env   # إن لزم، وعدّل IP/أسرار
+pnpm install
+pnpm --filter @isp/shared build
+bash infra/scripts/bootstrap-db.sh
 
 sudo bash infra/scripts/install-tsetisp-service.sh \
   --root /opt/match \
   --user "$USER" \
   --enable --start
 ```
-
 بدون تشغيل فوري (تثبيت الملف فقط):
 
 ```bash

@@ -89,13 +89,8 @@ cp .env.example .env
 pnpm install
 pnpm --filter @isp/shared build
 
-# إنشاء قواعد الأقسام
-bash infra/docker/postgres/init-local.sh
-
-# Prisma
-pnpm --filter @isp/api prisma:generate
-pnpm --filter @isp/api prisma:migrate
-pnpm db:seed
+# قواعد + migrate + حساب المدير (أو يُستدعى تلقائياً من ./dev.sh إن غاب جدول users)
+bash infra/scripts/bootstrap-db.sh
 ```
 
 ثم انتقل لقسم **تشغيل المشروع** أعلاه.
@@ -112,6 +107,7 @@ pnpm --filter @isp/shared build
 pnpm --filter @isp/api prisma:generate
 pnpm --filter @isp/api prisma:migrate
 pnpm db:seed
+# أو: bash infra/scripts/bootstrap-db.sh --force
 
 rm -rf apps/admin-web/.next
 pnpm --filter @isp/api build

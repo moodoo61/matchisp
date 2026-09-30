@@ -55,6 +55,23 @@ ensure_shared() {
   fi
 }
 
+# إن غاب جدول users (تنصيب جديد) شغّل bootstrap-db تلقائياً
+ensure_db() {
+  local pghost="${POSTGRES_HOST:-localhost}"
+  local pgport="${POSTGRES_PORT:-5432}"
+  local pguser="${POSTGRES_USER:-isp}"
+  local out=""
+  export PGPASSWORD="${POSTGRES_PASSWORD:-isp_secret}"
+  out="$(psql -h "$pghost" -p "$pgport" -U "$pguser" -d db_core -tAc \
+    "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='users'" \
+    2>/dev/null || true)"
+  if [[ "$out" == "1" ]]; then
+    return 0
+  fi
+  echo "قاعدة db_core بلا جدول users — تهيئة تلقائية..."
+  bash "$ROOT/infra/scripts/bootstrap-db.sh"
+}
+
 start_api() {
   echo "تشغيل الخلفي (API) على المنفذ ${API_PORT}..."
   pnpm --filter @isp/api dev &
@@ -83,6 +100,7 @@ case "$cmd" in
     load_env
     stop_ports
     ensure_shared
+    ensure_db
     trap cleanup INT TERM
     start_api
     start_web
@@ -94,6 +112,7 @@ case "$cmd" in
     fuser -k "${API_PORT}/tcp" 2>/dev/null || true
     sleep 1
     ensure_shared
+    ensure_db
     trap cleanup INT TERM
     start_api
     echo "API: http://127.0.0.1:${API_PORT}/api/docs"
@@ -116,6 +135,7 @@ case "$cmd" in
     load_env
     stop_ports
     ensure_shared
+    ensure_db
     trap cleanup INT TERM
     start_api
     start_web

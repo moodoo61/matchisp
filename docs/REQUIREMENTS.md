@@ -152,13 +152,15 @@ pnpm --filter @isp/shared build
 مرة واحدة بعد تثبيت Postgres:
 
 ```bash
-bash infra/docker/postgres/init-local.sh
-pnpm --filter @isp/api prisma:generate
-pnpm --filter @isp/api prisma:migrate
-pnpm db:seed
+bash infra/scripts/bootstrap-db.sh
+# أو يدوياً:
+# bash infra/docker/postgres/init-local.sh
+# pnpm --filter @isp/api prisma:generate && pnpm --filter @isp/api prisma:migrate && pnpm db:seed
 ```
 
-ثم التشغيل: `./dev.sh` — التفاصيل في [README](../README.md).
+ثم التشغيل: `./dev.sh` — إن غاب جدول `users` يُكمِل التهيئة تلقائياً. التفاصيل في [README](../README.md).
+
+> خطأ `The table public.users does not exist` = لم تُنفَّذ الترحيلات؛ شغّل `bootstrap-db.sh` ثم أعد تشغيل الخدمة.
 
 خدمة تطوير مؤقتة على خادم آخر: [TSETISP_SERVICE.md](./TSETISP_SERVICE.md) (`tsetisp` عبر `dev.sh`).
 
