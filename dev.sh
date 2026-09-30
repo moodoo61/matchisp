@@ -48,26 +48,10 @@ cleanup() {
   exit 0
 }
 
-# يعيد بناء @isp/shared إن غاب dist أو كان أقدم من المصدر
-# (تجنّب أخطاء مثل NETWORK_SSTP_* بعد git pull على أجهزة أخرى)
+# دائماً يعيد بناء @isp/shared (dist غير في git؛ tsbuildinfo القديم كان يتخطى التوليد)
 ensure_shared() {
-  local src="$ROOT/packages/shared/src"
-  local dist="$ROOT/packages/shared/dist"
-  local stamp="$dist/permissions.d.ts"
-  local need_build=0
-
-  if [[ ! -d "$dist" || ! -f "$stamp" ]]; then
-    need_build=1
-  elif ! grep -q 'NETWORK_SSTP_READ' "$stamp" 2>/dev/null; then
-    need_build=1
-  elif [[ -n "$(find "$src" -type f \( -name '*.ts' -o -name '*.tsx' \) -newer "$stamp" 2>/dev/null | head -1)" ]]; then
-    need_build=1
-  fi
-
-  if [[ "$need_build" -eq 1 ]]; then
-    echo "بناء @isp/shared..."
-    pnpm --filter @isp/shared build
-  fi
+  echo "بناء @isp/shared..."
+  pnpm --filter @isp/shared build
 }
 
 # إن غاب جدول users (تنصيب جديد) شغّل bootstrap-db تلقائياً

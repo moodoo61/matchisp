@@ -1,6 +1,7 @@
 apps/api/generated
 coverage
 dist
+*.tsbuildinfo
 .DS_Store
 .env
 .env.local
