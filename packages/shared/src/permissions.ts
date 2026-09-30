@@ -107,6 +107,8 @@ export const PERMISSIONS = {
   NETWORK_ROUTES_READ: 'network.routes:read',
   NETWORK_ROUTES_MANAGE: 'network.routes:manage',
   NETWORK_DNS_READ: 'network.dns:read',
+  NETWORK_SSTP_READ: 'network.sstp:read',
+  NETWORK_SSTP_MANAGE: 'network.sstp:manage',
 } as const;
 
 export type PermissionCode =
@@ -188,6 +190,8 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'network.routes:read': 'عرض جداول التوجيه',
   'network.routes:manage': 'تعديل التوجيه',
   'network.dns:read': 'عرض إعدادات DNS',
+  'network.sstp:read': 'عرض اتصال SSTP',
+  'network.sstp:manage': 'إدارة اتصال SSTP (حفظ/ربط/فصل)',
 };
 
 const LIVE_CHANNELS_WRITE_ACTIONS = new Set([
@@ -408,6 +412,20 @@ export function hasPermission(
         userPermissions.includes(PERMISSIONS.NETWORK_READ) ||
         userPermissions.includes(PERMISSIONS.NETWORK_MANAGE)
       );
+    }
+  }
+
+  if (required.startsWith('network.sstp:')) {
+    const action = required.slice('network.sstp:'.length);
+    if (action === 'read') {
+      return (
+        userPermissions.includes(PERMISSIONS.NETWORK_READ) ||
+        userPermissions.includes(PERMISSIONS.NETWORK_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.NETWORK_SSTP_MANAGE)
+      );
+    }
+    if (action === 'manage') {
+      return userPermissions.includes(PERMISSIONS.NETWORK_MANAGE);
     }
   }
 

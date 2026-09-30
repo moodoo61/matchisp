@@ -190,6 +190,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         PERMISSIONS.NETWORK_ROUTES_READ,
         PERMISSIONS.NETWORK_ROUTES_MANAGE,
         PERMISSIONS.NETWORK_DNS_READ,
+        PERMISSIONS.NETWORK_SSTP_READ,
+        PERMISSIONS.NETWORK_SSTP_MANAGE,
       ])
     ) {
       const settingsChildren: NonNullable<NavItem['children']> = [];
@@ -247,6 +249,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           PERMISSIONS.NETWORK_ROUTES_READ,
           PERMISSIONS.NETWORK_ROUTES_MANAGE,
           PERMISSIONS.NETWORK_DNS_READ,
+          PERMISSIONS.NETWORK_SSTP_READ,
+          PERMISSIONS.NETWORK_SSTP_MANAGE,
         ])
       ) {
         settingsChildren.push({

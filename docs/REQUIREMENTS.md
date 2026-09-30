@@ -63,6 +63,9 @@ redis-cli ping   # PONG
 | `postgresql-client` | `pg_dump`, `pg_restore`, `psql` | نسخ/استعادة قواعد الأقسام |
 | `ffmpeg` | `ffmpeg`, `ffprobe` | الترميز / البث |
 | `v4l-utils` | `v4l2-ctl` | أجهزة HDMI / كاميرا |
+| `sstp-client` | `sstpc` | عميل SSTP (MikroTik وغيرها) |
+| `ppp` | `pppd` | طبقة PPP لاتصال SSTP |
+| `openssl` + `build-essential` | بناء `libssl_cipher_preload.so` | توافق تشفير MikroTik |
 
 ```bash
 sudo apt install -y \
@@ -70,10 +73,35 @@ sudo apt install -y \
   smartmontools \
   postgresql-client \
   ffmpeg \
-  v4l-utils
+  v4l-utils \
+  sstp-client \
+  ppp \
+  openssl \
+  build-essential
 ```
 
-> أوامر مثل `mount` / `ip link set` قد تحتاج صلاحيات root أو `sudo` مضبوط للعملية التي تشغّل الـ API.
+سكربت التثبيت يبني أيضاً ملفات SSTP تحت `var/sstp/` (OpenSSL conf + مكتبة LD_PRELOAD).
+
+> أوامر مثل `mount` / `ip link set` / `sstpc` قد تحتاج صلاحيات root للعملية التي تشغّل الـ API.
+
+### SSTP (الإعدادات ← الشبكة ← SSTP)
+
+| العنصر | التفاصيل |
+| --- | --- |
+| الحزم | `sstp-client` + `ppp` |
+| الملفات | `var/sstp/openssl-sstp.cnf` و `var/sstp/libssl_cipher_preload.so` |
+| MikroTik | `certificate` يجب أن يكون معيّناً (ليس `none`) في `/interface sstp-server server` |
+| الافتراضي | **اتصال تلقائي عند تشغيل الـ API** + إعادة محاولة كل ~30 ثانية إذا انقطع |
+| إيقاف إعادة الاتصال | عطّل خيار «اتصال تلقائي» من الواجهة ثم افصل |
+
+بعد تثبيت الحزم على خادم جديد:
+
+```bash
+sudo bash infra/scripts/install-system-deps.sh
+# أو يدوياً بناء المكتبة:
+cc -shared -fPIC -O2 -o var/sstp/libssl_cipher_preload.so \
+  apps/api/src/modules/network/sstp/native/ssl_cipher_preload.c -ldl
+```
 
 ---
 

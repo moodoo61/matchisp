@@ -8,16 +8,26 @@ import { InterfacesControlService } from './interfaces/service/interfaces-contro
 import { InterfacesInventoryService } from './interfaces/service/interfaces-inventory.service';
 import { RoutesController } from './routes/controller/routes.controller';
 import { RoutesService } from './routes/service/routes.service';
+import { SstpController } from './sstp/controller/sstp.controller';
+import { SstpConnectionService } from './sstp/service/sstp-connection.service';
+import { SstpSettingsService } from './sstp/service/sstp-settings.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [InterfacesController, RoutesController, DnsController],
+  controllers: [
+    InterfacesController,
+    RoutesController,
+    DnsController,
+    SstpController,
+  ],
   providers: [
     InterfacesInventoryService,
     InterfacesControlService,
     AddressesService,
     RoutesService,
     DnsService,
+    SstpSettingsService,
+    SstpConnectionService,
   ],
 })
 export class NetworkModule {}

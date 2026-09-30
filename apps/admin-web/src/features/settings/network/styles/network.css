@@ -61,3 +61,58 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.sstp-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.sstp-form {
+  max-width: 720px;
+}
+
+.sstp-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.85rem 1rem;
+  align-items: start;
+}
+
+.sstp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.sstp-checks {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  padding-top: 0.35rem;
+}
+
+.sstp-log {
+  margin-top: 1rem;
+}
+
+.sstp-log pre {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 640px) {
+  .sstp-form-row {
+    grid-template-columns: 1fr;
+  }
+}

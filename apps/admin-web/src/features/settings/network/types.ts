@@ -45,6 +45,29 @@ export type NetworkDnsInfo = {
   resolvConf: string;
 };
 
+export type SstpStatus = {
+  id: string;
+  host: string;
+  username: string;
+  passwordSet: boolean;
+  certWarn: boolean;
+  tlsExt: boolean;
+  autoConnect: boolean;
+  updatedAt: string;
+  connected: boolean;
+  clientInstalled: boolean;
+  pid: number | null;
+  pppInterfaces: Array<{ ifName: string; operState: string }>;
+  logTail: string;
+  hasCredentials: boolean;
+  probe: {
+    tcpOk: boolean;
+    tlsOk: boolean;
+    detail: string;
+  };
+  mikrotikHint?: string;
+};
+
 export function operStateLabel(state: string): string {
   const map: Record<string, string> = {
     UP: 'يعمل',

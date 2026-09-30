@@ -60,6 +60,21 @@ export function NetworkSectionTabs() {
       });
     }
 
+    if (
+      canAny([
+        PERMISSIONS.NETWORK_READ,
+        PERMISSIONS.NETWORK_MANAGE,
+        PERMISSIONS.NETWORK_SSTP_READ,
+        PERMISSIONS.NETWORK_SSTP_MANAGE,
+      ])
+    ) {
+      list.push({
+        href: '/settings/network/sstp',
+        label: 'SSTP',
+        active: pathname.startsWith('/settings/network/sstp'),
+      });
+    }
+
     return list;
   }, [canAny, pathname]);
 

@@ -28,3 +28,21 @@ model InterfaceNote {
 
   @@map("interface_notes")
 }
+
+/// إعداد اتصال SSTP واحد (سجل افتراضي)
+model SstpSettings {
+  id          String   @id @default("default")
+  host        String   @default("")
+  username    String   @default("")
+  /// كلمة المرور مخزّنة لتمكين إعادة الاتصال من الواجهة
+  password    String   @default("")
+  /// تجاهل تحذير شهادة الخادم (شائع مع شهادات ذاتية)
+  certWarn    Boolean  @default(true)
+  /// تفعيل امتداد اسم المضيف في TLS (SNI)
+  tlsExt      Boolean  @default(true)
+  /// الاتصال تلقائياً عند تشغيل الـ API
+  autoConnect Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@map("sstp_settings")
+}
