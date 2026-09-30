@@ -1,17 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { AdminShell } from '@/components/AdminShell';
-import { AuthGate } from '@/components/AuthGate';
-import { InterfacesCard } from '@/features/settings/network/components/InterfacesCard';
-
-export default function NetworkInterfacesPage() {
-  return (
-    <AuthGate>
-      <AdminShell>
-        <div className="task-stack">
-          <InterfacesCard />
-        </div>
-      </AdminShell>
-    </AuthGate>
-  );
+/** المسار القديم — يُوجَّه إلى صفحة الشبكة الرئيسية */
+export default function NetworkInterfacesRedirectPage() {
+  redirect('/settings/network');
 }

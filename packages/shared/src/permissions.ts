@@ -84,6 +84,8 @@ export const PERMISSIONS = {
   /** إعدادات عامة */
   SETTINGS_GENERAL_READ: 'settings.general:read',
   SETTINGS_GENERAL_MANAGE: 'settings.general:manage',
+  SETTINGS_GENERAL_REBOOT: 'settings.general:reboot',
+  SETTINGS_GENERAL_SHUTDOWN: 'settings.general:shutdown',
 
   /** إدارة الأقراص */
   SETTINGS_DISKS_READ: 'settings.disks:read',
@@ -169,6 +171,8 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'settings:manage': 'إدارة الإعدادات (الكل)',
   'settings.general:read': 'عرض الإعدادات العامة',
   'settings.general:manage': 'تعديل الإعدادات العامة',
+  'settings.general:reboot': 'إعادة تشغيل الجهاز',
+  'settings.general:shutdown': 'إيقاف تشغيل الجهاز',
   'settings.disks:read': 'عرض إدارة الأقراص',
   'settings.disks:manage': 'إدارة الأقراص (ملاحظات وضبط)',
   'settings.disks:mount': 'تركيب قرص',
@@ -324,10 +328,15 @@ export function hasPermission(
       return (
         userPermissions.includes(PERMISSIONS.SETTINGS_READ) ||
         userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE) ||
-        userPermissions.includes(PERMISSIONS.SETTINGS_GENERAL_MANAGE)
+        userPermissions.includes(PERMISSIONS.SETTINGS_GENERAL_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_GENERAL_REBOOT) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_GENERAL_SHUTDOWN)
       );
     }
     if (action === 'manage') {
+      return userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE);
+    }
+    if (action === 'reboot' || action === 'shutdown') {
       return userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE);
     }
   }

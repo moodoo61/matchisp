@@ -21,6 +21,7 @@ import {
   GeneralLogoUploadService,
   generalLogoMulterOptions,
 } from '../service/general-logo-upload.service';
+import { GeneralPowerService } from '../service/general-power.service';
 import { GeneralSettingsService } from '../service/general-settings.service';
 
 @ApiTags('settings-general')
@@ -30,6 +31,7 @@ export class GeneralSettingsController {
   constructor(
     private readonly settings: GeneralSettingsService,
     private readonly uploads: GeneralLogoUploadService,
+    private readonly power: GeneralPowerService,
   ) {}
 
   @Get()
@@ -89,5 +91,17 @@ export class GeneralSettingsController {
     }
     const brandLogoUrl = this.uploads.toPublicUrl(file.filename);
     return this.settings.update({ brandLogoUrl }, user.id);
+  }
+
+  @Post('host/reboot')
+  @RequirePermissions(PERMISSIONS.SETTINGS_GENERAL_REBOOT)
+  reboot(@CurrentUser() user: RequestUser) {
+    return this.power.schedule('reboot', user.id);
+  }
+
+  @Post('host/shutdown')
+  @RequirePermissions(PERMISSIONS.SETTINGS_GENERAL_SHUTDOWN)
+  shutdown(@CurrentUser() user: RequestUser) {
+    return this.power.schedule('shutdown', user.id);
   }
 }

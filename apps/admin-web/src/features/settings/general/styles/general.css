@@ -54,3 +54,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+.general-power-hint {
+  margin: 0 0 0.85rem;
+}
+
+.general-power-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}

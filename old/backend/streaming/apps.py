@@ -1,9 +1,0 @@
-"""تكوين قسم صفحة البث"""
-from django.apps import AppConfig
-
-
-class StreamingConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'streaming'
-    verbose_name = '📺 قسم صفحة البث'
-

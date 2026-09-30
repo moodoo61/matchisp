@@ -32,3 +32,22 @@ export async function uploadGeneralBrandLogo(file: File) {
   );
   return res.brandLogoUrl;
 }
+
+export type HostPowerResult = {
+  success: boolean;
+  action: 'reboot' | 'shutdown';
+  message: string;
+  delayMs: number;
+};
+
+export function rebootHost() {
+  return api<HostPowerResult>('/settings/general/host/reboot', {
+    method: 'POST',
+  });
+}
+
+export function shutdownHost() {
+  return api<HostPowerResult>('/settings/general/host/shutdown', {
+    method: 'POST',
+  });
+}

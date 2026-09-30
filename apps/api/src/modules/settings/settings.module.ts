@@ -12,6 +12,7 @@ import { DisksNotesService } from './disks/service/disks-notes.service';
 import { DisksSmartService } from './disks/service/disks-smart.service';
 import { GeneralSettingsController } from './general/controller/general-settings.controller';
 import { GeneralLogoUploadService } from './general/service/general-logo-upload.service';
+import { GeneralPowerService } from './general/service/general-power.service';
 import { GeneralSettingsService } from './general/service/general-settings.service';
 
 @Module({
@@ -24,6 +25,7 @@ import { GeneralSettingsService } from './general/service/general-settings.servi
   providers: [
     GeneralSettingsService,
     GeneralLogoUploadService,
+    GeneralPowerService,
     DisksInventoryService,
     DisksMountService,
     DisksNotesService,

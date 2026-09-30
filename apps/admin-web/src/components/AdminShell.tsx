@@ -173,6 +173,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         PERMISSIONS.SETTINGS_MANAGE,
         PERMISSIONS.SETTINGS_GENERAL_READ,
         PERMISSIONS.SETTINGS_GENERAL_MANAGE,
+        PERMISSIONS.SETTINGS_GENERAL_REBOOT,
+        PERMISSIONS.SETTINGS_GENERAL_SHUTDOWN,
         PERMISSIONS.SETTINGS_DISKS_READ,
         PERMISSIONS.SETTINGS_DISKS_MANAGE,
         PERMISSIONS.SETTINGS_DISKS_MOUNT,
@@ -197,6 +199,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           PERMISSIONS.SETTINGS_MANAGE,
           PERMISSIONS.SETTINGS_GENERAL_READ,
           PERMISSIONS.SETTINGS_GENERAL_MANAGE,
+          PERMISSIONS.SETTINGS_GENERAL_REBOOT,
+          PERMISSIONS.SETTINGS_GENERAL_SHUTDOWN,
         ])
       ) {
         settingsChildren.push({
@@ -240,36 +244,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           PERMISSIONS.NETWORK_MANAGE,
           PERMISSIONS.NETWORK_INTERFACES_READ,
           PERMISSIONS.NETWORK_INTERFACES_MANAGE,
-        ])
-      ) {
-        settingsChildren.push({
-          href: '/settings/network/interfaces',
-          label: 'المنافذ والعنونة',
-        });
-      }
-      if (
-        canAny([
-          PERMISSIONS.NETWORK_READ,
-          PERMISSIONS.NETWORK_MANAGE,
           PERMISSIONS.NETWORK_ROUTES_READ,
           PERMISSIONS.NETWORK_ROUTES_MANAGE,
-        ])
-      ) {
-        settingsChildren.push({
-          href: '/settings/network/routes',
-          label: 'التوجيه',
-        });
-      }
-      if (
-        canAny([
-          PERMISSIONS.NETWORK_READ,
-          PERMISSIONS.NETWORK_MANAGE,
           PERMISSIONS.NETWORK_DNS_READ,
         ])
       ) {
         settingsChildren.push({
-          href: '/settings/network/dns',
-          label: 'DNS',
+          href: '/settings/network',
+          label: 'الشبكة',
         });
       }
       if (settingsChildren.length) {
