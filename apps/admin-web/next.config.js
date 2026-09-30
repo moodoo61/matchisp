@@ -30,57 +30,16 @@ loadRootEnv();
 const apiInternal =
   process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:3001';
 
-/** يستخرج اسم المضيف فقط (بدون منفذ/مسار) لقائمة allowedDevOrigins */
-function hostnameOf(value) {
-  const raw = (value ?? '').trim();
-  if (!raw) return null;
-  try {
-    if (raw.includes('://')) return new URL(raw).hostname || null;
-  } catch {
-    /* ليس URL كامل */
-  }
-  return raw.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0] || null;
-}
-
-function hostnamesFromCsv(csv) {
-  return (csv ?? '')
-    .split(',')
-    .map((part) => hostnameOf(part))
-    .filter(Boolean);
-}
-
-const allowAllOrigins =
-  process.env.CORS_ALLOW_ALL === 'true' ||
-  process.env.CORS_ORIGINS?.trim() === '*';
-
 /**
- * عند السماح للكل: لا نعرّف allowedDevOrigins أصلاً.
- * Next في وضع التطوير عند عدم التعريف يحذّر فقط ولا يحجب (mode=warn).
- * أي مصفوفة — حتى بالأنماط — تفعّل mode=block وقد تحجب IP مثل 172.x.
+ * مؤقت: لا نعرّف allowedDevOrigins أبداً في التطوير.
+ * أي تعريف للمفتاح يفعّل mode=block في Next 15 ويحجب /_next من IP بعيد
+ * (172.x / 45.x) حتى مع أنماط واسعة — فيفشل JS وتسجيل الدخول يتحول لـ GET.
+ * بدون المفتاح: mode=warn (تحذير فقط، بلا حجب).
+ * أعد تفعيل قائمة مضيفات لاحقاً في الإنتاج عند الحاجة.
  */
-const allowedDevOrigins = allowAllOrigins
-  ? undefined
-  : [
-      ...new Set(
-        [
-          'localhost',
-          '127.0.0.1',
-          'mo.zerolag.live',
-          '170.101.111.184',
-          ...hostnamesFromCsv(process.env.ALLOWED_DEV_ORIGINS),
-          ...hostnamesFromCsv(process.env.CORS_ORIGINS).filter((h) => h !== '*'),
-          hostnameOf(process.env.ADMIN_WEB_URL),
-          hostnameOf(process.env.API_URL),
-          hostnameOf(process.env.NEXT_PUBLIC_API_URL),
-        ].filter(Boolean),
-      ),
-    ];
-
 const nextConfig = {
   transpilePackages: ['@isp/shared'],
   output: 'standalone',
-  ...(allowedDevOrigins ? { allowedDevOrigins } : {}),
-  // المتصفح يستدعي /api على نفس الأصل → Next يمرّرها للـ Nest (بدون CORS/mixed content)
   async rewrites() {
     return [
       {
