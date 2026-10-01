@@ -3,6 +3,10 @@ import { execFile } from 'child_process';
 import { readdir, readFile, realpath } from 'fs/promises';
 import { join } from 'path';
 import { promisify } from 'util';
+import {
+  pairVideoAudioPaths,
+  type AlsaCard,
+} from './hdmi-audio-pairing';
 
 const execFileAsync = promisify(execFile);
 
@@ -22,25 +26,22 @@ export class HdmiDevicesService {
     const audioCards = await this.listAlsaCards();
     const v4l2Names = await this.readV4l2Names();
     const sysNames = await this.readSysfsNames(videoNodes);
+    const paired = pairVideoAudioPaths(videoNodes, audioCards);
 
-    return videoNodes.map((videoPath, index) => {
-      const card =
-        audioCards.length === 0
-          ? null
-          : audioCards[Math.min(index, audioCards.length - 1)];
-      const audioPaths = card
-        ? [`hw:${card.index},0`, `plughw:${card.index},0`]
-        : [];
+    return paired.map((row, index) => {
+      const cardName =
+        audioCards.find((c) => `hw:${c.index},0` === row.audioPath)?.name ??
+        null;
       const name =
-        v4l2Names[videoPath] ||
-        sysNames[videoPath] ||
-        (card ? `${card.name}` : `Capture ${index + 1}`);
+        v4l2Names[row.videoPath] ||
+        sysNames[row.videoPath] ||
+        (cardName ? cardName : `Capture ${index + 1}`);
       return {
-        id: videoPath,
+        id: row.videoPath,
         name,
-        videoPath,
-        audioPath: audioPaths[0] ?? null,
-        audioPaths,
+        videoPath: row.videoPath,
+        audioPath: row.audioPath,
+        audioPaths: row.audioPaths,
       };
     });
   }
@@ -80,10 +81,10 @@ export class HdmiDevicesService {
     }
   }
 
-  private async listAlsaCards(): Promise<{ index: number; name: string }[]> {
+  private async listAlsaCards(): Promise<AlsaCard[]> {
     try {
       const raw = await readFile('/proc/asound/cards', 'utf8');
-      const cards: { index: number; name: string }[] = [];
+      const cards: AlsaCard[] = [];
       for (const line of raw.split('\n')) {
         const m = line.match(/^\s*(\d+)\s+\[[^\]]+\]:\s*(.+)$/);
         if (m) {
@@ -128,7 +129,11 @@ export class HdmiDevicesService {
         const resolved = await realpath(videoPath);
         const match = resolved.match(/video(\d+)$/);
         if (!match) continue;
-        const namePath = join('/sys/class/video4linux', `video${match[1]}`, 'name');
+        const namePath = join(
+          '/sys/class/video4linux',
+          `video${match[1]}`,
+          'name',
+        );
         const name = (await readFile(namePath, 'utf8')).trim();
         if (name) map[videoPath] = name;
       } catch {

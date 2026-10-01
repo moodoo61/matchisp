@@ -24,6 +24,7 @@ describe('encodeGpuSourceOption', () => {
     expect(source).toContain('--hdmi');
     expect(source).toContain('/dev/video0');
     expect(source).toContain('hw:1,0');
+    expect(source).not.toContain("'hw:1,0'");
   });
 
   it('يرفض HDMI بلا أجهزة', () => {

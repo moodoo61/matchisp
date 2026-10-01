@@ -49,6 +49,7 @@ function buildTsExec(source: string) {
 }
 
 function shellEscape(value: string) {
-  if (/^[A-Za-z0-9_./:@%?&=+-]+$/.test(value)) return value;
+  // الفاصلة مسموحة لـ ALSA مثل hw:1,0
+  if (/^[A-Za-z0-9_.,/:@%?&=+-]+$/.test(value)) return value;
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
