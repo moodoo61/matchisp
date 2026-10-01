@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import {
   chmodSync,
-  existsSync,
   mkdirSync,
   writeFileSync,
 } from 'node:fs';
@@ -120,16 +119,15 @@ export function resolveAbrProfileForRungs(
   // حدّث الملف دائماً ليعكس bitrates الحالية من الإعدادات العامة
   writeFileSync(configPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 
-  if (!existsSync(scriptPath)) {
-    const body = [
-      '#!/bin/bash',
-      `# ABR profile ${profileKey} — يُعاد استخدامه للقنوات بنفس الجودات`,
-      `exec ${shellSingleQuote(globalScript)} "$1" ${shellSingleQuote(configPath)}`,
-      '',
-    ].join('\n');
-    writeFileSync(scriptPath, body, 'utf8');
-    chmodSync(scriptPath, 0o755);
-  }
+  // يُحدَّث دائماً ليمرّر كل الوسائط ($@) — IPTV و HDMI (--hdmi video audio)
+  const body = [
+    '#!/bin/bash',
+    `# ABR profile ${profileKey} — يُعاد استخدامه للقنوات بنفس الجودات`,
+    `exec ${shellSingleQuote(globalScript)} "$@" ${shellSingleQuote(configPath)}`,
+    '',
+  ].join('\n');
+  writeFileSync(scriptPath, body, 'utf8');
+  chmodSync(scriptPath, 0o755);
 
   return {
     profileKey,

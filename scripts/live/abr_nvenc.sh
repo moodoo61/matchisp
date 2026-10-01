@@ -1,11 +1,15 @@
 #!/bin/bash
 # مشفر ABR لـ MistServer (NVENC + scale_cuda) — يقرأ الإعدادات من JSON
-# الاستخدام في مصدر Mist:
+#
+# IPTV:
 #   ts-exec:/opt/match/scripts/live/abr_nvenc.sh https://example.com/stream.m3u8
+# HDMI Capture:
+#   ts-exec:/opt/match/scripts/live/abr_nvenc.sh --hdmi /dev/video0 hw:1,0
 #
 # ملف الإعداد (يُحدَّث من لوحة الجودة والترميز):
 #   /opt/match/var/live/abr_nvenc.json
 # أو LIVE_ABR_CONFIG_PATH
+# المعامل الأخير الاختياري: مسار config.json مخصص للملف الشخصي
 
 set -euo pipefail
 
@@ -14,9 +18,25 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 FFMPEG="${LIVE_FFMPEG_PATH:-/usr/local/bin/ffmpeg}"
 FFPROBE="${LIVE_FFPROBE_PATH:-/usr/local/bin/ffprobe}"
 CONFIG_PATH="${LIVE_ABR_CONFIG_PATH:-$ROOT/var/live/abr_nvenc.json}"
-INPUT="${1:?Usage: abr_nvenc.sh <input_url> [config.json]}"
-if [[ "${2:-}" != "" ]]; then
-  CONFIG_PATH="$2"
+
+MODE="iptv"
+INPUT=""
+VIDEO_DEV=""
+AUDIO_DEV=""
+
+if [[ "${1:-}" == "--hdmi" ]]; then
+  MODE="hdmi"
+  VIDEO_DEV="${2:?Usage: abr_nvenc.sh --hdmi <video_device> <audio_device> [config.json]}"
+  AUDIO_DEV="${3:?Usage: abr_nvenc.sh --hdmi <video_device> <audio_device> [config.json]}"
+  if [[ "${4:-}" != "" ]]; then
+    CONFIG_PATH="$4"
+  fi
+  INPUT="$VIDEO_DEV"
+else
+  INPUT="${1:?Usage: abr_nvenc.sh <input_url> [config.json]  OR  abr_nvenc.sh --hdmi <video> <audio> [config.json]}"
+  if [[ "${2:-}" != "" ]]; then
+    CONFIG_PATH="$2"
+  fi
 fi
 
 # إنهاء أي ffmpeg سابق لنفس المصدر
@@ -24,7 +44,7 @@ while read -r oldpid; do
   [[ -n "$oldpid" ]] || continue
   kill -KILL "$oldpid" 2>/dev/null || true
 done < <(ps -eo pid=,args= | awk -v inurl="$INPUT" '
-  index($0, "/ffmpeg") && index($0, "-i " inurl) { print $1 }
+  index($0, "/ffmpeg") && index($0, inurl) { print $1 }
 ')
 
 NET_OPTS=(
@@ -106,35 +126,57 @@ detect_cuvid_decoder() {
   esac
 }
 
-CUVID_DECODER=$(detect_cuvid_decoder)
-echo "abr_nvenc: decoder=${CUVID_DECODER} input=${INPUT} config=${CONFIG_PATH} rungs=${RUNG_COUNT}" >&2
-
 # بناء filter_complex ديناميكي حسب عدد الجودات
 SPLIT_OUT=""
-SCALE_CHAIN=""
 for ((i=0; i<RUNG_COUNT; i++)); do
   SPLIT_OUT+="[v$((i+1))]"
 done
-FILTER="[0:v:0]split=${RUNG_COUNT}${SPLIT_OUT}"
+
+if [[ "$MODE" == "hdmi" ]]; then
+  # HDMI: رفع الإطارات إلى CUDA ثم تقسيم/تحجيم
+  FILTER="[0:v:0]format=nv12,hwupload_cuda,split=${RUNG_COUNT}${SPLIT_OUT}"
+else
+  FILTER="[0:v:0]split=${RUNG_COUNT}${SPLIT_OUT}"
+fi
+
 for ((i=0; i<RUNG_COUNT; i++)); do
   W="$(read_cfg "rungs[$i].width" 1280)"
   H="$(read_cfg "rungs[$i].height" 720)"
   FILTER+=";[v$((i+1))]scale_cuda=${W}:${H}:interp_algo=bilinear[o$((i+1))]"
 done
 
-FF_ARGS=(
-  "$FFMPEG"
-  -hide_banner -loglevel warning
-  "${NET_OPTS[@]}"
-  -fflags +genpts+discardcorrupt
-  -err_detect ignore_err
-  -probesize 10M -analyzeduration 10M
-  -hwaccel cuda -hwaccel_output_format cuda -c:v "$CUVID_DECODER"
-  -i "$INPUT"
-  -filter_complex "$FILTER"
-  -map 0:a:0? -c:a:0 aac -b:a:0 "${A_BR}k" -ar:0 "$A_SR"
-  -af "aresample=async=1:min_hard_comp=0.100:first_pts=0"
-)
+if [[ "$MODE" == "hdmi" ]]; then
+  echo "abr_nvenc: mode=hdmi video=${VIDEO_DEV} audio=${AUDIO_DEV} config=${CONFIG_PATH} rungs=${RUNG_COUNT}" >&2
+  FF_ARGS=(
+    "$FFMPEG"
+    -hide_banner -loglevel warning
+    -fflags +genpts+discardcorrupt
+    -err_detect ignore_err
+    -thread_queue_size 512
+    -f v4l2 -i "$VIDEO_DEV"
+    -thread_queue_size 512
+    -f alsa -i "$AUDIO_DEV"
+    -filter_complex "$FILTER"
+    -map 1:a:0? -c:a:0 aac -b:a:0 "${A_BR}k" -ar:0 "$A_SR"
+    -af "aresample=async=1:min_hard_comp=0.100:first_pts=0"
+  )
+else
+  CUVID_DECODER=$(detect_cuvid_decoder)
+  echo "abr_nvenc: mode=iptv decoder=${CUVID_DECODER} input=${INPUT} config=${CONFIG_PATH} rungs=${RUNG_COUNT}" >&2
+  FF_ARGS=(
+    "$FFMPEG"
+    -hide_banner -loglevel warning
+    "${NET_OPTS[@]}"
+    -fflags +genpts+discardcorrupt
+    -err_detect ignore_err
+    -probesize 10M -analyzeduration 10M
+    -hwaccel cuda -hwaccel_output_format cuda -c:v "$CUVID_DECODER"
+    -i "$INPUT"
+    -filter_complex "$FILTER"
+    -map 0:a:0? -c:a:0 aac -b:a:0 "${A_BR}k" -ar:0 "$A_SR"
+    -af "aresample=async=1:min_hard_comp=0.100:first_pts=0"
+  )
+fi
 
 for ((i=0; i<RUNG_COUNT; i++)); do
   BR="$(read_cfg "rungs[$i].bitrateKbps" 800)"

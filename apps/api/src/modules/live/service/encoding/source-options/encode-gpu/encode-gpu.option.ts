@@ -8,6 +8,7 @@ import { resolveAbrScriptPath } from '../../quality/abr-runtime-config';
 
 /**
  * ترميز GPU — سكربت عام أو مخصص حسب جودات القناة.
+ * يدعم IPTV (رابط) و HDMI (v4l2 + ALSA).
  */
 export const encodeGpuSourceOption: SourceOptionDefinition = {
   mode: 'encode_gpu',
@@ -17,19 +18,29 @@ export const encodeGpuSourceOption: SourceOptionDefinition = {
 };
 
 function resolveMistSource(input: SourceOptionInput): string {
-  if (input.type !== 'IPTV') {
-    throw new Error('ترميز GPU يدعم مصادر IPTV حالياً');
-  }
-  const source = input.sourceUrl?.trim();
-  if (!source) {
-    throw new Error('مصدر IPTV مطلوب لترميز GPU');
-  }
-
   const script = input.abrScriptPath?.trim() || resolveAbrScriptPath();
   if (!path.isAbsolute(script)) {
     throw new Error('مسار سكربت ABR يجب أن يكون مطلقاً');
   }
-  return `ts-exec:${shellEscape(script)} ${shellEscape(source)}`;
+
+  if (input.type === 'IPTV') {
+    const source = input.sourceUrl?.trim();
+    if (!source) {
+      throw new Error('مصدر IPTV مطلوب لترميز GPU');
+    }
+    return `ts-exec:${shellEscape(script)} ${shellEscape(source)}`;
+  }
+
+  if (input.type === 'HDMI') {
+    const video = input.videoDevice?.trim();
+    const audio = input.audioDevice?.trim();
+    if (!video || !audio) {
+      throw new Error('مسارا الفيديو والصوت مطلوبان لترميز GPU عبر HDMI');
+    }
+    return `ts-exec:${shellEscape(script)} --hdmi ${shellEscape(video)} ${shellEscape(audio)}`;
+  }
+
+  throw new Error('نوع مصدر غير مدعوم لترميز GPU');
 }
 
 function shellEscape(value: string) {

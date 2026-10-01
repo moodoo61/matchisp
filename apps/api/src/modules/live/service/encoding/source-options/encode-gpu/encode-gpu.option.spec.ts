@@ -13,13 +13,26 @@ describe('encodeGpuSourceOption', () => {
     expect(source).toContain('http://live.example/stream.m3u8');
   });
 
-  it('يرفض HDMI حالياً', () => {
+  it('يبني ts-exec لـ HDMI مع --hdmi وأجهزة الفيديو/الصوت', () => {
+    const source = encodeGpuSourceOption.resolveMistSource({
+      type: 'HDMI',
+      videoDevice: '/dev/video0',
+      audioDevice: 'hw:1,0',
+    });
+    expect(source.startsWith('ts-exec:')).toBe(true);
+    expect(source).toContain('abr_nvenc.sh');
+    expect(source).toContain('--hdmi');
+    expect(source).toContain('/dev/video0');
+    expect(source).toContain('hw:1,0');
+  });
+
+  it('يرفض HDMI بلا أجهزة', () => {
     expect(() =>
       encodeGpuSourceOption.resolveMistSource({
         type: 'HDMI',
         videoDevice: '/dev/video0',
-        audioDevice: 'hw:0,0',
+        audioDevice: null,
       }),
-    ).toThrow(/IPTV/);
+    ).toThrow(/الصوت|HDMI/);
   });
 });
