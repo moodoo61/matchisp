@@ -68,6 +68,7 @@ export type ViewingPageAdminSection = {
 };
 
 export type ViewingPageChannelsResponse = {
+  /** فارغ = نفس مضيف صفحة المشغّل؛ وإلا عنوان Mist الصريح */
   httpBase: string;
   sections: ViewingPageAdminSection[];
 };

@@ -1,8 +1,6 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { Public } from '../../../../common/guards';
-import { requestOriginFromHeaders } from '../../service/mist/mist-playback-urls';
 import { PublicClientLiveService } from '../service/public_client_live.service';
 import { ViewingPageService } from '../service/viewing_page.service';
 
@@ -23,13 +21,13 @@ export class PublicClientLiveController {
 
   @Public()
   @Get('channels')
-  listChannels(@Req() req: Request) {
-    return this.clientLive.listChannels(requestOriginFromHeaders(req.headers));
+  listChannels() {
+    return this.clientLive.listChannels();
   }
 
   @Public()
   @Get('sections')
-  listSections(@Req() req: Request) {
-    return this.clientLive.listGrouped(requestOriginFromHeaders(req.headers));
+  listSections() {
+    return this.clientLive.listGrouped();
   }
 }

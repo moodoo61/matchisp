@@ -1,53 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   buildMistPlaybackUrls,
-  isLoopbackHttpBase,
-  resolveMistPublicHttpBase,
+  normalizeMistHttpBase,
   type MistPlaybackUrls,
 } from './mist-playback-urls';
 
-export type MistPlaybackResolveOptions = {
-  /** Origin/Host من طلب المتصفح */
-  requestOrigin?: string | null;
-  /**
-   * true لواجهات المشاهدة العامة/الإدارية:
-   * يفضّل مضيف الطلب على MISTSERVER_HTTP_URL الثابت.
-   */
-  preferRequest?: boolean;
-};
-
-/** روابط مشاهدة القنوات من منفذ HTTP لـ MistServer (ليس api2) */
+/**
+ * روابط مشاهدة القنوات من MistServer.
+ * الافتراضي: مسارات نسبية — المشغّل يبني المضيف من عنوان صفحة المشاهدة.
+ * اختياري: MISTSERVER_HTTP_URL صريح إن كان Mist على مضيف آخر.
+ */
 @Injectable()
 export class MistPlaybackService {
-  private readonly logger = new Logger(MistPlaybackService.name);
-  private warnedLoopback = false;
-
   constructor(private readonly config: ConfigService) {}
 
-  /** قاعدة يصل إليها متصفح العميل (IP/نطاق الجهاز الذي فُتح منه الطلب) */
-  httpBase(options: MistPlaybackResolveOptions = {}) {
-    const base = resolveMistPublicHttpBase({
-      configured: this.config.get<string>('MISTSERVER_HTTP_URL'),
-      adminWebUrl: this.config.get<string>('ADMIN_WEB_URL'),
-      requestOrigin: options.requestOrigin,
-      preferRequest: options.preferRequest,
-    });
-
-    if (isLoopbackHttpBase(base) && !this.warnedLoopback) {
-      this.warnedLoopback = true;
-      this.logger.warn(
-        'عنوان مشاهدة Mist يشير إلى localhost — متصفح العميل لن يصل للبث. عيّن MISTSERVER_HTTP_URL أو افتح الواجهة عبر IP/نطاق الجهاز',
-      );
-    }
-
-    return base;
+  /** قاعدة صريحة إن وُجدت؛ فارغ = نفس مضيف صفحة المشغّل */
+  httpBase(): string {
+    return normalizeMistHttpBase(this.config.get<string>('MISTSERVER_HTTP_URL'));
   }
 
-  urlsFor(
-    streamName: string,
-    options: MistPlaybackResolveOptions = {},
-  ): MistPlaybackUrls {
-    return buildMistPlaybackUrls(this.httpBase(options), streamName);
+  urlsFor(streamName: string): MistPlaybackUrls {
+    return buildMistPlaybackUrls(this.httpBase(), streamName);
   }
 }

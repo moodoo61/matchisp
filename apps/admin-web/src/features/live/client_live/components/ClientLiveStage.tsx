@@ -1,4 +1,8 @@
+'use client';
+
+import { useMemo } from 'react';
 import type { PublicLiveChannel } from '../types';
+import { resolveClientPlaybackUrl } from '../lib/resolveClientPlaybackUrl';
 import { ClientLivePlayer } from './ClientLivePlayer';
 
 type Props = {
@@ -13,15 +17,19 @@ function isLive(channel: PublicLiveChannel) {
 /** المسرح — الفيديو وسطر معلومة واحد (لا تكرار) */
 export function ClientLiveStage({ channel, brandLogoUrl }: Props) {
   const live = isLive(channel);
+  const hlsUrl = useMemo(
+    () => resolveClientPlaybackUrl(channel.playback.hlsUrl),
+    [channel.playback.hlsUrl],
+  );
 
   return (
     <section className="cl-feature" aria-live="polite">
       <div className="cl-screen-shell">
         <div className="cl-screen">
-          {channel.playback.hlsUrl ? (
+          {hlsUrl ? (
             <ClientLivePlayer
               key={channel.id}
-              hlsUrl={channel.playback.hlsUrl}
+              hlsUrl={hlsUrl}
               posterUrl={channel.imageUrl}
               brandLogoUrl={brandLogoUrl}
             />
