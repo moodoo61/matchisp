@@ -7,6 +7,16 @@ import {
   type MistPlaybackUrls,
 } from './mist-playback-urls';
 
+export type MistPlaybackResolveOptions = {
+  /** Origin/Host من طلب المتصفح */
+  requestOrigin?: string | null;
+  /**
+   * true لواجهات المشاهدة العامة/الإدارية:
+   * يفضّل مضيف الطلب على MISTSERVER_HTTP_URL الثابت.
+   */
+  preferRequest?: boolean;
+};
+
 /** روابط مشاهدة القنوات من منفذ HTTP لـ MistServer (ليس api2) */
 @Injectable()
 export class MistPlaybackService {
@@ -15,24 +25,29 @@ export class MistPlaybackService {
 
   constructor(private readonly config: ConfigService) {}
 
-  /** قاعدة يصل إليها متصفح العميل (IP/نطاق عام) */
-  httpBase() {
+  /** قاعدة يصل إليها متصفح العميل (IP/نطاق الجهاز الذي فُتح منه الطلب) */
+  httpBase(options: MistPlaybackResolveOptions = {}) {
     const base = resolveMistPublicHttpBase({
       configured: this.config.get<string>('MISTSERVER_HTTP_URL'),
       adminWebUrl: this.config.get<string>('ADMIN_WEB_URL'),
+      requestOrigin: options.requestOrigin,
+      preferRequest: options.preferRequest,
     });
 
     if (isLoopbackHttpBase(base) && !this.warnedLoopback) {
       this.warnedLoopback = true;
       this.logger.warn(
-        'MISTSERVER_HTTP_URL يشير إلى localhost — متصفح العميل لن يصل للبث. عيّن عنواناً عاماً مثل http://IP أو http://domain',
+        'عنوان مشاهدة Mist يشير إلى localhost — متصفح العميل لن يصل للبث. عيّن MISTSERVER_HTTP_URL أو افتح الواجهة عبر IP/نطاق الجهاز',
       );
     }
 
     return base;
   }
 
-  urlsFor(streamName: string): MistPlaybackUrls {
-    return buildMistPlaybackUrls(this.httpBase(), streamName);
+  urlsFor(
+    streamName: string,
+    options: MistPlaybackResolveOptions = {},
+  ): MistPlaybackUrls {
+    return buildMistPlaybackUrls(this.httpBase(options), streamName);
   }
 }

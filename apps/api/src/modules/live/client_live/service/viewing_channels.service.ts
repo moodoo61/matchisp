@@ -39,7 +39,7 @@ export class ViewingChannelsService {
     private readonly audit: AuditService,
   ) {}
 
-  async listForAdmin(): Promise<{
+  async listForAdmin(requestOrigin?: string | null): Promise<{
     httpBase: string;
     sections: Array<{
       id: string;
@@ -64,9 +64,10 @@ export class ViewingChannelsService {
     ]);
 
     const hidden = new Set(visibility.hiddenChannelIds);
+    const playbackOpts = { requestOrigin, preferRequest: true } as const;
 
     return {
-      httpBase: this.playback.httpBase(),
+      httpBase: this.playback.httpBase(playbackOpts),
       sections: sections.map((section) => ({
         id: section.id,
         name: section.name,
@@ -78,7 +79,7 @@ export class ViewingChannelsService {
             mistStatuses,
             activeStats.get(channel.name)?.viewers ?? 0,
           );
-          const urls = this.playback.urlsFor(channel.name);
+          const urls = this.playback.urlsFor(channel.name, playbackOpts);
           return {
             id: channel.id,
             name: channel.name,

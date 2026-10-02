@@ -3,6 +3,7 @@ import {
   buildMistPlaybackUrls,
   isLoopbackHttpBase,
   normalizeMistHttpBase,
+  requestOriginFromHeaders,
   resolveMistPublicHttpBase,
 } from './mist-playback-urls';
 
@@ -28,7 +29,7 @@ describe('mist-playback-urls', () => {
     ).toBe('http://170.101.111.184');
   });
 
-  it('يفضّل العنوان العام المضبوط', () => {
+  it('يفضّل العنوان العام المضبوط بدون preferRequest', () => {
     expect(
       resolveMistPublicHttpBase({
         configured: 'http://mo.zerolag.live',
@@ -37,7 +38,37 @@ describe('mist-playback-urls', () => {
     ).toBe('http://mo.zerolag.live');
   });
 
-  it('normalize فارغ لا يفرض localhost مباشرة', () => {
+  it('auto يتجاهل القيمة ويستنتج من الطلب', () => {
+    expect(
+      resolveMistPublicHttpBase({
+        configured: 'auto',
+        requestOrigin: 'http://10.0.0.5:4010',
+        adminWebUrl: 'http://170.101.111.184:4010',
+      }),
+    ).toBe('http://10.0.0.5');
+  });
+
+  it('preferRequest يفضّل مضيف الطلب على .env القديم', () => {
+    expect(
+      resolveMistPublicHttpBase({
+        configured: 'http://170.101.111.184',
+        requestOrigin: 'http://192.168.1.50:4010',
+        preferRequest: true,
+      }),
+    ).toBe('http://192.168.1.50');
+  });
+
+  it('يستخرج Origin من ترويسات الطلب', () => {
+    expect(
+      requestOriginFromHeaders({
+        origin: 'http://192.168.1.50:4010',
+        host: '192.168.1.50:3001',
+      }),
+    ).toBe('http://192.168.1.50:4010');
+  });
+
+  it('normalize فارغ و auto', () => {
     expect(normalizeMistHttpBase('')).toBe('');
+    expect(normalizeMistHttpBase('auto')).toBe('');
   });
 });

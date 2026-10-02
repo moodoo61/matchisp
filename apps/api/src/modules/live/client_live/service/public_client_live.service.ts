@@ -38,12 +38,12 @@ export class PublicClientLiveService {
     private readonly viewingChannels: ViewingChannelsService,
   ) {}
 
-  async listChannels(): Promise<PublicLiveChannelDto[]> {
-    const grouped = await this.listGrouped();
+  async listChannels(requestOrigin?: string | null): Promise<PublicLiveChannelDto[]> {
+    const grouped = await this.listGrouped(requestOrigin);
     return grouped.flatMap((section) => section.channels);
   }
 
-  async listGrouped(): Promise<PublicLiveSectionDto[]> {
+  async listGrouped(requestOrigin?: string | null): Promise<PublicLiveSectionDto[]> {
     const settings = await this.viewingPage.getPublicSettings();
     if (!settings.enabled) return [];
 
@@ -61,6 +61,8 @@ export class PublicClientLiveService {
       this.mist.listStreamStatuses(),
       this.mist.listActiveStreamStats(),
     ]);
+
+    const playbackOpts = { requestOrigin, preferRequest: true } as const;
 
     return sections
       .map((section) => {
@@ -88,7 +90,7 @@ export class PublicClientLiveService {
               online: mist.online,
               active: mist.active,
               viewers: mist.viewers,
-              playback: this.playback.urlsFor(channel.name),
+              playback: this.playback.urlsFor(channel.name, playbackOpts),
             };
           });
         return {
