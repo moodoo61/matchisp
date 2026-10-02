@@ -22,6 +22,7 @@ import { CreateLoginServiceDto } from '../dto/create-login-service.dto';
 import { UpdateLoginServiceDto } from '../dto/update-login-service.dto';
 import {
   CurrentUser,
+  RequireAnyPermission,
   RequirePermissions,
   type RequestUser,
 } from '../../../common/guards';
@@ -42,7 +43,10 @@ export class LoginServicesController {
   }
 
   @Post('upload')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_SERVICES_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_LOGIN_SERVICES_CREATE,
+    PERMISSIONS.PAGE_LOGIN_SERVICES_UPDATE,
+  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -68,7 +72,7 @@ export class LoginServicesController {
   }
 
   @Post()
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_SERVICES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_SERVICES_CREATE)
   create(
     @Body() dto: CreateLoginServiceDto,
     @CurrentUser() user: RequestUser,
@@ -77,7 +81,10 @@ export class LoginServicesController {
   }
 
   @Patch(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_SERVICES_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_LOGIN_SERVICES_UPDATE,
+    PERMISSIONS.PAGE_LOGIN_SERVICES_TOGGLE,
+  )
   update(
     @Param('id') id: string,
     @Body() dto: UpdateLoginServiceDto,
@@ -87,7 +94,7 @@ export class LoginServicesController {
   }
 
   @Delete(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_SERVICES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_SERVICES_DELETE)
   remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
     return this.services.remove(id, user.id);
   }

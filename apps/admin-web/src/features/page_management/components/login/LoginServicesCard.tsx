@@ -35,7 +35,10 @@ export function LoginServicesCard() {
   const flag = useCardFlag('login_services');
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.PAGE_LOGIN_SERVICES_READ);
-  const canManage = can(PERMISSIONS.PAGE_LOGIN_SERVICES_MANAGE);
+  const canCreate = can(PERMISSIONS.PAGE_LOGIN_SERVICES_CREATE);
+  const canUpdate = can(PERMISSIONS.PAGE_LOGIN_SERVICES_UPDATE);
+  const canDelete = can(PERMISSIONS.PAGE_LOGIN_SERVICES_DELETE);
+  const canToggle = can(PERMISSIONS.PAGE_LOGIN_SERVICES_TOGGLE);
   async function reload() {
     try {
       setItems(await listLoginServices());
@@ -88,7 +91,7 @@ export function LoginServicesCard() {
         </span>
       ),
     },
-    ...(canManage
+    ...(canUpdate || canToggle || canDelete
       ? [
     {
       key: 'actions',
@@ -96,49 +99,55 @@ export function LoginServicesCard() {
       className: 'col-actions',
       render: (row: LoginService) => (
         <div className="row-actions">
-          <IconButton label="تعديل" onClick={() => setModal(row)}>
-            <IconEdit />
-          </IconButton>
-          <IconButton
-            label={row.isActive ? 'تعطيل' : 'تفعيل'}
-            onClick={async () => {
-              try {
-                await notifyMutation(
-                  toast,
-                  () => updateLoginService(row.id, { isActive: !row.isActive }),
-                  {
-                    success: row.isActive
-                      ? 'تم تعطيل الخدمة'
-                      : 'تم تفعيل الخدمة',
-                  },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconToggle />
-          </IconButton>
-          <IconButton
-            label="حذف"
-            tone="danger"
-            onClick={async () => {
-              if (!confirm('حذف الخدمة؟')) return;
-              try {
-                await notifyMutation(
-                  toast,
-                  () => deleteLoginService(row.id),
-                  { success: 'تم حذف الخدمة بنجاح' },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconTrash />
-          </IconButton>
+          {canUpdate ? (
+            <IconButton label="تعديل" onClick={() => setModal(row)}>
+              <IconEdit />
+            </IconButton>
+          ) : null}
+          {canToggle ? (
+            <IconButton
+              label={row.isActive ? 'تعطيل' : 'تفعيل'}
+              onClick={async () => {
+                try {
+                  await notifyMutation(
+                    toast,
+                    () => updateLoginService(row.id, { isActive: !row.isActive }),
+                    {
+                      success: row.isActive
+                        ? 'تم تعطيل الخدمة'
+                        : 'تم تفعيل الخدمة',
+                    },
+                  );
+                  await reload();
+                } catch {
+                  // الإشعار عبر notifyMutation
+                }
+              }}
+            >
+              <IconToggle />
+            </IconButton>
+          ) : null}
+          {canDelete ? (
+            <IconButton
+              label="حذف"
+              tone="danger"
+              onClick={async () => {
+                if (!confirm('حذف الخدمة؟')) return;
+                try {
+                  await notifyMutation(
+                    toast,
+                    () => deleteLoginService(row.id),
+                    { success: 'تم حذف الخدمة بنجاح' },
+                  );
+                  await reload();
+                } catch {
+                  // الإشعار عبر notifyMutation
+                }
+              }}
+            >
+              <IconTrash />
+            </IconButton>
+          ) : null}
         </div>
       ),
     } satisfies Column<LoginService>,
@@ -156,7 +165,7 @@ export function LoginServicesCard() {
         enabled={flag.enabled}
         actions={
           <>
-            {canManage ? (
+            {canToggle ? (
               <CardEnableToggle
                 enabled={flag.enabled}
                 busy={flag.busy}
@@ -164,7 +173,7 @@ export function LoginServicesCard() {
               />
             ) : null}
             <CopyApiIcon path={PUBLIC_LOGIN_ENDPOINTS.services} />
-            {canManage ? (
+            {canCreate ? (
               <IconButton
                 label="إضافة"
                 tone="accent"
@@ -183,11 +192,13 @@ export function LoginServicesCard() {
           emptyText="لا توجد خدمات"
         />
       </TaskCard>
-      <LoginServiceModal
-        state={modal}
-        onClose={() => setModal(null)}
-        onSaved={reload}
-      />
+      {canCreate || canUpdate ? (
+        <LoginServiceModal
+          state={modal}
+          onClose={() => setModal(null)}
+          onSaved={reload}
+        />
+      ) : null}
     </>
   );
 }

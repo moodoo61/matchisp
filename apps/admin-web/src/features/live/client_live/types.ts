@@ -25,9 +25,20 @@ export type PublicLiveSection = {
 
 export type ViewingPageSettings = {
   enabled: boolean;
+  /** من الإعدادات العامة: brandName */
   brandTitle: string;
+  /** من الإعدادات العامة: brandLogoUrl */
+  brandLogoUrl: string;
+  brandLogoAbsoluteUrl: string | null;
+  showBrandTitle: boolean;
+  showBrandLogo: boolean;
+  brandSubtitle: string;
+  showBrandSubtitle: boolean;
+  liveBadgeText: string;
+  showLiveBadge: boolean;
   pageTitle: string;
   tagline: string;
+  showMatchSchedule: boolean;
 };
 
 export type ViewingPageSettingsInput = Partial<ViewingPageSettings>;

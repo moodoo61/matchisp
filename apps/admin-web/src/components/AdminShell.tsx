@@ -22,6 +22,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         PERMISSIONS.PAGE_LOGIN_SERVICES_READ,
         PERMISSIONS.PAGE_LOGIN_CONTACTS_READ,
         PERMISSIONS.PAGE_LOGIN_PACKAGES_READ,
+        PERMISSIONS.PAGE_LOGIN_IMAGES_CREATE,
+        PERMISSIONS.PAGE_LOGIN_IMAGES_UPDATE,
+        PERMISSIONS.PAGE_LOGIN_IMAGES_DELETE,
+        PERMISSIONS.PAGE_LOGIN_IMAGES_TOGGLE,
+        PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE,
+        PERMISSIONS.PAGE_LOGIN_TICKER_CREATE,
+        PERMISSIONS.PAGE_LOGIN_TICKER_UPDATE,
+        PERMISSIONS.PAGE_LOGIN_TICKER_DELETE,
+        PERMISSIONS.PAGE_LOGIN_TICKER_TOGGLE,
+        PERMISSIONS.PAGE_LOGIN_TICKER_MANAGE,
+        PERMISSIONS.PAGE_LOGIN_SERVICES_CREATE,
+        PERMISSIONS.PAGE_LOGIN_SERVICES_UPDATE,
+        PERMISSIONS.PAGE_LOGIN_SERVICES_DELETE,
+        PERMISSIONS.PAGE_LOGIN_SERVICES_TOGGLE,
+        PERMISSIONS.PAGE_LOGIN_SERVICES_MANAGE,
+        PERMISSIONS.PAGE_LOGIN_CONTACTS_CREATE,
+        PERMISSIONS.PAGE_LOGIN_CONTACTS_UPDATE,
+        PERMISSIONS.PAGE_LOGIN_CONTACTS_DELETE,
+        PERMISSIONS.PAGE_LOGIN_CONTACTS_TOGGLE,
+        PERMISSIONS.PAGE_LOGIN_CONTACTS_MANAGE,
+        PERMISSIONS.PAGE_LOGIN_PACKAGES_CREATE,
+        PERMISSIONS.PAGE_LOGIN_PACKAGES_UPDATE,
+        PERMISSIONS.PAGE_LOGIN_PACKAGES_DELETE,
+        PERMISSIONS.PAGE_LOGIN_PACKAGES_TOGGLE,
+        PERMISSIONS.PAGE_LOGIN_PACKAGES_MANAGE,
       ])
     ) {
       pageChildren.push({ href: '/pages/login', label: 'ص تسجيل الدخول' });
@@ -30,12 +55,22 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       canAny([
         PERMISSIONS.PAGE_MANAGEMENT_READ,
         PERMISSIONS.PAGE_STATUS_SERVICES_READ,
+        PERMISSIONS.PAGE_STATUS_SERVICES_CREATE,
+        PERMISSIONS.PAGE_STATUS_SERVICES_UPDATE,
+        PERMISSIONS.PAGE_STATUS_SERVICES_DELETE,
+        PERMISSIONS.PAGE_STATUS_SERVICES_TOGGLE,
+        PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE,
       ])
     ) {
       pageChildren.push({ href: '/pages/status', label: 'ص الحالة' });
     }
     if (
-      canAny([PERMISSIONS.PAGE_MANAGEMENT_READ, PERMISSIONS.PAGE_SPEED_READ])
+      canAny([
+        PERMISSIONS.PAGE_MANAGEMENT_READ,
+        PERMISSIONS.PAGE_SPEED_READ,
+        PERMISSIONS.PAGE_SPEED_UPDATE,
+        PERMISSIONS.PAGE_SPEED_MANAGE,
+      ])
     ) {
       pageChildren.push({ href: '/pages/speed', label: 'خيارات السرعة' });
     }
@@ -267,7 +302,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       }
     }
     if (can(PERMISSIONS.ROLES_READ)) {
-      items.push({ href: '/roles', label: 'الأدوار والصلاحيات' });
+      items.push({ href: '/roles', label: 'الأدوار' });
     }
     if (can(PERMISSIONS.AUDIT_READ)) {
       items.push({ href: '/audit', label: 'سجلات التدقيق' });

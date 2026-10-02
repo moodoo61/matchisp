@@ -22,6 +22,7 @@ import { CreateStatusServiceDto } from '../dto/create-status-service.dto';
 import { UpdateStatusServiceDto } from '../dto/update-status-service.dto';
 import {
   CurrentUser,
+  RequireAnyPermission,
   RequirePermissions,
   type RequestUser,
 } from '../../../common/guards';
@@ -42,7 +43,10 @@ export class StatusServicesController {
   }
 
   @Post('upload')
-  @RequirePermissions(PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_STATUS_SERVICES_CREATE,
+    PERMISSIONS.PAGE_STATUS_SERVICES_UPDATE,
+  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -68,7 +72,7 @@ export class StatusServicesController {
   }
 
   @Post()
-  @RequirePermissions(PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_STATUS_SERVICES_CREATE)
   create(
     @Body() dto: CreateStatusServiceDto,
     @CurrentUser() user: RequestUser,
@@ -77,7 +81,10 @@ export class StatusServicesController {
   }
 
   @Patch(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_STATUS_SERVICES_UPDATE,
+    PERMISSIONS.PAGE_STATUS_SERVICES_TOGGLE,
+  )
   update(
     @Param('id') id: string,
     @Body() dto: UpdateStatusServiceDto,
@@ -87,7 +94,7 @@ export class StatusServicesController {
   }
 
   @Delete(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_STATUS_SERVICES_DELETE)
   remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
     return this.services.remove(id, user.id);
   }

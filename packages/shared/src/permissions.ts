@@ -15,19 +15,52 @@ export const PERMISSIONS = {
   PAGE_MANAGEMENT_MANAGE: 'page_management:manage',
 
   PAGE_LOGIN_IMAGES_READ: 'page_management.login.images:read',
+  /** اختصار: كل مهام إعلانات الصور */
   PAGE_LOGIN_IMAGES_MANAGE: 'page_management.login.images:manage',
+  PAGE_LOGIN_IMAGES_CREATE: 'page_management.login.images:create',
+  PAGE_LOGIN_IMAGES_UPDATE: 'page_management.login.images:update',
+  PAGE_LOGIN_IMAGES_DELETE: 'page_management.login.images:delete',
+  /** تفعيل/تعطيل إعلان أو البطاقة */
+  PAGE_LOGIN_IMAGES_TOGGLE: 'page_management.login.images:toggle',
+
   PAGE_LOGIN_TICKER_READ: 'page_management.login.ticker:read',
   PAGE_LOGIN_TICKER_MANAGE: 'page_management.login.ticker:manage',
+  PAGE_LOGIN_TICKER_CREATE: 'page_management.login.ticker:create',
+  PAGE_LOGIN_TICKER_UPDATE: 'page_management.login.ticker:update',
+  PAGE_LOGIN_TICKER_DELETE: 'page_management.login.ticker:delete',
+  PAGE_LOGIN_TICKER_TOGGLE: 'page_management.login.ticker:toggle',
+
   PAGE_LOGIN_SERVICES_READ: 'page_management.login.services:read',
   PAGE_LOGIN_SERVICES_MANAGE: 'page_management.login.services:manage',
+  PAGE_LOGIN_SERVICES_CREATE: 'page_management.login.services:create',
+  PAGE_LOGIN_SERVICES_UPDATE: 'page_management.login.services:update',
+  PAGE_LOGIN_SERVICES_DELETE: 'page_management.login.services:delete',
+  PAGE_LOGIN_SERVICES_TOGGLE: 'page_management.login.services:toggle',
+
   PAGE_LOGIN_CONTACTS_READ: 'page_management.login.contacts:read',
   PAGE_LOGIN_CONTACTS_MANAGE: 'page_management.login.contacts:manage',
+  PAGE_LOGIN_CONTACTS_CREATE: 'page_management.login.contacts:create',
+  PAGE_LOGIN_CONTACTS_UPDATE: 'page_management.login.contacts:update',
+  PAGE_LOGIN_CONTACTS_DELETE: 'page_management.login.contacts:delete',
+  PAGE_LOGIN_CONTACTS_TOGGLE: 'page_management.login.contacts:toggle',
+
   PAGE_LOGIN_PACKAGES_READ: 'page_management.login.packages:read',
   PAGE_LOGIN_PACKAGES_MANAGE: 'page_management.login.packages:manage',
+  PAGE_LOGIN_PACKAGES_CREATE: 'page_management.login.packages:create',
+  PAGE_LOGIN_PACKAGES_UPDATE: 'page_management.login.packages:update',
+  PAGE_LOGIN_PACKAGES_DELETE: 'page_management.login.packages:delete',
+  PAGE_LOGIN_PACKAGES_TOGGLE: 'page_management.login.packages:toggle',
+
   PAGE_STATUS_SERVICES_READ: 'page_management.status.services:read',
   PAGE_STATUS_SERVICES_MANAGE: 'page_management.status.services:manage',
+  PAGE_STATUS_SERVICES_CREATE: 'page_management.status.services:create',
+  PAGE_STATUS_SERVICES_UPDATE: 'page_management.status.services:update',
+  PAGE_STATUS_SERVICES_DELETE: 'page_management.status.services:delete',
+  PAGE_STATUS_SERVICES_TOGGLE: 'page_management.status.services:toggle',
+
   PAGE_SPEED_READ: 'page_management.speed:read',
   PAGE_SPEED_MANAGE: 'page_management.speed:manage',
+  PAGE_SPEED_UPDATE: 'page_management.speed:update',
 
   /** اختصار: أي عرض ضمن البث المباشر */
   LIVE_READ: 'live:read',
@@ -128,19 +161,44 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'page_management:read': 'عرض إدارة الصفحة (الكل)',
   'page_management:manage': 'تعديل إدارة الصفحة (الكل)',
   'page_management.login.images:read': 'عرض إعلانات الصور',
-  'page_management.login.images:manage': 'تعديل إعلانات الصور',
+  'page_management.login.images:manage': 'إدارة إعلانات الصور (الكل)',
+  'page_management.login.images:create': 'إضافة إعلان صورة',
+  'page_management.login.images:update': 'تعديل إعلان صورة',
+  'page_management.login.images:delete': 'حذف إعلان صورة',
+  'page_management.login.images:toggle': 'تفعيل/تعطيل إعلان صورة',
   'page_management.login.ticker:read': 'عرض إعلان النص',
-  'page_management.login.ticker:manage': 'تعديل إعلان النص',
+  'page_management.login.ticker:manage': 'إدارة إعلان النص (الكل)',
+  'page_management.login.ticker:create': 'إضافة إعلان نص',
+  'page_management.login.ticker:update': 'تعديل إعلان نص',
+  'page_management.login.ticker:delete': 'حذف إعلان نص',
+  'page_management.login.ticker:toggle': 'تفعيل/تعطيل إعلان نص',
   'page_management.login.services:read': 'عرض خدمات تسجيل الدخول',
-  'page_management.login.services:manage': 'تعديل خدمات تسجيل الدخول',
+  'page_management.login.services:manage': 'إدارة خدمات تسجيل الدخول (الكل)',
+  'page_management.login.services:create': 'إضافة خدمة تسجيل دخول',
+  'page_management.login.services:update': 'تعديل خدمة تسجيل دخول',
+  'page_management.login.services:delete': 'حذف خدمة تسجيل دخول',
+  'page_management.login.services:toggle': 'تفعيل/تعطيل خدمة تسجيل دخول',
   'page_management.login.contacts:read': 'عرض أرقام التواصل',
-  'page_management.login.contacts:manage': 'تعديل أرقام التواصل',
+  'page_management.login.contacts:manage': 'إدارة أرقام التواصل (الكل)',
+  'page_management.login.contacts:create': 'إضافة رقم تواصل',
+  'page_management.login.contacts:update': 'تعديل رقم تواصل',
+  'page_management.login.contacts:delete': 'حذف رقم تواصل',
+  'page_management.login.contacts:toggle': 'تفعيل/تعطيل رقم تواصل',
   'page_management.login.packages:read': 'عرض الباقات',
-  'page_management.login.packages:manage': 'تعديل الباقات',
+  'page_management.login.packages:manage': 'إدارة الباقات (الكل)',
+  'page_management.login.packages:create': 'إضافة باقة',
+  'page_management.login.packages:update': 'تعديل باقة',
+  'page_management.login.packages:delete': 'حذف باقة',
+  'page_management.login.packages:toggle': 'تفعيل/تعطيل باقة',
   'page_management.status.services:read': 'عرض خدمات الحالة',
-  'page_management.status.services:manage': 'تعديل خدمات الحالة',
+  'page_management.status.services:manage': 'إدارة خدمات الحالة (الكل)',
+  'page_management.status.services:create': 'إضافة خدمة حالة',
+  'page_management.status.services:update': 'تعديل خدمة حالة',
+  'page_management.status.services:delete': 'حذف خدمة حالة',
+  'page_management.status.services:toggle': 'تفعيل/تعطيل خدمة حالة',
   'page_management.speed:read': 'عرض خيارات السرعة',
-  'page_management.speed:manage': 'تعديل خيارات السرعة',
+  'page_management.speed:manage': 'إدارة خيارات السرعة (الكل)',
+  'page_management.speed:update': 'تعديل خيارات السرعة',
   'live:read': 'عرض البث المباشر (الكل)',
   'live:manage': 'تعديل البث المباشر (الكل)',
   'live.channels:read': 'عرض قنوات البث',
@@ -214,6 +272,14 @@ const LIVE_SPORTS_WRITE_ACTIONS = new Set([
   'manage',
 ]);
 
+const PAGE_FEATURE_WRITE_ACTIONS = new Set([
+  'create',
+  'update',
+  'delete',
+  'toggle',
+  'manage',
+]);
+
 /** هل يملك المستخدم الصلاحية المطلوبة (مع اختصارات القسم) */
 export function hasPermission(
   userPermissions: readonly string[],
@@ -226,15 +292,28 @@ export function hasPermission(
     if (userPermissions.includes(manageCode)) return true;
   }
 
-  if (required.startsWith('page_management.') && required.endsWith(':manage')) {
-    return userPermissions.includes(PERMISSIONS.PAGE_MANAGEMENT_MANAGE);
-  }
+  if (required.startsWith('page_management.')) {
+    const colon = required.lastIndexOf(':');
+    const resource = required.slice(0, colon);
+    const action = required.slice(colon + 1);
+    const manageCode = `${resource}:manage`;
 
-  if (required.startsWith('page_management.') && required.endsWith(':read')) {
-    return (
-      userPermissions.includes(PERMISSIONS.PAGE_MANAGEMENT_READ) ||
-      userPermissions.includes(PERMISSIONS.PAGE_MANAGEMENT_MANAGE)
-    );
+    if (action === 'read') {
+      return (
+        userPermissions.includes(PERMISSIONS.PAGE_MANAGEMENT_READ) ||
+        userPermissions.includes(PERMISSIONS.PAGE_MANAGEMENT_MANAGE) ||
+        userPermissions.includes(manageCode)
+      );
+    }
+
+    if (PAGE_FEATURE_WRITE_ACTIONS.has(action)) {
+      if (userPermissions.includes(PERMISSIONS.PAGE_MANAGEMENT_MANAGE)) {
+        return true;
+      }
+      if (action !== 'manage' && userPermissions.includes(manageCode)) {
+        return true;
+      }
+    }
   }
 
   if (required.startsWith('live.channels:')) {
@@ -461,13 +540,13 @@ export function hasAnyPermission(
   return required.some((code) => hasPermission(userPermissions, code));
 }
 
-/** ربط مفتاح تفعيل البطاقة بصلاحية التعديل */
+/** ربط مفتاح تفعيل البطاقة بصلاحية التفعيل/التعطيل */
 export const PAGE_CARD_FLAG_MANAGE_PERMISSION: Record<string, PermissionCode> =
   {
-    login_images: PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE,
-    login_ticker: PERMISSIONS.PAGE_LOGIN_TICKER_MANAGE,
-    login_services: PERMISSIONS.PAGE_LOGIN_SERVICES_MANAGE,
-    login_contacts: PERMISSIONS.PAGE_LOGIN_CONTACTS_MANAGE,
-    login_packages: PERMISSIONS.PAGE_LOGIN_PACKAGES_MANAGE,
-    status_services: PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE,
+    login_images: PERMISSIONS.PAGE_LOGIN_IMAGES_TOGGLE,
+    login_ticker: PERMISSIONS.PAGE_LOGIN_TICKER_TOGGLE,
+    login_services: PERMISSIONS.PAGE_LOGIN_SERVICES_TOGGLE,
+    login_contacts: PERMISSIONS.PAGE_LOGIN_CONTACTS_TOGGLE,
+    login_packages: PERMISSIONS.PAGE_LOGIN_PACKAGES_TOGGLE,
+    status_services: PERMISSIONS.PAGE_STATUS_SERVICES_TOGGLE,
   };

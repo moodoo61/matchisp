@@ -3,6 +3,7 @@ import { ClientLivePlayer } from './ClientLivePlayer';
 
 type Props = {
   channel: PublicLiveChannel;
+  brandLogoUrl?: string | null;
 };
 
 function isLive(channel: PublicLiveChannel) {
@@ -10,7 +11,7 @@ function isLive(channel: PublicLiveChannel) {
 }
 
 /** المسرح — الفيديو وسطر معلومة واحد (لا تكرار) */
-export function ClientLiveStage({ channel }: Props) {
+export function ClientLiveStage({ channel, brandLogoUrl }: Props) {
   const live = isLive(channel);
 
   return (
@@ -22,6 +23,7 @@ export function ClientLiveStage({ channel }: Props) {
               key={channel.id}
               hlsUrl={channel.playback.hlsUrl}
               posterUrl={channel.imageUrl}
+              brandLogoUrl={brandLogoUrl}
             />
           ) : (
             <div className="cl-frame-empty">{channel.label}</div>

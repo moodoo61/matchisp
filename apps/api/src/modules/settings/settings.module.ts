@@ -35,5 +35,6 @@ import { GeneralSettingsService } from './general/service/general-settings.servi
     DatabasesRestoreService,
     DatabasesInventoryService,
   ],
+  exports: [GeneralSettingsService],
 })
 export class SettingsModule {}

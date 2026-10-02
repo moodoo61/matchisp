@@ -22,6 +22,7 @@ import { CreateImageAdDto } from '../dto/create-image-ad.dto';
 import { UpdateImageAdDto } from '../dto/update-image-ad.dto';
 import {
   CurrentUser,
+  RequireAnyPermission,
   RequirePermissions,
   type RequestUser,
 } from '../../../common/guards';
@@ -42,7 +43,10 @@ export class LoginImageAdsController {
   }
 
   @Post('upload')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_LOGIN_IMAGES_CREATE,
+    PERMISSIONS.PAGE_LOGIN_IMAGES_UPDATE,
+  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -68,13 +72,16 @@ export class LoginImageAdsController {
   }
 
   @Post()
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_IMAGES_CREATE)
   create(@Body() dto: CreateImageAdDto, @CurrentUser() user: RequestUser) {
     return this.imageAds.create(dto, user.id);
   }
 
   @Patch(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_LOGIN_IMAGES_UPDATE,
+    PERMISSIONS.PAGE_LOGIN_IMAGES_TOGGLE,
+  )
   update(
     @Param('id') id: string,
     @Body() dto: UpdateImageAdDto,
@@ -84,7 +91,7 @@ export class LoginImageAdsController {
   }
 
   @Delete(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_IMAGES_DELETE)
   remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
     return this.imageAds.remove(id, user.id);
   }

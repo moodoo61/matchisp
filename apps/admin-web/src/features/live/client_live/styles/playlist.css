@@ -17,6 +17,8 @@
   flex: 0 0 auto;
   padding: 0.85rem 1.1rem 0.7rem;
   border-bottom: 1px solid rgba(200, 164, 93, 0.18);
+  display: grid;
+  gap: 0.7rem;
 }
 
 .cl-playlist-head h2 {
@@ -26,10 +28,44 @@
   color: var(--cl-ivory);
 }
 
-.cl-playlist-head p {
-  margin: 0.15rem 0 0;
+.cl-playlist-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 164, 93, 0.35) transparent;
+}
+
+.cl-playlist-tab {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.42rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--cl-muted);
-  font-size: 0.74rem;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--cl-dur-fast) ease,
+    border-color var(--cl-dur-fast) ease,
+    color var(--cl-dur-fast) ease;
+}
+
+.cl-playlist-tab:hover {
+  color: var(--cl-ivory);
+  border-color: rgba(200, 164, 93, 0.35);
+}
+
+.cl-playlist-tab.is-active {
+  color: #241b08;
+  border-color: transparent;
+  background: var(--cl-gold-gradient);
 }
 
 .cl-playlist-body {
@@ -44,23 +80,11 @@
   scrollbar-color: rgba(200, 164, 93, 0.35) transparent;
 }
 
-.cl-playlist-section h3 {
-  margin: 0.25rem 0.4rem 0.45rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--cl-gold-100);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-}
-
-.cl-playlist-section h3::before {
-  content: "";
-  width: 14px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--cl-gold-500);
+.cl-playlist-empty {
+  margin: 1.2rem 0.4rem;
+  color: var(--cl-muted);
+  font-size: 0.84rem;
+  text-align: center;
 }
 
 .cl-playlist-list {

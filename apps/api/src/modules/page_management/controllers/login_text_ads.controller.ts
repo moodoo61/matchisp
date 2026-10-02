@@ -14,6 +14,7 @@ import { CreateTextAdDto } from '../dto/create-text-ad.dto';
 import { UpdateTextAdDto } from '../dto/update-text-ad.dto';
 import {
   CurrentUser,
+  RequireAnyPermission,
   RequirePermissions,
   type RequestUser,
 } from '../../../common/guards';
@@ -37,13 +38,16 @@ export class LoginTextAdsController {
   }
 
   @Post()
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_TICKER_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_TICKER_CREATE)
   create(@Body() dto: CreateTextAdDto, @CurrentUser() user: RequestUser) {
     return this.textAds.create(dto, user.id);
   }
 
   @Patch(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_TICKER_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_LOGIN_TICKER_UPDATE,
+    PERMISSIONS.PAGE_LOGIN_TICKER_TOGGLE,
+  )
   update(
     @Param('id') id: string,
     @Body() dto: UpdateTextAdDto,
@@ -53,7 +57,7 @@ export class LoginTextAdsController {
   }
 
   @Delete(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_TICKER_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_TICKER_DELETE)
   remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
     return this.textAds.remove(id, user.id);
   }

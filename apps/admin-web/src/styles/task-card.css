@@ -45,3 +45,12 @@
 .task-card-body {
   padding: 0.35rem 0.5rem 0.5rem;
 }
+
+.task-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid var(--border);
+}

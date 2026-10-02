@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
+import { SettingsModule } from '../settings/settings.module';
 import { ChannelSectionsController } from './controllers/channel_sections.controller';
 import { ChannelsController } from './controllers/channels.controller';
 import { HdmiDevicesController } from './controllers/hdmi_devices.controller';
@@ -35,7 +36,7 @@ import { SportsEventsSettingsService } from './sports_events/service/sports-even
 import { SportMatchesAutoClearService } from './sports_events/service/sport-matches-auto-clear.service';
 
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, SettingsModule],
   controllers: [
     ChannelSectionsController,
     ChannelsController,

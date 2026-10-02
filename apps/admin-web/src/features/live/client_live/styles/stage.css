@@ -121,9 +121,9 @@
 }
 
 .cl-program-state.is-live {
-  border: 1px solid rgba(255, 84, 112, 0.4);
-  background: rgba(255, 84, 112, 0.12);
-  color: #ffc2cd;
+  border: 1px solid rgba(61, 220, 151, 0.4);
+  background: rgba(61, 220, 151, 0.14);
+  color: #9bf0c8;
 }
 
 .cl-program-state:not(.is-live) {

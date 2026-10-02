@@ -32,4 +32,41 @@ export class UpdateViewingPageDto {
   @IsString()
   @MaxLength(200)
   tagline?: string;
+
+  @ApiPropertyOptional({ description: 'إظهار جدول المباريات في صفحة العميل' })
+  @IsOptional()
+  @IsBoolean()
+  showMatchSchedule?: boolean;
+
+  @ApiPropertyOptional({ description: 'إظهار اسم العلامة في صفحة العميل' })
+  @IsOptional()
+  @IsBoolean()
+  showBrandTitle?: boolean;
+
+  @ApiPropertyOptional({ description: 'إظهار شعار العلامة في صفحة العميل' })
+  @IsOptional()
+  @IsBoolean()
+  showBrandLogo?: boolean;
+
+  @ApiPropertyOptional({ example: 'LIVE • HD' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  brandSubtitle?: string;
+
+  @ApiPropertyOptional({ description: 'إظهار العبارة تحت اسم العلامة' })
+  @IsOptional()
+  @IsBoolean()
+  showBrandSubtitle?: boolean;
+
+  @ApiPropertyOptional({ example: 'بث مباشر' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  liveBadgeText?: string;
+
+  @ApiPropertyOptional({ description: 'إظهار شارة البث في الترويسة' })
+  @IsOptional()
+  @IsBoolean()
+  showLiveBadge?: boolean;
 }

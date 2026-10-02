@@ -14,6 +14,10 @@ describe('permissions foundation', () => {
 
   it('includes granular page management permissions', () => {
     expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_LOGIN_IMAGES_CREATE);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_LOGIN_IMAGES_UPDATE);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_LOGIN_IMAGES_DELETE);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_LOGIN_IMAGES_TOGGLE);
     expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_LOGIN_PACKAGES_READ);
     expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE);
     expect(ALL_PERMISSIONS).toContain(PERMISSIONS.PAGE_SPEED_READ);
@@ -24,6 +28,18 @@ describe('permissions foundation', () => {
       hasPermission(
         [PERMISSIONS.PAGE_MANAGEMENT_MANAGE],
         PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE,
+      ),
+    ).toBe(true);
+    expect(
+      hasPermission(
+        [PERMISSIONS.PAGE_MANAGEMENT_MANAGE],
+        PERMISSIONS.PAGE_LOGIN_IMAGES_CREATE,
+      ),
+    ).toBe(true);
+    expect(
+      hasPermission(
+        [PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE],
+        PERMISSIONS.PAGE_LOGIN_IMAGES_DELETE,
       ),
     ).toBe(true);
     expect(

@@ -39,6 +39,8 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
 .icon-btn:hover {

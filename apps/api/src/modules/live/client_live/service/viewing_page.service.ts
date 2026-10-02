@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaLiveService } from '../../../../database/database.module';
 import { AuditService } from '../../../audit/audit.service';
+import { GeneralSettingsService } from '../../../settings/general/service/general-settings.service';
 import {
   DEFAULT_VIEWING_PAGE_SETTINGS,
   VIEWING_PAGE_META_KEY,
@@ -8,10 +9,32 @@ import {
 } from '../constants/viewing-page';
 import { UpdateViewingPageDto } from '../dto/update-viewing-page.dto';
 
+type StoredViewingPageSettings = Omit<
+  ViewingPageSettings,
+  'brandTitle' | 'brandLogoUrl' | 'brandLogoAbsoluteUrl'
+> & {
+  /** قديم في التخزين — يُتجاهل لصالح brandName من الإعدادات العامة */
+  brandTitle?: string;
+};
+
+function boolOr(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function optionalText(
+  value: unknown,
+  fallback: string,
+  max: number,
+): string {
+  if (typeof value !== 'string') return fallback;
+  return value.trim().slice(0, max);
+}
+
 @Injectable()
 export class ViewingPageService {
   constructor(
     private readonly prisma: PrismaLiveService,
+    private readonly generalSettings: GeneralSettingsService,
     private readonly audit: AuditService,
   ) {}
 
@@ -24,15 +47,33 @@ export class ViewingPageService {
   }
 
   async updateSettings(dto: UpdateViewingPageDto, actorId: string) {
-    const current = await this.loadSettings();
-    const next: ViewingPageSettings = {
+    const current = await this.loadStoredSettings();
+    const next: StoredViewingPageSettings = {
       enabled: dto.enabled ?? current.enabled,
-      brandTitle: normalizeText(dto.brandTitle, current.brandTitle, 80),
       pageTitle: normalizeText(dto.pageTitle, current.pageTitle, 120),
       tagline:
         dto.tagline !== undefined
           ? dto.tagline.trim().slice(0, 200)
           : current.tagline,
+      brandSubtitle:
+        dto.brandSubtitle !== undefined
+          ? dto.brandSubtitle.trim().slice(0, 80)
+          : current.brandSubtitle,
+      liveBadgeText:
+        dto.liveBadgeText !== undefined
+          ? dto.liveBadgeText.trim().slice(0, 40)
+          : current.liveBadgeText,
+      showBrandTitle: boolOr(dto.showBrandTitle, current.showBrandTitle),
+      showBrandLogo: boolOr(dto.showBrandLogo, current.showBrandLogo),
+      showBrandSubtitle: boolOr(
+        dto.showBrandSubtitle,
+        current.showBrandSubtitle,
+      ),
+      showLiveBadge: boolOr(dto.showLiveBadge, current.showLiveBadge),
+      showMatchSchedule: boolOr(
+        dto.showMatchSchedule,
+        current.showMatchSchedule,
+      ),
     };
 
     await this.prisma.sectionMeta.upsert({
@@ -52,39 +93,77 @@ export class ViewingPageService {
       metadata: { enabled: next.enabled },
     });
 
-    return next;
+    return this.withBrandFromGeneral(next);
   }
 
   private async loadSettings(): Promise<ViewingPageSettings> {
+    const stored = await this.loadStoredSettings();
+    return this.withBrandFromGeneral(stored);
+  }
+
+  private async loadStoredSettings(): Promise<StoredViewingPageSettings> {
+    const defaults: StoredViewingPageSettings = {
+      enabled: DEFAULT_VIEWING_PAGE_SETTINGS.enabled,
+      pageTitle: DEFAULT_VIEWING_PAGE_SETTINGS.pageTitle,
+      tagline: DEFAULT_VIEWING_PAGE_SETTINGS.tagline,
+      brandSubtitle: DEFAULT_VIEWING_PAGE_SETTINGS.brandSubtitle,
+      liveBadgeText: DEFAULT_VIEWING_PAGE_SETTINGS.liveBadgeText,
+      showBrandTitle: DEFAULT_VIEWING_PAGE_SETTINGS.showBrandTitle,
+      showBrandLogo: DEFAULT_VIEWING_PAGE_SETTINGS.showBrandLogo,
+      showBrandSubtitle: DEFAULT_VIEWING_PAGE_SETTINGS.showBrandSubtitle,
+      showLiveBadge: DEFAULT_VIEWING_PAGE_SETTINGS.showLiveBadge,
+      showMatchSchedule: DEFAULT_VIEWING_PAGE_SETTINGS.showMatchSchedule,
+    };
+
     const row = await this.prisma.sectionMeta.findUnique({
       where: { key: VIEWING_PAGE_META_KEY },
     });
-    if (!row?.value) return { ...DEFAULT_VIEWING_PAGE_SETTINGS };
+    if (!row?.value) return defaults;
+
     try {
       const parsed = JSON.parse(row.value) as Partial<ViewingPageSettings>;
       return {
-        enabled:
-          typeof parsed.enabled === 'boolean'
-            ? parsed.enabled
-            : DEFAULT_VIEWING_PAGE_SETTINGS.enabled,
-        brandTitle: normalizeText(
-          parsed.brandTitle,
-          DEFAULT_VIEWING_PAGE_SETTINGS.brandTitle,
+        enabled: boolOr(parsed.enabled, defaults.enabled),
+        pageTitle: normalizeText(parsed.pageTitle, defaults.pageTitle, 120),
+        tagline: optionalText(parsed.tagline, defaults.tagline, 200),
+        brandSubtitle: optionalText(
+          parsed.brandSubtitle,
+          defaults.brandSubtitle,
           80,
         ),
-        pageTitle: normalizeText(
-          parsed.pageTitle,
-          DEFAULT_VIEWING_PAGE_SETTINGS.pageTitle,
-          120,
+        liveBadgeText: optionalText(
+          parsed.liveBadgeText,
+          defaults.liveBadgeText,
+          40,
         ),
-        tagline:
-          typeof parsed.tagline === 'string'
-            ? parsed.tagline.trim().slice(0, 200)
-            : DEFAULT_VIEWING_PAGE_SETTINGS.tagline,
+        showBrandTitle: boolOr(parsed.showBrandTitle, defaults.showBrandTitle),
+        showBrandLogo: boolOr(parsed.showBrandLogo, defaults.showBrandLogo),
+        showBrandSubtitle: boolOr(
+          parsed.showBrandSubtitle,
+          defaults.showBrandSubtitle,
+        ),
+        showLiveBadge: boolOr(parsed.showLiveBadge, defaults.showLiveBadge),
+        showMatchSchedule: boolOr(
+          parsed.showMatchSchedule,
+          defaults.showMatchSchedule,
+        ),
       };
     } catch {
-      return { ...DEFAULT_VIEWING_PAGE_SETTINGS };
+      return defaults;
     }
+  }
+
+  /** يحقن اسم/شعار العلامة فقط من الإعدادات العامة — لا systemName */
+  private async withBrandFromGeneral(
+    settings: StoredViewingPageSettings,
+  ): Promise<ViewingPageSettings> {
+    const general = await this.generalSettings.get();
+    return {
+      ...settings,
+      brandTitle: (general.brandName ?? '').trim().slice(0, 120),
+      brandLogoUrl: (general.brandLogoUrl ?? '').trim(),
+      brandLogoAbsoluteUrl: general.brandLogoAbsoluteUrl ?? null,
+    };
   }
 }
 

@@ -2,34 +2,73 @@ import { MatchScheduleButton } from './schedule/MatchScheduleButton';
 
 type Props = {
   brandTitle: string;
+  brandLogoUrl?: string | null;
+  brandSubtitle?: string;
+  liveBadgeText?: string;
+  showBrandTitle?: boolean;
+  showBrandLogo?: boolean;
+  showBrandSubtitle?: boolean;
+  showLiveBadge?: boolean;
+  showMatchSchedule?: boolean;
   onSelectChannel?: (channelId: string) => void;
 };
 
-/** ترويسة منحوتة — مونوغرام محفور واسم بتدرج ذهبي */
-export function ClientLiveHeader({ brandTitle, onSelectChannel }: Props) {
-  const initial = brandTitle.trim().slice(0, 1) || 'L';
+/** ترويسة منحوتة — شعار/اسم العلامة حسب إعدادات الإظهار */
+export function ClientLiveHeader({
+  brandTitle,
+  brandLogoUrl,
+  brandSubtitle = 'LIVE • HD',
+  liveBadgeText = 'بث مباشر',
+  showBrandTitle = true,
+  showBrandLogo = true,
+  showBrandSubtitle = true,
+  showLiveBadge = true,
+  showMatchSchedule = true,
+  onSelectChannel,
+}: Props) {
+  const title = brandTitle.trim();
+  const subtitle = brandSubtitle.trim();
+  const badge = liveBadgeText.trim();
+  const logo = brandLogoUrl?.trim() || null;
+  const initial = title.slice(0, 1) || 'L';
 
   return (
     <header className="cl-header">
       <div className="cl-header-inner">
         <div className="cl-identity">
-          <span className="cl-monogram" aria-hidden>
-            {initial}
-            <span className="cl-monogram-shine" aria-hidden />
-            <span className="cl-monogram-ring" aria-hidden />
-          </span>
-          <div className="cl-brand-wrap">
-            <p className="cl-brand">{brandTitle}</p>
-            <p className="cl-brand-sub">LIVE • HD</p>
-          </div>
+          {showBrandLogo ? (
+            logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="cl-brand-logo" src={logo} alt="" />
+            ) : (
+              <span className="cl-monogram" aria-hidden>
+                {initial}
+                <span className="cl-monogram-shine" aria-hidden />
+                <span className="cl-monogram-ring" aria-hidden />
+              </span>
+            )
+          ) : null}
+
+          {showBrandTitle ? (
+            <div className="cl-brand-wrap">
+              <p className="cl-brand">{title || '—'}</p>
+              {showBrandSubtitle && subtitle ? (
+                <p className="cl-brand-sub">{subtitle}</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="cl-header-actions">
-          <MatchScheduleButton onSelectChannel={onSelectChannel} />
-          <span className="cl-live-pill">
-            <i aria-hidden />
-            بث مباشر
-          </span>
+          {showMatchSchedule ? (
+            <MatchScheduleButton onSelectChannel={onSelectChannel} />
+          ) : null}
+          {showLiveBadge && badge ? (
+            <span className="cl-live-pill">
+              <i aria-hidden />
+              {badge}
+            </span>
+          ) : null}
         </div>
       </div>
     </header>

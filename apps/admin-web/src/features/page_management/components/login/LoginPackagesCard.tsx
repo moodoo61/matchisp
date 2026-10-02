@@ -35,7 +35,10 @@ export function LoginPackagesCard() {
   const flag = useCardFlag('login_packages');
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.PAGE_LOGIN_PACKAGES_READ);
-  const canManage = can(PERMISSIONS.PAGE_LOGIN_PACKAGES_MANAGE);
+  const canCreate = can(PERMISSIONS.PAGE_LOGIN_PACKAGES_CREATE);
+  const canUpdate = can(PERMISSIONS.PAGE_LOGIN_PACKAGES_UPDATE);
+  const canDelete = can(PERMISSIONS.PAGE_LOGIN_PACKAGES_DELETE);
+  const canToggle = can(PERMISSIONS.PAGE_LOGIN_PACKAGES_TOGGLE);
   async function reload() {
     try {
       setItems(await listLoginPackages());
@@ -91,7 +94,7 @@ export function LoginPackagesCard() {
         </span>
       ),
     },
-    ...(canManage
+    ...(canUpdate || canToggle || canDelete
       ? [
     {
       key: 'actions',
@@ -99,49 +102,55 @@ export function LoginPackagesCard() {
       className: 'col-actions',
       render: (row: LoginPackage) => (
         <div className="row-actions">
-          <IconButton label="تعديل" onClick={() => setModal(row)}>
-            <IconEdit />
-          </IconButton>
-          <IconButton
-            label={row.isActive ? 'تعطيل' : 'تفعيل'}
-            onClick={async () => {
-              try {
-                await notifyMutation(
-                  toast,
-                  () => updateLoginPackage(row.id, { isActive: !row.isActive }),
-                  {
-                    success: row.isActive
-                      ? 'تم تعطيل الباقة'
-                      : 'تم تفعيل الباقة',
-                  },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconToggle />
-          </IconButton>
-          <IconButton
-            label="حذف"
-            tone="danger"
-            onClick={async () => {
-              if (!confirm('حذف الباقة؟')) return;
-              try {
-                await notifyMutation(
-                  toast,
-                  () => deleteLoginPackage(row.id),
-                  { success: 'تم حذف الباقة بنجاح' },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconTrash />
-          </IconButton>
+          {canUpdate ? (
+            <IconButton label="تعديل" onClick={() => setModal(row)}>
+              <IconEdit />
+            </IconButton>
+          ) : null}
+          {canToggle ? (
+            <IconButton
+              label={row.isActive ? 'تعطيل' : 'تفعيل'}
+              onClick={async () => {
+                try {
+                  await notifyMutation(
+                    toast,
+                    () => updateLoginPackage(row.id, { isActive: !row.isActive }),
+                    {
+                      success: row.isActive
+                        ? 'تم تعطيل الباقة'
+                        : 'تم تفعيل الباقة',
+                    },
+                  );
+                  await reload();
+                } catch {
+                  // الإشعار عبر notifyMutation
+                }
+              }}
+            >
+              <IconToggle />
+            </IconButton>
+          ) : null}
+          {canDelete ? (
+            <IconButton
+              label="حذف"
+              tone="danger"
+              onClick={async () => {
+                if (!confirm('حذف الباقة؟')) return;
+                try {
+                  await notifyMutation(
+                    toast,
+                    () => deleteLoginPackage(row.id),
+                    { success: 'تم حذف الباقة بنجاح' },
+                  );
+                  await reload();
+                } catch {
+                  // الإشعار عبر notifyMutation
+                }
+              }}
+            >
+              <IconTrash />
+            </IconButton>
+          ) : null}
         </div>
       ),
     } satisfies Column<LoginPackage>,
@@ -159,7 +168,7 @@ export function LoginPackagesCard() {
         enabled={flag.enabled}
         actions={
           <>
-            {canManage ? (
+            {canToggle ? (
               <CardEnableToggle
                 enabled={flag.enabled}
                 busy={flag.busy}
@@ -167,7 +176,7 @@ export function LoginPackagesCard() {
               />
             ) : null}
             <CopyApiIcon path={PUBLIC_LOGIN_ENDPOINTS.packages} />
-            {canManage ? (
+            {canCreate ? (
               <IconButton
                 label="إضافة"
                 tone="accent"
@@ -186,11 +195,13 @@ export function LoginPackagesCard() {
           emptyText="لا توجد باقات"
         />
       </TaskCard>
-      <LoginPackageModal
-        state={modal}
-        onClose={() => setModal(null)}
-        onSaved={reload}
-      />
+      {canCreate || canUpdate ? (
+        <LoginPackageModal
+          state={modal}
+          onClose={() => setModal(null)}
+          onSaved={reload}
+        />
+      ) : null}
     </>
   );
 }

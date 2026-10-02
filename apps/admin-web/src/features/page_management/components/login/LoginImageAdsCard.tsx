@@ -35,7 +35,11 @@ export function LoginImageAdsCard() {
   const flag = useCardFlag('login_images');
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.PAGE_LOGIN_IMAGES_READ);
-  const canManage = can(PERMISSIONS.PAGE_LOGIN_IMAGES_MANAGE);
+  const canCreate = can(PERMISSIONS.PAGE_LOGIN_IMAGES_CREATE);
+  const canUpdate = can(PERMISSIONS.PAGE_LOGIN_IMAGES_UPDATE);
+  const canDelete = can(PERMISSIONS.PAGE_LOGIN_IMAGES_DELETE);
+  const canToggle = can(PERMISSIONS.PAGE_LOGIN_IMAGES_TOGGLE);
+
   async function reload() {
     try {
       setItems(await listImageAds());
@@ -74,60 +78,69 @@ export function LoginImageAdsCard() {
         </span>
       ),
     },
-    ...(canManage
+    ...(canUpdate || canToggle || canDelete
       ? [
-    {
-      key: 'actions',
-      header: '',
-      className: 'col-actions',
-      render: (row: ImageAd) => (
-        <div className="row-actions">
-          <IconButton label="تعديل" onClick={() => setModal(row)}>
-            <IconEdit />
-          </IconButton>
-          <IconButton
-            label={row.isActive ? 'تعطيل' : 'تفعيل'}
-            onClick={async () => {
-              try {
-                await notifyMutation(
-                  toast,
-                  () => updateImageAd(row.id, { isActive: !row.isActive }),
-                  {
-                    success: row.isActive
-                      ? 'تم تعطيل الإعلان'
-                      : 'تم تفعيل الإعلان',
-                  },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconToggle />
-          </IconButton>
-          <IconButton
-            label="حذف"
-            tone="danger"
-            onClick={async () => {
-              if (!confirm('حذف الإعلان؟')) return;
-              try {
-                await notifyMutation(
-                  toast,
-                  () => deleteImageAd(row.id),
-                  { success: 'تم حذف الإعلان بنجاح' },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconTrash />
-          </IconButton>
-        </div>
-      ),
-    } satisfies Column<ImageAd>,
+          {
+            key: 'actions',
+            header: '',
+            className: 'col-actions',
+            render: (row: ImageAd) => (
+              <div className="row-actions">
+                {canUpdate ? (
+                  <IconButton label="تعديل" onClick={() => setModal(row)}>
+                    <IconEdit />
+                  </IconButton>
+                ) : null}
+                {canToggle ? (
+                  <IconButton
+                    label={row.isActive ? 'تعطيل' : 'تفعيل'}
+                    onClick={async () => {
+                      try {
+                        await notifyMutation(
+                          toast,
+                          () =>
+                            updateImageAd(row.id, {
+                              isActive: !row.isActive,
+                            }),
+                          {
+                            success: row.isActive
+                              ? 'تم تعطيل الإعلان'
+                              : 'تم تفعيل الإعلان',
+                          },
+                        );
+                        await reload();
+                      } catch {
+                        // الإشعار عبر notifyMutation
+                      }
+                    }}
+                  >
+                    <IconToggle />
+                  </IconButton>
+                ) : null}
+                {canDelete ? (
+                  <IconButton
+                    label="حذف"
+                    tone="danger"
+                    onClick={async () => {
+                      if (!confirm('حذف الإعلان؟')) return;
+                      try {
+                        await notifyMutation(
+                          toast,
+                          () => deleteImageAd(row.id),
+                          { success: 'تم حذف الإعلان بنجاح' },
+                        );
+                        await reload();
+                      } catch {
+                        // الإشعار عبر notifyMutation
+                      }
+                    }}
+                  >
+                    <IconTrash />
+                  </IconButton>
+                ) : null}
+              </div>
+            ),
+          } satisfies Column<ImageAd>,
         ]
       : []),
   ];
@@ -142,7 +155,7 @@ export function LoginImageAdsCard() {
         enabled={flag.enabled}
         actions={
           <>
-            {canManage ? (
+            {canToggle ? (
               <CardEnableToggle
                 enabled={flag.enabled}
                 busy={flag.busy}
@@ -150,7 +163,7 @@ export function LoginImageAdsCard() {
               />
             ) : null}
             <CopyApiIcon path={PUBLIC_LOGIN_ENDPOINTS.ads} />
-            {canManage ? (
+            {canCreate ? (
               <IconButton
                 label="إضافة"
                 tone="accent"
@@ -164,11 +177,13 @@ export function LoginImageAdsCard() {
       >
         <DataTable columns={columns} rows={items} rowKey={(r) => r.id} />
       </TaskCard>
-      <LoginImageAdModal
-        state={modal}
-        onClose={() => setModal(null)}
-        onSaved={reload}
-      />
+      {canCreate || canUpdate ? (
+        <LoginImageAdModal
+          state={modal}
+          onClose={() => setModal(null)}
+          onSaved={reload}
+        />
+      ) : null}
     </>
   );
 }

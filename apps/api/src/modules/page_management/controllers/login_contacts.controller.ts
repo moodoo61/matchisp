@@ -15,6 +15,7 @@ import { CreateContactMethodDto } from '../dto/create-contact-method.dto';
 import { UpdateContactMethodDto } from '../dto/update-contact-method.dto';
 import {
   CurrentUser,
+  RequireAnyPermission,
   RequirePermissions,
   type RequestUser,
 } from '../../../common/guards';
@@ -38,7 +39,7 @@ export class LoginContactsController {
   }
 
   @Post()
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_CONTACTS_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_CONTACTS_CREATE)
   create(
     @Body() dto: CreateContactMethodDto,
     @CurrentUser() user: RequestUser,
@@ -47,7 +48,10 @@ export class LoginContactsController {
   }
 
   @Patch(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_CONTACTS_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_LOGIN_CONTACTS_UPDATE,
+    PERMISSIONS.PAGE_LOGIN_CONTACTS_TOGGLE,
+  )
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateContactMethodDto,
@@ -57,7 +61,7 @@ export class LoginContactsController {
   }
 
   @Delete(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_CONTACTS_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_CONTACTS_DELETE)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: RequestUser,

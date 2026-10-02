@@ -37,7 +37,10 @@ export function StatusServicesCard() {
   const flag = useCardFlag('status_services');
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.PAGE_STATUS_SERVICES_READ);
-  const canManage = can(PERMISSIONS.PAGE_STATUS_SERVICES_MANAGE);
+  const canCreate = can(PERMISSIONS.PAGE_STATUS_SERVICES_CREATE);
+  const canUpdate = can(PERMISSIONS.PAGE_STATUS_SERVICES_UPDATE);
+  const canDelete = can(PERMISSIONS.PAGE_STATUS_SERVICES_DELETE);
+  const canToggle = can(PERMISSIONS.PAGE_STATUS_SERVICES_TOGGLE);
 
   async function reload() {
     try {
@@ -91,7 +94,7 @@ export function StatusServicesCard() {
         </span>
       ),
     },
-    ...(canManage
+    ...(canUpdate || canToggle || canDelete
       ? [
           {
             key: 'actions',
@@ -99,52 +102,58 @@ export function StatusServicesCard() {
             className: 'col-actions',
             render: (row: StatusService) => (
               <div className="row-actions">
-                <IconButton label="تعديل" onClick={() => setModal(row)}>
-                  <IconEdit />
-                </IconButton>
-                <IconButton
-                  label={row.isActive ? 'تعطيل' : 'تفعيل'}
-                  onClick={async () => {
-                    try {
-                      await notifyMutation(
-                        toast,
-                        () =>
-                          updateStatusService(row.id, {
-                            isActive: !row.isActive,
-                          }),
-                        {
-                          success: row.isActive
-                            ? 'تم تعطيل الخدمة'
-                            : 'تم تفعيل الخدمة',
-                        },
-                      );
-                      await reload();
-                    } catch {
-                      // الإشعار عبر notifyMutation
-                    }
-                  }}
-                >
-                  <IconToggle />
-                </IconButton>
-                <IconButton
-                  label="حذف"
-                  tone="danger"
-                  onClick={async () => {
-                    if (!confirm('حذف الخدمة؟')) return;
-                    try {
-                      await notifyMutation(
-                        toast,
-                        () => deleteStatusService(row.id),
-                        { success: 'تم حذف الخدمة بنجاح' },
-                      );
-                      await reload();
-                    } catch {
-                      // الإشعار عبر notifyMutation
-                    }
-                  }}
-                >
-                  <IconTrash />
-                </IconButton>
+                {canUpdate ? (
+                  <IconButton label="تعديل" onClick={() => setModal(row)}>
+                    <IconEdit />
+                  </IconButton>
+                ) : null}
+                {canToggle ? (
+                  <IconButton
+                    label={row.isActive ? 'تعطيل' : 'تفعيل'}
+                    onClick={async () => {
+                      try {
+                        await notifyMutation(
+                          toast,
+                          () =>
+                            updateStatusService(row.id, {
+                              isActive: !row.isActive,
+                            }),
+                          {
+                            success: row.isActive
+                              ? 'تم تعطيل الخدمة'
+                              : 'تم تفعيل الخدمة',
+                          },
+                        );
+                        await reload();
+                      } catch {
+                        // الإشعار عبر notifyMutation
+                      }
+                    }}
+                  >
+                    <IconToggle />
+                  </IconButton>
+                ) : null}
+                {canDelete ? (
+                  <IconButton
+                    label="حذف"
+                    tone="danger"
+                    onClick={async () => {
+                      if (!confirm('حذف الخدمة؟')) return;
+                      try {
+                        await notifyMutation(
+                          toast,
+                          () => deleteStatusService(row.id),
+                          { success: 'تم حذف الخدمة بنجاح' },
+                        );
+                        await reload();
+                      } catch {
+                        // الإشعار عبر notifyMutation
+                      }
+                    }}
+                  >
+                    <IconTrash />
+                  </IconButton>
+                ) : null}
               </div>
             ),
           } satisfies Column<StatusService>,
@@ -162,7 +171,7 @@ export function StatusServicesCard() {
         enabled={flag.enabled}
         actions={
           <>
-            {canManage ? (
+            {canToggle ? (
               <CardEnableToggle
                 enabled={flag.enabled}
                 busy={flag.busy}
@@ -170,7 +179,7 @@ export function StatusServicesCard() {
               />
             ) : null}
             <CopyApiIcon path={PUBLIC_STATUS_ENDPOINTS.services} />
-            {canManage ? (
+            {canCreate ? (
               <IconButton
                 label="إضافة"
                 tone="accent"
@@ -190,7 +199,7 @@ export function StatusServicesCard() {
         />
       </TaskCard>
 
-      {canManage ? (
+      {canCreate || canUpdate ? (
         <StatusServiceModal
           state={modal}
           onClose={() => setModal(null)}

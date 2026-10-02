@@ -56,6 +56,17 @@
   pointer-events: none;
 }
 
+.cl-brand-logo {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #1a2340;
+  border: 1px solid rgba(43, 30, 7, 0.6);
+  padding: 4px;
+}
+
 /* نصوص محفورة على الذهب */
 .cl-brand-wrap {
   min-width: 0;
@@ -104,6 +115,6 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #ff5470;
+  background: var(--cl-live);
   animation: cl-pulse 1.8s ease-in-out infinite;
 }

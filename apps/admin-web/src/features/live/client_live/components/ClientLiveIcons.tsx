@@ -61,6 +61,31 @@ export function FullscreenIcon(props: IconProps) {
   );
 }
 
+export function StopIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
+export function QualityIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 7h10M14 7a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM4 17h6M10 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM20 17H14M20 7h-2" />
+    </IconBase>
+  );
+}
+
+export function PipIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <rect x="11" y="11" width="8" height="6" rx="1" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
 export function SearchIcon(props: IconProps) {
   return (
     <IconBase {...props}>

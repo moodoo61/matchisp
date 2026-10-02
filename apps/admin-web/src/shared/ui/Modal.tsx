@@ -10,9 +10,18 @@ type Props = {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  /** أصناف إضافية على اللوحة (مثل توسيع العرض) */
+  panelClassName?: string;
 };
 
-export function Modal({ open, title, onClose, children, footer }: Props) {
+export function Modal({
+  open,
+  title,
+  onClose,
+  children,
+  footer,
+  panelClassName,
+}: Props) {
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -27,7 +36,7 @@ export function Modal({ open, title, onClose, children, footer }: Props) {
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="modal-panel"
+        className={['modal-panel', panelClassName].filter(Boolean).join(' ')}
         role="dialog"
         aria-modal="true"
         aria-label={title}

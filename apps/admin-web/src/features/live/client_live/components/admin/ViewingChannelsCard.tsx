@@ -1,18 +1,23 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PERMISSIONS } from '@isp/shared';
 import {
   listViewingPageChannels,
   setViewingChannelVisibility,
 } from '@/features/live/client_live/api';
-import type { ViewingPageChannelsResponse } from '@/features/live/client_live/types';
+import type {
+  ViewingPageAdminChannel,
+  ViewingPageChannelsResponse,
+} from '@/features/live/client_live/types';
 import { usePermissions } from '@/lib/usePermissions';
 import {
   CardEnableToggle,
+  DataTable,
   TaskCard,
   notifyMutation,
   useToast,
+  type Column,
 } from '@/shared/ui';
 
 function onlineLabel(online: 0 | 1 | 2 | null, active: boolean) {
@@ -22,7 +27,13 @@ function onlineLabel(online: 0 | 1 | 2 | null, active: boolean) {
   return '—';
 }
 
-/** قنوات صفحة المشاهدة: تجميع حسب القسم + إظهار/إخفاء + رابط HLS */
+function onlineBadgeClass(online: 0 | 1 | 2 | null, active: boolean) {
+  if (active || online === 1) return 'ok';
+  if (online === 2) return 'progress';
+  return '';
+}
+
+/** قنوات صفحة المشاهدة: جدول أعمدة + إظهار/إخفاء */
 export function ViewingChannelsCard() {
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.LIVE_VIEWING_PAGE_READ);
@@ -46,6 +57,11 @@ export function ViewingChannelsCard() {
     if (!canRead) return;
     void reload();
   }, [canRead, reload]);
+
+  const channels = useMemo(() => {
+    if (!data) return [] as ViewingPageAdminChannel[];
+    return data.sections.flatMap((section) => section.channels);
+  }, [data]);
 
   const toggleVisible = async (id: string, visible: boolean) => {
     if (!canToggle) return;
@@ -79,73 +95,80 @@ export function ViewingChannelsCard() {
     }
   };
 
+  const columns: Column<ViewingPageAdminChannel>[] = [
+    {
+      key: 'icon',
+      header: 'الأيقونة',
+      render: (row) =>
+        row.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="viewing-channels-thumb"
+            src={row.imageUrl}
+            alt=""
+          />
+        ) : (
+          <span className="viewing-channels-thumb is-empty" aria-hidden>
+            {row.label.slice(0, 1)}
+          </span>
+        ),
+    },
+    {
+      key: 'label',
+      header: 'اسم القناة',
+      render: (row) => row.label,
+    },
+    {
+      key: 'section',
+      header: 'القسم',
+      render: (row) => row.section.label,
+    },
+    {
+      key: 'status',
+      header: 'الحالة',
+      render: (row) => (
+        <span className={`badge ${onlineBadgeClass(row.online, row.active)}`}>
+          {onlineLabel(row.online, row.active)}
+          {!row.isActive ? ' · غير مفعّلة' : ''}
+          {!row.visible ? ' · مخفية' : ''}
+        </span>
+      ),
+    },
+    {
+      key: 'viewers',
+      header: 'المشاهدون',
+      render: (row) => row.viewers,
+    },
+    {
+      key: 'actions',
+      header: 'الأزرار',
+      render: (row) =>
+        canToggle ? (
+          <CardEnableToggle
+            enabled={row.visible}
+            busy={busyId === row.id}
+            onToggle={() => void toggleVisible(row.id, !row.visible)}
+          />
+        ) : (
+          <span className="muted">{row.visible ? 'ظاهرة' : 'مخفية'}</span>
+        ),
+    },
+  ];
+
   if (!canRead) return null;
 
   return (
-    <TaskCard title="قنوات صفحة المشاهدة">
+    <TaskCard title="القنوات">
       {error ? <p className="error">{error}</p> : null}
       {!data && !error ? <p className="muted">جاري التحميل…</p> : null}
       {data ? (
         <div className="viewing-channels">
-          <p className="muted viewing-channels-base">
-            قاعدة المشاهدة: <code>{data.httpBase}</code>
-            {/127\.0\.0\.1|localhost/i.test(data.httpBase) ? (
-              <span className="error">
-                {' '}
-                — عنوان محلي؛ المتصفح لن يصل للبث. عيّن MISTSERVER_HTTP_URL إلى
-                IP/نطاق عام.
-              </span>
-            ) : null}
-          </p>
-          {data.sections.length === 0 ? (
-            <p className="muted">لا توجد أقسام أو قنوات بعد</p>
-          ) : null}
-          {data.sections.map((section) => (
-            <section key={section.id} className="viewing-channels-section">
-              <h3>{section.label}</h3>
-              {section.channels.length === 0 ? (
-                <p className="muted">لا قنوات في هذا القسم</p>
-              ) : (
-                <div className="viewing-channels-list">
-                  {section.channels.map((channel) => (
-                    <div
-                      key={channel.id}
-                      className={
-                        channel.visible && channel.isActive
-                          ? 'viewing-channels-row field-row'
-                          : 'viewing-channels-row field-row is-disabled'
-                      }
-                    >
-                      <div className="viewing-channels-meta">
-                        <strong>{channel.label}</strong>
-                        <small>
-                          {channel.name} ·{' '}
-                          {onlineLabel(channel.online, channel.active)}
-                          {!channel.isActive ? ' · غير مفعّلة' : ''}
-                        </small>
-                        <code className="viewing-channels-url" title={channel.playback.hlsUrl}>
-                          {channel.playback.hlsUrl}
-                        </code>
-                      </div>
-                      {canToggle ? (
-                        <CardEnableToggle
-                          enabled={channel.visible}
-                          busy={busyId === channel.id}
-                          onToggle={() =>
-                            void toggleVisible(channel.id, !channel.visible)
-                          }
-                        />
-                      ) : (
-                        <span className="muted">
-                          {channel.visible ? 'ظاهرة' : 'مخفية'}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          ))}
+          <DataTable
+            columns={columns}
+            rows={channels}
+            rowKey={(r) => r.id}
+            emptyText="لا توجد أقسام أو قنوات بعد"
+          />
           {!canToggle ? (
             <p className="muted">عرض فقط — لا صلاحية تعديل</p>
           ) : null}

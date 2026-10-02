@@ -48,7 +48,7 @@
 }
 
 .cl-schedule-modal {
-  width: min(720px, 100%);
+  width: min(860px, 100%);
   max-height: min(78dvh, 640px);
   display: flex;
   flex-direction: column;
@@ -108,6 +108,16 @@
   color: #ff8fa3;
 }
 
+.cl-schedule-cols {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr);
+  gap: 0.55rem 0.75rem;
+  padding: 0 0.85rem 0.55rem;
+  color: var(--cl-faint);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .cl-schedule-list {
   list-style: none;
   margin: 0;
@@ -122,8 +132,9 @@
   text-align: start;
   cursor: pointer;
   display: grid;
-  grid-template-columns: 4.2rem minmax(0, 1fr);
+  grid-template-columns: 4.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr);
   gap: 0.55rem 0.75rem;
+  align-items: center;
   padding: 0.75rem 0.85rem;
   border-radius: var(--cl-radius-md);
   border: 1px solid var(--cl-card-line-soft);
@@ -140,11 +151,16 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.cl-schedule-row.is-nearest {
+  border-color: rgba(61, 220, 151, 0.45);
+  background: rgba(61, 220, 151, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(61, 220, 151, 0.15);
+}
+
 .cl-schedule-time {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--cl-gold-100);
-  align-self: center;
 }
 
 .cl-schedule-fixture {
@@ -182,17 +198,21 @@
   font-weight: 700;
 }
 
-.cl-schedule-meta {
-  grid-column: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.75rem;
-  font-size: 0.78rem;
+.cl-schedule-tournament {
+  font-size: 0.8rem;
   color: var(--cl-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cl-schedule-channel {
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--cl-gold-300);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @keyframes cl-schedule-fade {
@@ -215,10 +235,20 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
+  .cl-schedule-cols {
+    display: none;
+  }
+
   .cl-schedule-row {
-    grid-template-columns: 3.4rem minmax(0, 1fr);
-    padding: 0.65rem 0.7rem;
+    grid-template-columns: 3.6rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .cl-schedule-tournament,
+  .cl-schedule-channel {
+    grid-column: 2;
+    white-space: normal;
   }
 
   .cl-header-actions {

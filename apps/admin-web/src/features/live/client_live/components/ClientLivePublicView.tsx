@@ -10,9 +10,18 @@ import { PlaylistPanel } from './playlist/PlaylistPanel';
 
 const FALLBACK_SETTINGS: ViewingPageSettings = {
   enabled: true,
-  brandTitle: 'ISP Live',
+  brandTitle: '',
+  brandLogoUrl: '',
+  brandLogoAbsoluteUrl: null,
+  showBrandTitle: true,
+  showBrandLogo: true,
+  brandSubtitle: 'LIVE • HD',
+  showBrandSubtitle: true,
+  liveBadgeText: 'بث مباشر',
+  showLiveBadge: true,
   pageTitle: 'البث المباشر',
   tagline: '',
+  showMatchSchedule: true,
 };
 
 /** الهيكل المستقل الجديد — ترويسة دنيا + مسرح + قائمة جانبية */
@@ -71,6 +80,14 @@ export function ClientLivePublicView() {
     <div className="cl-app">
       <ClientLiveHeader
         brandTitle={settings.brandTitle}
+        brandLogoUrl={settings.brandLogoAbsoluteUrl || settings.brandLogoUrl}
+        brandSubtitle={settings.brandSubtitle}
+        liveBadgeText={settings.liveBadgeText}
+        showBrandTitle={settings.showBrandTitle}
+        showBrandLogo={settings.showBrandLogo}
+        showBrandSubtitle={settings.showBrandSubtitle}
+        showLiveBadge={settings.showLiveBadge}
+        showMatchSchedule={settings.showMatchSchedule}
         onSelectChannel={selectChannel}
       />
 
@@ -90,14 +107,21 @@ export function ClientLivePublicView() {
 
         {settings.enabled && selected ? (
           <div className="cl-layout">
-            <ClientLiveStage channel={selected} />
+            <ClientLiveStage
+              channel={selected}
+              brandLogoUrl={
+                settings.showBrandLogo
+                  ? settings.brandLogoAbsoluteUrl || settings.brandLogoUrl
+                  : null
+              }
+            />
             <PlaylistPanel sections={sections} selectedId={selectedId} onSelect={selectChannel} />
           </div>
         ) : null}
       </main>
 
       <footer className="cl-footer">
-        <p>{settings.brandTitle}</p>
+        {settings.showBrandTitle ? <p>{settings.brandTitle}</p> : <p />}
         <span>مشاهدة مباشرة</span>
       </footer>
     </div>

@@ -44,7 +44,10 @@ export function LoginContactsCard() {
   const flag = useCardFlag('login_contacts');
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.PAGE_LOGIN_CONTACTS_READ);
-  const canManage = can(PERMISSIONS.PAGE_LOGIN_CONTACTS_MANAGE);
+  const canCreate = can(PERMISSIONS.PAGE_LOGIN_CONTACTS_CREATE);
+  const canUpdate = can(PERMISSIONS.PAGE_LOGIN_CONTACTS_UPDATE);
+  const canDelete = can(PERMISSIONS.PAGE_LOGIN_CONTACTS_DELETE);
+  const canToggle = can(PERMISSIONS.PAGE_LOGIN_CONTACTS_TOGGLE);
 
   async function reload() {
     try {
@@ -96,7 +99,7 @@ export function LoginContactsCard() {
         </span>
       ),
     },
-    ...(canManage
+    ...(canUpdate || canToggle || canDelete
       ? [
           {
             key: 'actions',
@@ -104,56 +107,62 @@ export function LoginContactsCard() {
             className: 'col-actions',
             render: (row: ContactMethod) => (
               <div className="row-actions">
-                <IconButton label="تعديل" onClick={() => setModal(row)}>
-                  <IconEdit />
-                </IconButton>
-                <IconButton
-                  label={row.isActive ? 'إيقاف' : 'تفعيل'}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        await notifyMutation(
-                          toast,
-                          () =>
-                            updateContactMethod(row.id, {
-                              isActive: !row.isActive,
-                            }),
-                          {
-                            success: row.isActive
-                              ? 'تم إيقاف طريقة التواصل'
-                              : 'تم تفعيل طريقة التواصل',
-                          },
-                        );
-                        await reload();
-                      } catch {
-                        /* toast */
-                      }
-                    })();
-                  }}
-                >
-                  <IconToggle />
-                </IconButton>
-                <IconButton
-                  label="حذف"
-                  tone="danger"
-                  onClick={() => {
-                    if (!confirm(`حذف «${row.displayName}»؟`)) return;
-                    void (async () => {
-                      try {
-                        await notifyMutation(
-                          toast,
-                          () => deleteContactMethod(row.id),
-                          { success: 'تم الحذف' },
-                        );
-                        await reload();
-                      } catch {
-                        /* toast */
-                      }
-                    })();
-                  }}
-                >
-                  <IconTrash />
-                </IconButton>
+                {canUpdate ? (
+                  <IconButton label="تعديل" onClick={() => setModal(row)}>
+                    <IconEdit />
+                  </IconButton>
+                ) : null}
+                {canToggle ? (
+                  <IconButton
+                    label={row.isActive ? 'إيقاف' : 'تفعيل'}
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await notifyMutation(
+                            toast,
+                            () =>
+                              updateContactMethod(row.id, {
+                                isActive: !row.isActive,
+                              }),
+                            {
+                              success: row.isActive
+                                ? 'تم إيقاف طريقة التواصل'
+                                : 'تم تفعيل طريقة التواصل',
+                            },
+                          );
+                          await reload();
+                        } catch {
+                          /* toast */
+                        }
+                      })();
+                    }}
+                  >
+                    <IconToggle />
+                  </IconButton>
+                ) : null}
+                {canDelete ? (
+                  <IconButton
+                    label="حذف"
+                    tone="danger"
+                    onClick={() => {
+                      if (!confirm(`حذف «${row.displayName}»؟`)) return;
+                      void (async () => {
+                        try {
+                          await notifyMutation(
+                            toast,
+                            () => deleteContactMethod(row.id),
+                            { success: 'تم الحذف' },
+                          );
+                          await reload();
+                        } catch {
+                          /* toast */
+                        }
+                      })();
+                    }}
+                  >
+                    <IconTrash />
+                  </IconButton>
+                ) : null}
               </div>
             ),
           } satisfies Column<ContactMethod>,
@@ -171,7 +180,7 @@ export function LoginContactsCard() {
         enabled={flag.enabled}
         actions={
           <>
-            {canManage ? (
+            {canToggle ? (
               <CardEnableToggle
                 enabled={flag.enabled}
                 busy={flag.busy}
@@ -179,7 +188,7 @@ export function LoginContactsCard() {
               />
             ) : null}
             <CopyApiIcon path={PUBLIC_LOGIN_ENDPOINTS.contacts} />
-            {canManage ? (
+            {canCreate ? (
               <IconButton label="إضافة" onClick={() => setModal('new')}>
                 <IconPlus />
               </IconButton>
@@ -193,7 +202,7 @@ export function LoginContactsCard() {
           <p className="muted">لا توجد طرق تواصل بعد.</p>
         )}
       </TaskCard>
-      {canManage ? (
+      {canCreate || canUpdate ? (
         <LoginContactsModal
           state={modal}
           onClose={() => setModal(null)}

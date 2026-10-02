@@ -14,6 +14,7 @@ import { CreateLoginPackageDto } from '../dto/create-login-package.dto';
 import { UpdateLoginPackageDto } from '../dto/update-login-package.dto';
 import {
   CurrentUser,
+  RequireAnyPermission,
   RequirePermissions,
   type RequestUser,
 } from '../../../common/guards';
@@ -37,7 +38,7 @@ export class LoginPackagesController {
   }
 
   @Post()
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_PACKAGES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_PACKAGES_CREATE)
   create(
     @Body() dto: CreateLoginPackageDto,
     @CurrentUser() user: RequestUser,
@@ -46,7 +47,10 @@ export class LoginPackagesController {
   }
 
   @Patch(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_PACKAGES_MANAGE)
+  @RequireAnyPermission(
+    PERMISSIONS.PAGE_LOGIN_PACKAGES_UPDATE,
+    PERMISSIONS.PAGE_LOGIN_PACKAGES_TOGGLE,
+  )
   update(
     @Param('id') id: string,
     @Body() dto: UpdateLoginPackageDto,
@@ -56,7 +60,7 @@ export class LoginPackagesController {
   }
 
   @Delete(':id')
-  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_PACKAGES_MANAGE)
+  @RequirePermissions(PERMISSIONS.PAGE_LOGIN_PACKAGES_DELETE)
   remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
     return this.packages.remove(id, user.id);
   }

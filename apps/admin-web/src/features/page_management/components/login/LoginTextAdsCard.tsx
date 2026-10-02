@@ -36,7 +36,10 @@ export function LoginTextAdsCard() {
   const flag = useCardFlag('login_ticker');
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.PAGE_LOGIN_TICKER_READ);
-  const canManage = can(PERMISSIONS.PAGE_LOGIN_TICKER_MANAGE);
+  const canCreate = can(PERMISSIONS.PAGE_LOGIN_TICKER_CREATE);
+  const canUpdate = can(PERMISSIONS.PAGE_LOGIN_TICKER_UPDATE);
+  const canDelete = can(PERMISSIONS.PAGE_LOGIN_TICKER_DELETE);
+  const canToggle = can(PERMISSIONS.PAGE_LOGIN_TICKER_TOGGLE);
   async function reload() {
     try {
       setItems(await listTextAds());
@@ -77,7 +80,7 @@ export function LoginTextAdsCard() {
         </span>
       ),
     },
-    ...(canManage
+    ...(canUpdate || canToggle || canDelete
       ? [
     {
       key: 'actions',
@@ -85,49 +88,55 @@ export function LoginTextAdsCard() {
       className: 'col-actions',
       render: (row: TextAd) => (
         <div className="row-actions">
-          <IconButton label="تعديل" onClick={() => setModal(row)}>
-            <IconEdit />
-          </IconButton>
-          <IconButton
-            label={row.isActive ? 'تعطيل' : 'تفعيل'}
-            onClick={async () => {
-              try {
-                await notifyMutation(
-                  toast,
-                  () => updateTextAd(row.id, { isActive: !row.isActive }),
-                  {
-                    success: row.isActive
-                      ? 'تم تعطيل النص'
-                      : 'تم تفعيل النص',
-                  },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconToggle />
-          </IconButton>
-          <IconButton
-            label="حذف"
-            tone="danger"
-            onClick={async () => {
-              if (!confirm('حذف النص؟')) return;
-              try {
-                await notifyMutation(
-                  toast,
-                  () => deleteTextAd(row.id),
-                  { success: 'تم حذف النص بنجاح' },
-                );
-                await reload();
-              } catch {
-                // الإشعار عبر notifyMutation
-              }
-            }}
-          >
-            <IconTrash />
-          </IconButton>
+          {canUpdate ? (
+            <IconButton label="تعديل" onClick={() => setModal(row)}>
+              <IconEdit />
+            </IconButton>
+          ) : null}
+          {canToggle ? (
+            <IconButton
+              label={row.isActive ? 'تعطيل' : 'تفعيل'}
+              onClick={async () => {
+                try {
+                  await notifyMutation(
+                    toast,
+                    () => updateTextAd(row.id, { isActive: !row.isActive }),
+                    {
+                      success: row.isActive
+                        ? 'تم تعطيل النص'
+                        : 'تم تفعيل النص',
+                    },
+                  );
+                  await reload();
+                } catch {
+                  // الإشعار عبر notifyMutation
+                }
+              }}
+            >
+              <IconToggle />
+            </IconButton>
+          ) : null}
+          {canDelete ? (
+            <IconButton
+              label="حذف"
+              tone="danger"
+              onClick={async () => {
+                if (!confirm('حذف النص؟')) return;
+                try {
+                  await notifyMutation(
+                    toast,
+                    () => deleteTextAd(row.id),
+                    { success: 'تم حذف النص بنجاح' },
+                  );
+                  await reload();
+                } catch {
+                  // الإشعار عبر notifyMutation
+                }
+              }}
+            >
+              <IconTrash />
+            </IconButton>
+          ) : null}
         </div>
       ),
     } satisfies Column<TextAd>,
@@ -145,7 +154,7 @@ export function LoginTextAdsCard() {
         enabled={flag.enabled}
         actions={
           <>
-            {canManage ? (
+            {canToggle ? (
               <CardEnableToggle
                 enabled={flag.enabled}
                 busy={flag.busy}
@@ -153,7 +162,7 @@ export function LoginTextAdsCard() {
               />
             ) : null}
             <CopyApiIcon path={PUBLIC_LOGIN_ENDPOINTS.ticker} />
-            {canManage ? (
+            {canCreate ? (
               <IconButton
                 label="إضافة"
                 tone="accent"
@@ -168,11 +177,13 @@ export function LoginTextAdsCard() {
         {activeTexts.length ? <TickerPreview items={activeTexts} /> : null}
         <DataTable columns={columns} rows={items} rowKey={(r) => r.id} />
       </TaskCard>
-      <LoginTextAdModal
-        state={modal}
-        onClose={() => setModal(null)}
-        onSaved={reload}
-      />
+      {canCreate || canUpdate ? (
+        <LoginTextAdModal
+          state={modal}
+          onClose={() => setModal(null)}
+          onSaved={reload}
+        />
+      ) : null}
     </>
   );
 }
