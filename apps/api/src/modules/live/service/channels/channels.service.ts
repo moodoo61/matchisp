@@ -1,9 +1,12 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import type { EncodingSourceMode } from '@isp/shared';
+import { Prisma } from '../../../../../generated/live';
 import { PrismaLiveService } from '../../../../database/database.module';
 import { AuditService } from '../../../audit/audit.service';
 import { CreateChannelDto } from '../../dto/channels/create-channel.dto';
@@ -25,6 +28,8 @@ import { ChannelUniquenessService } from './channel-uniqueness';
 
 @Injectable()
 export class ChannelsService {
+  private readonly logger = new Logger(ChannelsService.name);
+
   constructor(
     private readonly prisma: PrismaLiveService,
     private readonly audit: AuditService,
@@ -287,8 +292,48 @@ export class ChannelsService {
 
   async remove(id: string, actorId: string) {
     const current = await this.get(id);
-    await this.mist.deleteStream(current.name);
-    await this.prisma.channel.delete({ where: { id } });
+
+    const matchCount = await this.prisma.sportMatch.count({
+      where: { channelId: id },
+    });
+    if (matchCount > 0) {
+      const message = `لا يمكن حذف القناة لأنها مرتبطة بـ ${matchCount} مباراة في الأحداث الرياضية — احذف المباريات أو غيّر قناتها أولاً`;
+      this.logger.warn(
+        `رفض حذف القناة name=${current.name} id=${id}: ${message}`,
+      );
+      throw new ConflictException(message);
+    }
+
+    try {
+      await this.mist.deleteStream(current.name);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        `فشل حذف قناة Mist قبل قاعدة البيانات name=${current.name}: ${detail}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw err;
+    }
+
+    try {
+      await this.prisma.channel.delete({ where: { id } });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        `فشل حذف القناة من قاعدة البيانات بعد Mist name=${current.name} id=${id}: ${detail}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'لا يمكن حذف القناة لارتباطها بسجلات أخرى (مثل المباريات) — أزل الارتباط ثم أعد المحاولة',
+        );
+      }
+      throw err;
+    }
+
     await this.audit.log({
       actorId,
       action: 'delete',
