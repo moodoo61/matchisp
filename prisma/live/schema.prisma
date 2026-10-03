@@ -114,9 +114,9 @@ model SportMatch {
   awayTeam    SportTeam @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
   /// موعد المباراة
   kickoffAt   DateTime
-  channelId   String    @db.Uuid
-  /// حذف القناة يمسح مبارياتها تلقائياً — لا يُمنع حذف القناة بوجود مباراة
-  channel     Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  /// اختياري — حذف القناة لا يمس المباراة (يُصفَّر الربط فقط)
+  channelId   String?   @db.Uuid
+  channel     Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

@@ -71,8 +71,11 @@ export function deleteChannel(id: string) {
   });
 }
 
-export function listHdmiDevices() {
-  return api<HdmiCaptureDevice[]>('/live/hdmi-devices');
+export function listHdmiDevices(exceptChannelId?: string) {
+  const q = exceptChannelId
+    ? `?exceptChannelId=${encodeURIComponent(exceptChannelId)}`
+    : '';
+  return api<HdmiCaptureDevice[]>(`/live/hdmi-devices${q}`);
 }
 
 export function stopChannelSessions(id: string) {

@@ -147,7 +147,9 @@ export function useChannelModal(
   async function discoverHdmiDevices(preferredVideo?: string) {
     setDevicesLoading(true);
     try {
-      const list = await listHdmiDevices();
+      const exceptId =
+        state && state !== 'new' ? state.id : undefined;
+      const list = await listHdmiDevices(exceptId);
       setDevices(list);
       const prefer = preferredVideo ?? videoDevice;
       const match = prefer

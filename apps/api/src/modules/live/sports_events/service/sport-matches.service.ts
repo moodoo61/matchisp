@@ -40,28 +40,31 @@ export class SportMatchesService {
     if (!settings.enabled) return [];
 
     const rows = await this.listToday();
-    return rows.map((row) => ({
-      id: row.id,
-      tournament: row.tournament,
-      kickoffAt: row.kickoffAt.toISOString(),
-      homeTeam: {
-        id: row.homeTeam.id,
-        name: row.homeTeam.name,
-        type: row.homeTeam.type,
-        logoUrl: row.homeTeam.logoUrl,
-      },
-      awayTeam: {
-        id: row.awayTeam.id,
-        name: row.awayTeam.name,
-        type: row.awayTeam.type,
-        logoUrl: row.awayTeam.logoUrl,
-      },
-      channel: {
-        id: row.channel.id,
-        name: row.channel.name,
-        label: row.channel.label,
-      },
-    }));
+    // بدون قناة لا فائدة من عرضها في صفحة المشاهدة (لا يمكن التبديل إليها)
+    return rows
+      .filter((row) => row.channel != null)
+      .map((row) => ({
+        id: row.id,
+        tournament: row.tournament,
+        kickoffAt: row.kickoffAt.toISOString(),
+        homeTeam: {
+          id: row.homeTeam.id,
+          name: row.homeTeam.name,
+          type: row.homeTeam.type,
+          logoUrl: row.homeTeam.logoUrl,
+        },
+        awayTeam: {
+          id: row.awayTeam.id,
+          name: row.awayTeam.name,
+          type: row.awayTeam.type,
+          logoUrl: row.awayTeam.logoUrl,
+        },
+        channel: {
+          id: row.channel!.id,
+          name: row.channel!.name,
+          label: row.channel!.label,
+        },
+      }));
   }
 
   list() {
@@ -177,20 +180,25 @@ export class SportMatchesService {
   private async assertTeamsAndChannel(
     homeTeamId: string,
     awayTeamId: string,
-    channelId: string,
+    channelId: string | null,
   ) {
     if (homeTeamId === awayTeamId) {
       throw new BadRequestException('يجب أن يكون الفريقان مختلفين');
     }
 
-    const [home, away, channel] = await Promise.all([
+    const [home, away] = await Promise.all([
       this.prisma.sportTeam.findUnique({ where: { id: homeTeamId } }),
       this.prisma.sportTeam.findUnique({ where: { id: awayTeamId } }),
-      this.prisma.channel.findUnique({ where: { id: channelId } }),
     ]);
 
     if (!home) throw new NotFoundException('الفريق الأول غير موجود');
     if (!away) throw new NotFoundException('الفريق الثاني غير موجود');
-    if (!channel) throw new NotFoundException('القناة غير موجودة');
+
+    if (channelId) {
+      const channel = await this.prisma.channel.findUnique({
+        where: { id: channelId },
+      });
+      if (!channel) throw new NotFoundException('القناة غير موجودة');
+    }
   }
 }

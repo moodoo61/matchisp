@@ -30,9 +30,6 @@ function auditDetail(row: AuditPage['items'][number]): string {
     const status = typeof meta.status === 'number' ? ` (${meta.status})` : '';
     return `${meta.method ?? ''} ${meta.path}${status}`.trim();
   }
-  if (typeof meta.count === 'number' && meta.reason === 'channel_delete') {
-    return `مسح ${meta.count} مباراة مع حذف القناة`;
-  }
   return '—';
 }
 

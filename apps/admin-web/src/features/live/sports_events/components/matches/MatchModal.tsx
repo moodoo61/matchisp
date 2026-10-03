@@ -76,7 +76,7 @@ export function MatchModal({ state, onClose, onSaved }: Props) {
       tournament: state.tournament,
       homeTeamId: state.homeTeamId,
       awayTeamId: state.awayTeamId,
-      channelId: state.channelId,
+      channelId: state.channelId ?? '',
       kickoff: partsFromIso(state.kickoffAt),
     });
   }, [state]);

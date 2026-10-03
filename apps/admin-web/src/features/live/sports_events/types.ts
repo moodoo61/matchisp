@@ -27,10 +27,10 @@ export type SportMatch = {
   homeTeamId: string;
   awayTeamId: string;
   kickoffAt: string;
-  channelId: string;
+  channelId: string | null;
   homeTeam: SportTeam;
   awayTeam: SportTeam;
-  channel: SportMatchChannel;
+  channel: SportMatchChannel | null;
   createdAt: string;
   updatedAt: string;
 };

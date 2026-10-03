@@ -139,12 +139,34 @@ export class ChannelsService {
     }
   }
 
+  private async assertHdmiDeviceFree(
+    videoDevice: string | null | undefined,
+    exceptChannelId?: string,
+  ) {
+    const path = videoDevice?.trim();
+    if (!path) return;
+    const taken = await this.prisma.channel.findFirst({
+      where: {
+        type: 'HDMI',
+        videoDevice: path,
+        ...(exceptChannelId ? { id: { not: exceptChannelId } } : {}),
+      },
+      select: { id: true, label: true },
+    });
+    if (taken) {
+      throw new ConflictException(
+        `جهاز HDMI مستخدم مسبقاً في القناة «${taken.label}»`,
+      );
+    }
+  }
+
   async create(dto: CreateChannelDto, actorId: string) {
     await this.assertSection(dto.sectionId);
     const name = normalizeName(dto.name);
     const label = normalizeLabel(dto.label);
     await this.uniqueness.assertUnique({ name, label });
     const paths = normalizeChannelPaths(dto);
+    await this.assertHdmiDeviceFree(paths.videoDevice);
     const sourceMode = this.resolveChannelSourceMode(dto.sourceMode);
     const { mistSource, abrProfileKey, qualityRungIds } =
       await this.resolveMistAndAbr(
@@ -214,6 +236,7 @@ export class ChannelsService {
       audioDevice:
         dto.audioDevice !== undefined ? dto.audioDevice : current.audioDevice,
     });
+    await this.assertHdmiDeviceFree(paths.videoDevice, id);
 
     const nextName = name ?? current.name;
     const alwaysOn =
@@ -293,35 +316,7 @@ export class ChannelsService {
   async remove(id: string, actorId: string) {
     const current = await this.get(id);
 
-    // الواجهة تعرض مباريات «اليوم» فقط — قد تبقى مباريات بأيام أخرى في DB.
-    // حذف القناة لا يُرفض بسببها: نمسح الارتباط ثم القناة (Cascade في schema أيضاً).
-    const linkedMatches = await this.prisma.sportMatch.findMany({
-      where: { channelId: id },
-      select: { id: true, tournament: true, kickoffAt: true },
-    });
-    if (linkedMatches.length > 0) {
-      await this.prisma.sportMatch.deleteMany({ where: { channelId: id } });
-      this.logger.log(
-        `حذف ${linkedMatches.length} مباراة مرتبطة بالقناة name=${current.name} قبل حذف القناة`,
-      );
-      await this.audit.log({
-        actorId,
-        action: 'delete_cascade',
-        resource: 'live.sports_events.match',
-        resourceId: id,
-        metadata: {
-          reason: 'channel_delete',
-          channelName: current.name,
-          count: linkedMatches.length,
-          matches: linkedMatches.map((m) => ({
-            id: m.id,
-            tournament: m.tournament,
-            kickoffAt: m.kickoffAt.toISOString(),
-          })),
-        },
-      });
-    }
-
+    // المباريات مستقلة: ON DELETE SET NULL يصفّر channelId دون حذف المباراة.
     try {
       await this.mist.deleteStream(current.name);
     } catch (err) {
@@ -382,11 +377,7 @@ export class ChannelsService {
       action: 'delete',
       resource: 'live.channel',
       resourceId: id,
-      metadata: {
-        name: current.name,
-        label: current.label,
-        cascadedMatches: linkedMatches.length,
-      },
+      metadata: { name: current.name, label: current.label },
     });
     return { success: true };
   }

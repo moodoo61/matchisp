@@ -75,7 +75,7 @@ export function ChannelSourceFields({
                 ? 'جاري استكشاف الأجهزة…'
                 : devices.length
                   ? 'اختر جهاز HDMI Capture'
-                  : 'لا توجد أجهزة متصلة'}
+                  : 'لا أجهزة متاحة (الكل مستخدم أو غير متصل)'}
             </option>
             {devices.map((device) => (
               <option key={device.id} value={device.id}>

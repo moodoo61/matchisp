@@ -3,6 +3,7 @@ import { execFile } from 'child_process';
 import { readdir, readFile, realpath } from 'fs/promises';
 import { join } from 'path';
 import { promisify } from 'util';
+import { PrismaLiveService } from '../../../../database/database.module';
 import {
   pairVideoAudioPaths,
   type AlsaCard,
@@ -20,8 +21,35 @@ export type HdmiCaptureDevice = {
 
 @Injectable()
 export class HdmiDevicesService {
+  constructor(private readonly prisma: PrismaLiveService) {}
+
+  /** أجهزة HDMI Capture المتصلة وغير المستخدمة بقناة أخرى */
+  async listAvailable(exceptChannelId?: string): Promise<HdmiCaptureDevice[]> {
+    const [all, usedRows] = await Promise.all([
+      this.listConnected(),
+      this.prisma.channel.findMany({
+        where: {
+          type: 'HDMI',
+          videoDevice: { not: null },
+          ...(exceptChannelId?.trim()
+            ? { id: { not: exceptChannelId.trim() } }
+            : {}),
+        },
+        select: { videoDevice: true },
+      }),
+    ]);
+
+    const used = new Set(
+      usedRows
+        .map((row) => row.videoDevice?.trim())
+        .filter((path): path is string => Boolean(path)),
+    );
+
+    return all.filter((device) => !used.has(device.videoPath));
+  }
+
   /** أجهزة HDMI Capture المتصلة بالخادم (V4L2 + ALSA) */
-  async list(): Promise<HdmiCaptureDevice[]> {
+  async listConnected(): Promise<HdmiCaptureDevice[]> {
     const videoNodes = await this.listCaptureVideoNodes();
     const audioCards = await this.listAlsaCards();
     const v4l2Names = await this.readV4l2Names();

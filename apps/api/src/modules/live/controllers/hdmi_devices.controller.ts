@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@isp/shared';
 import { HdmiDevicesService } from '../service/hdmi/hdmi_devices.service';
@@ -15,7 +15,7 @@ export class HdmiDevicesController {
     PERMISSIONS.LIVE_CHANNELS_CREATE,
     PERMISSIONS.LIVE_CHANNELS_UPDATE,
   )
-  list() {
-    return this.devices.list();
+  list(@Query('exceptChannelId') exceptChannelId?: string) {
+    return this.devices.listAvailable(exceptChannelId);
   }
 }
