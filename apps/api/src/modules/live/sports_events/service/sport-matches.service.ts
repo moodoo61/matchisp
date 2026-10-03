@@ -140,14 +140,35 @@ export class SportMatchesService {
 
   async remove(id: string, actorId: string) {
     const existing = await this.get(id);
-    await this.prisma.sportMatch.delete({ where: { id } });
+    try {
+      await this.prisma.sportMatch.delete({ where: { id } });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await this.audit.log({
+        actorId,
+        action: 'failed',
+        resource: 'live.sports_events.match',
+        resourceId: id,
+        metadata: {
+          op: 'delete',
+          tournament: existing.tournament,
+          channelId: existing.channelId,
+          message,
+        },
+      });
+      throw err;
+    }
 
     await this.audit.log({
       actorId,
       action: 'delete',
       resource: 'live.sports_events.match',
       resourceId: id,
-      metadata: { tournament: existing.tournament },
+      metadata: {
+        tournament: existing.tournament,
+        channelId: existing.channelId,
+        kickoffAt: existing.kickoffAt.toISOString(),
+      },
     });
 
     return { success: true };

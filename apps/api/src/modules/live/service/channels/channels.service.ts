@@ -293,15 +293,33 @@ export class ChannelsService {
   async remove(id: string, actorId: string) {
     const current = await this.get(id);
 
-    const matchCount = await this.prisma.sportMatch.count({
+    // الواجهة تعرض مباريات «اليوم» فقط — قد تبقى مباريات بأيام أخرى في DB.
+    // حذف القناة لا يُرفض بسببها: نمسح الارتباط ثم القناة (Cascade في schema أيضاً).
+    const linkedMatches = await this.prisma.sportMatch.findMany({
       where: { channelId: id },
+      select: { id: true, tournament: true, kickoffAt: true },
     });
-    if (matchCount > 0) {
-      const message = `لا يمكن حذف القناة لأنها مرتبطة بـ ${matchCount} مباراة في الأحداث الرياضية — احذف المباريات أو غيّر قناتها أولاً`;
-      this.logger.warn(
-        `رفض حذف القناة name=${current.name} id=${id}: ${message}`,
+    if (linkedMatches.length > 0) {
+      await this.prisma.sportMatch.deleteMany({ where: { channelId: id } });
+      this.logger.log(
+        `حذف ${linkedMatches.length} مباراة مرتبطة بالقناة name=${current.name} قبل حذف القناة`,
       );
-      throw new ConflictException(message);
+      await this.audit.log({
+        actorId,
+        action: 'delete_cascade',
+        resource: 'live.sports_events.match',
+        resourceId: id,
+        metadata: {
+          reason: 'channel_delete',
+          channelName: current.name,
+          count: linkedMatches.length,
+          matches: linkedMatches.map((m) => ({
+            id: m.id,
+            tournament: m.tournament,
+            kickoffAt: m.kickoffAt.toISOString(),
+          })),
+        },
+      });
     }
 
     try {
@@ -309,9 +327,21 @@ export class ChannelsService {
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        `فشل حذف قناة Mist قبل قاعدة البيانات name=${current.name}: ${detail}`,
+        `فشل حذف قناة Mist name=${current.name}: ${detail}`,
         err instanceof Error ? err.stack : undefined,
       );
+      await this.audit.log({
+        actorId,
+        action: 'failed',
+        resource: 'live.channel',
+        resourceId: id,
+        metadata: {
+          op: 'delete',
+          stage: 'mist',
+          name: current.name,
+          message: detail,
+        },
+      });
       throw err;
     }
 
@@ -323,12 +353,25 @@ export class ChannelsService {
         `فشل حذف القناة من قاعدة البيانات بعد Mist name=${current.name} id=${id}: ${detail}`,
         err instanceof Error ? err.stack : undefined,
       );
+      await this.audit.log({
+        actorId,
+        action: 'failed',
+        resource: 'live.channel',
+        resourceId: id,
+        metadata: {
+          op: 'delete',
+          stage: 'database',
+          name: current.name,
+          message: detail,
+          mistDeleted: true,
+        },
+      });
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === 'P2003'
       ) {
         throw new ConflictException(
-          'لا يمكن حذف القناة لارتباطها بسجلات أخرى (مثل المباريات) — أزل الارتباط ثم أعد المحاولة',
+          'لا يمكن حذف القناة لارتباطها بسجلات أخرى — راجع سجلات التدقيق',
         );
       }
       throw err;
@@ -339,7 +382,11 @@ export class ChannelsService {
       action: 'delete',
       resource: 'live.channel',
       resourceId: id,
-      metadata: { name: current.name, label: current.label },
+      metadata: {
+        name: current.name,
+        label: current.label,
+        cascadedMatches: linkedMatches.length,
+      },
     });
     return { success: true };
   }

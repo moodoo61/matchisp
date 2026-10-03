@@ -11,6 +11,7 @@ type AuditPage = {
     action: string;
     resource: string;
     resourceId?: string | null;
+    metadata?: Record<string, unknown> | null;
     createdAt: string;
     actor?: { name: string; username: string } | null;
   }>;
@@ -18,6 +19,22 @@ type AuditPage = {
   page: number;
   pageSize: number;
 };
+
+function auditDetail(row: AuditPage['items'][number]): string {
+  const meta = row.metadata;
+  if (!meta || typeof meta !== 'object') return '—';
+  if (typeof meta.message === 'string' && meta.message.trim()) {
+    return meta.message;
+  }
+  if (typeof meta.path === 'string') {
+    const status = typeof meta.status === 'number' ? ` (${meta.status})` : '';
+    return `${meta.method ?? ''} ${meta.path}${status}`.trim();
+  }
+  if (typeof meta.count === 'number' && meta.reason === 'channel_delete') {
+    return `مسح ${meta.count} مباراة مع حذف القناة`;
+  }
+  return '—';
+}
 
 export default function AuditPage() {
   const [data, setData] = useState<AuditPage | null>(null);
@@ -78,7 +95,7 @@ export default function AuditPage() {
                 <th>الفاعل</th>
                 <th>الإجراء</th>
                 <th>المورد</th>
-                <th>معرف المورد</th>
+                <th>التفاصيل</th>
                 <th>الوقت</th>
               </tr>
             </thead>
@@ -89,7 +106,9 @@ export default function AuditPage() {
                   <td>{row.action}</td>
                   <td>{row.resource}</td>
                   <td>
-                    <code>{row.resourceId ?? '—'}</code>
+                    <span title={row.resourceId ?? undefined}>
+                      {auditDetail(row)}
+                    </span>
                   </td>
                   <td>{new Date(row.createdAt).toLocaleString('ar')}</td>
                 </tr>

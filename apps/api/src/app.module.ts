@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { FailedRequestLoggingFilter } from './common/failed-request-logging.filter';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TeamModule } from './modules/team/team.module';
@@ -37,6 +39,12 @@ import { NetworkModule } from './modules/network/network.module';
     ServiceMonitorModule,
     SettingsModule,
     NetworkModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: FailedRequestLoggingFilter,
+    },
   ],
 })
 export class AppModule {}

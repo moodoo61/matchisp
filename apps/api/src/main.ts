@@ -6,7 +6,6 @@ import cookieParser from 'cookie-parser';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
-import { FailedRequestLoggingFilter } from './common/failed-request-logging.filter';
 
 function resolveCorsOrigins(): string | string[] | boolean {
   // مؤقت: السماح لأي أصل (يعكس Origin الطلب — متوافق مع credentials)
@@ -47,7 +46,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.useGlobalFilters(new FailedRequestLoggingFilter());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('ISP Admin API')
