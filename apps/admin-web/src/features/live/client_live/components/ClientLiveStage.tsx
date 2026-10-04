@@ -8,6 +8,7 @@ import { ClientLivePlayer } from './ClientLivePlayer';
 type Props = {
   channel: PublicLiveChannel;
   brandLogoUrl?: string | null;
+  autoplay?: boolean;
 };
 
 function isLive(channel: PublicLiveChannel) {
@@ -15,7 +16,11 @@ function isLive(channel: PublicLiveChannel) {
 }
 
 /** المسرح — الفيديو وسطر معلومة واحد (لا تكرار) */
-export function ClientLiveStage({ channel, brandLogoUrl }: Props) {
+export function ClientLiveStage({
+  channel,
+  brandLogoUrl,
+  autoplay = true,
+}: Props) {
   const live = isLive(channel);
   const hlsUrl = useMemo(
     () => resolveClientPlaybackUrl(channel.playback.hlsUrl),
@@ -32,6 +37,7 @@ export function ClientLiveStage({ channel, brandLogoUrl }: Props) {
               hlsUrl={hlsUrl}
               posterUrl={channel.imageUrl}
               brandLogoUrl={brandLogoUrl}
+              autoplay={autoplay}
             />
           ) : (
             <div className="cl-frame-empty">{channel.label}</div>

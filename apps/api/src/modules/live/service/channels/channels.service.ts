@@ -19,6 +19,8 @@ import {
 } from '../encoding/source-options';
 import { EncodingQualityService } from '../encoding/quality/encoding-quality.service';
 import { resolveAbrProfileForRungs } from '../encoding/quality/abr-profile';
+import { HlsMasterProbeService } from '../encoding/source-options/passthrough-ffmpeg/hls-master-probe.service';
+import { HlsMasterPlaylistService } from '../encoding/source-options/passthrough-ffmpeg/hls-master-playlist.service';
 import {
   normalizeChannelPaths,
   normalizeLabel,
@@ -36,10 +38,12 @@ export class ChannelsService {
     private readonly mist: MistServerService,
     private readonly uniqueness: ChannelUniquenessService,
     private readonly encodingQuality: EncodingQualityService,
+    private readonly hlsProbe: HlsMasterProbeService,
+    private readonly hlsPlaylist: HlsMasterPlaylistService,
   ) {}
 
   async list() {
-    const [items, mistStatuses, activeStats] = await Promise.all([
+    const [items, mistStatuses, activeStats, inputStats] = await Promise.all([
       this.prisma.channel.findMany({
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
         include: {
@@ -48,16 +52,21 @@ export class ChannelsService {
       }),
       this.mist.listStreamStatuses(),
       this.mist.listActiveStreamStats(),
+      this.mist.listInputStats(),
     ]);
 
-    return items.map((item) => ({
-      ...item,
-      mist: this.mist.statusFor(
-        item.name,
-        mistStatuses,
-        activeStats.get(item.name)?.viewers ?? 0,
-      ),
-    }));
+    return items.map((item) => {
+      const stats = activeStats.get(item.name);
+      return {
+        ...item,
+        mist: this.mist.statusFor(
+          item.name,
+          mistStatuses,
+          stats?.viewers ?? 0,
+          inputStats.get(item.name) ?? null,
+        ),
+      };
+    });
   }
 
   async get(id: string) {
@@ -139,6 +148,67 @@ export class ChannelsService {
     }
   }
 
+  /**
+   * مباشر ffmpeg + مستويات HLS — المصدر النهائي دائماً عبر ffpass (ts-exec):
+   * - مستوى واحد → رابط المستوى
+   * - أكثر من مستوى → master محلي موحّد يُمرَّر كدخل واحد لـ ffpass
+   */
+  private async resolveFfmpegIptvSource(input: {
+    sourceMode: EncodingSourceMode;
+    type: 'IPTV' | 'HDMI';
+    channelName: string;
+    sourceUrl: string | null;
+    /** إن وُجدت (حتى فارغة) يعني أن الواجهة أرسلت اختيار تحليل HLS */
+    hlsVariantUrls?: string[];
+  }): Promise<{
+    sourceUrl: string | null;
+    mistSourceMode: EncodingSourceMode;
+  }> {
+    if (input.sourceMode !== 'passthrough_ffmpeg' || input.type !== 'IPTV') {
+      return {
+        sourceUrl: input.sourceUrl,
+        mistSourceMode: input.sourceMode,
+      };
+    }
+
+    const masterUrl = input.sourceUrl?.trim() || '';
+
+    // تحديث بدون إعادة تحليل (مثل alwaysOn) — أبقِ المصدر كما هو، مع ffpass دائماً
+    if (input.hlsVariantUrls === undefined) {
+      if (!masterUrl) {
+        throw new BadRequestException('مصدر IPTV مطلوب لوضع مباشر ffmpeg');
+      }
+      return {
+        sourceUrl: masterUrl,
+        mistSourceMode: 'passthrough_ffmpeg',
+      };
+    }
+
+    const selected = [
+      ...new Set(input.hlsVariantUrls.map((u) => u.trim()).filter(Boolean)),
+    ];
+    if (selected.length < 1) {
+      throw new BadRequestException(
+        'اختر مستوى جودة واحداً على الأقل بعد تحليل الرابط',
+      );
+    }
+    if (!masterUrl) {
+      throw new BadRequestException(
+        'رابط المصدر الأصلي مطلوب مع اختيار مستويات الجودة',
+      );
+    }
+
+    const built = await this.hlsPlaylist.buildFromSelection({
+      channelName: input.channelName,
+      masterUrl,
+      selectedUrls: selected,
+    });
+    return {
+      sourceUrl: built.mistUrl,
+      mistSourceMode: 'passthrough_ffmpeg',
+    };
+  }
+
   private async assertHdmiDeviceFree(
     videoDevice: string | null | undefined,
     exceptChannelId?: string,
@@ -168,14 +238,25 @@ export class ChannelsService {
     const paths = normalizeChannelPaths(dto);
     await this.assertHdmiDeviceFree(paths.videoDevice);
     const sourceMode = this.resolveChannelSourceMode(dto.sourceMode);
+    const resolved = await this.resolveFfmpegIptvSource({
+      sourceMode,
+      type: dto.type,
+      channelName: name,
+      sourceUrl: paths.sourceUrl,
+      hlsVariantUrls: dto.hlsVariantUrls,
+    });
+    const effectivePaths = { ...paths, sourceUrl: resolved.sourceUrl };
     const { mistSource, abrProfileKey, qualityRungIds } =
       await this.resolveMistAndAbr(
-        sourceMode,
-        { type: dto.type, ...paths },
+        resolved.mistSourceMode,
+        { type: dto.type, ...effectivePaths },
         dto.qualityRungIds,
       );
     const alwaysOn = dto.alwaysOn ?? false;
 
+    this.logger.log(
+      `تسجيل قناة name=${name} mode=${sourceMode} mistMode=${resolved.mistSourceMode} mistSource=${mistSource}`,
+    );
     await this.mist.upsertStream({ name, source: mistSource, alwaysOn });
 
     try {
@@ -185,7 +266,7 @@ export class ChannelsService {
           name,
           label,
           type: dto.type,
-          ...paths,
+          ...effectivePaths,
           sourceMode,
           qualityRungIds,
           abrProfileKey,
@@ -245,18 +326,29 @@ export class ChannelsService {
       dto.sourceMode ?? current.sourceMode,
       { allowFallback: dto.sourceMode === undefined },
     );
+    const resolved = await this.resolveFfmpegIptvSource({
+      sourceMode,
+      type,
+      channelName: nextName,
+      sourceUrl: paths.sourceUrl,
+      hlsVariantUrls: dto.hlsVariantUrls,
+    });
+    const effectivePaths = { ...paths, sourceUrl: resolved.sourceUrl };
     const qualityRungIdsInput =
       dto.qualityRungIds !== undefined
         ? dto.qualityRungIds
         : current.qualityRungIds;
     const { mistSource, abrProfileKey, qualityRungIds } =
       await this.resolveMistAndAbr(
-        sourceMode,
-        { type, ...paths },
+        resolved.mistSourceMode,
+        { type, ...effectivePaths },
         qualityRungIdsInput,
       );
     const nameChanged = nextName !== current.name;
 
+    this.logger.log(
+      `تحديث قناة name=${nextName} mode=${sourceMode} mistMode=${resolved.mistSourceMode} mistSource=${mistSource}`,
+    );
     await this.mist.upsertStream({
       name: nextName,
       source: mistSource,
@@ -273,7 +365,7 @@ export class ChannelsService {
         name,
         label,
         type: dto.type,
-        ...paths,
+        ...effectivePaths,
         sourceMode: dto.sourceMode !== undefined ? sourceMode : undefined,
         qualityRungIds,
         abrProfileKey,

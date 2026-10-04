@@ -7,7 +7,26 @@
 
 set -euo pipefail
 
-FFMPEG="${LIVE_FFMPEG_PATH:-/usr/local/bin/ffmpeg}"
+resolve_ffmpeg() {
+  if [[ -n "${LIVE_FFMPEG_PATH:-}" && -x "${LIVE_FFMPEG_PATH}" ]]; then
+    echo "${LIVE_FFMPEG_PATH}"
+    return
+  fi
+  for candidate in /usr/bin/ffmpeg /usr/local/bin/ffmpeg; do
+    if [[ -x "$candidate" ]]; then
+      echo "$candidate"
+      return
+    fi
+  done
+  if command -v ffmpeg >/dev/null 2>&1; then
+    command -v ffmpeg
+    return
+  fi
+  echo "ffpass: ffmpeg غير موجود — عيّن LIVE_FFMPEG_PATH أو ثبّت ffmpeg" >&2
+  exit 127
+}
+
+FFMPEG="$(resolve_ffmpeg)"
 INPUT="${1:?Usage: ffpass.sh <input_url>}"
 
 # إنهاء أي ffmpeg سابق لنفس المصدر
@@ -18,15 +37,18 @@ done < <(ps -eo pid=,args= | awk -v inurl="$INPUT" '
   index($0, "/ffmpeg") && index($0, "-i " inurl) { print $1 }
 ')
 
+# خيارات شبكة + HLS (قوائم m3u8 الحية)
 NET_OPTS=(
   -rw_timeout 15000000
   -reconnect 1
   -reconnect_streamed 1
   -reconnect_on_network_error 1
   -reconnect_delay_max 5
+  -http_persistent 1
+  -multiple_requests 1
 )
 
-echo "ffpass: input=${INPUT}" >&2
+echo "ffpass: ffmpeg=${FFMPEG} input=${INPUT}" >&2
 
 FF_ARGS=(
   "$FFMPEG"
@@ -39,10 +61,12 @@ FF_ARGS=(
   -i "$INPUT"
   -map 0:v:0? -map 0:a:0?
   -c:v copy
-  -c:a copy
+  -c:a aac -b:a 128k -ar 48000 -ac 2
   -f mpegts
   -
 )
+
+# الملاحظة: نسخ الصوت copy يفشل كثيراً مع HLS (AAC في TS غير متوافق) — نعيد ترميز الصوت فقط.
 
 # python يبقى أباً لـ ffmpeg — PDEATHSIG عند موت MistInTS
 exec python3 -c '

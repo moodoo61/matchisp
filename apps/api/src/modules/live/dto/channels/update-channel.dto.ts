@@ -77,6 +77,16 @@ export class UpdateChannelDto {
   @IsString({ each: true })
   qualityRungIds?: string[];
 
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'مستويات HLS المختارة من التحليل (مباشر ffmpeg) — أكثر من واحد يولّد master موحّد',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  hlsVariantUrls?: string[];
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

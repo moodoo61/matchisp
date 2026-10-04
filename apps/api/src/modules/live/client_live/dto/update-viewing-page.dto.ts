@@ -69,4 +69,11 @@ export class UpdateViewingPageDto {
   @IsOptional()
   @IsBoolean()
   showLiveBadge?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'تشغيل القناة تلقائياً عند دخول صفحة المشاهدة',
+  })
+  @IsOptional()
+  @IsBoolean()
+  autoplayOnEnter?: boolean;
 }

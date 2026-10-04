@@ -74,6 +74,7 @@ export class ViewingPageService {
         dto.showMatchSchedule,
         current.showMatchSchedule,
       ),
+      autoplayOnEnter: boolOr(dto.autoplayOnEnter, current.autoplayOnEnter),
     };
 
     await this.prisma.sectionMeta.upsert({
@@ -113,6 +114,7 @@ export class ViewingPageService {
       showBrandSubtitle: DEFAULT_VIEWING_PAGE_SETTINGS.showBrandSubtitle,
       showLiveBadge: DEFAULT_VIEWING_PAGE_SETTINGS.showLiveBadge,
       showMatchSchedule: DEFAULT_VIEWING_PAGE_SETTINGS.showMatchSchedule,
+      autoplayOnEnter: DEFAULT_VIEWING_PAGE_SETTINGS.autoplayOnEnter,
     };
 
     const row = await this.prisma.sectionMeta.findUnique({
@@ -146,6 +148,10 @@ export class ViewingPageService {
         showMatchSchedule: boolOr(
           parsed.showMatchSchedule,
           defaults.showMatchSchedule,
+        ),
+        autoplayOnEnter: boolOr(
+          parsed.autoplayOnEnter,
+          defaults.autoplayOnEnter,
         ),
       };
     } catch {

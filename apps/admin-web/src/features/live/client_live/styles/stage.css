@@ -41,7 +41,7 @@
   font-size: 1.4rem;
 }
 
-/* السطر السفلي مثبت — لا يختفي أبداً */
+/* السطر السفلي مثبت — ذهبية مثل الترويسة */
 .cl-program {
   flex: 0 0 auto;
   position: sticky;
@@ -52,10 +52,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid var(--cl-card-line-soft);
+  border: 1px solid #6f5626;
   border-radius: var(--cl-radius-lg);
-  background: rgba(20, 27, 51, 0.95);
-  box-shadow: var(--cl-shadow-card);
+  background: var(--cl-gold-gradient);
+  box-shadow: var(--cl-shadow-gold);
 }
 
 .cl-program-channel {
@@ -72,9 +72,9 @@
   overflow: hidden;
   display: grid;
   place-items: center;
-  border-radius: 13px;
-  border: 1px solid rgba(200, 164, 93, 0.3);
-  background: #101839;
+  border-radius: 10px;
+  border: 1px solid rgba(43, 30, 7, 0.55);
+  background: #1a2340;
   color: var(--cl-gold-100);
   font-family: var(--cl-font-display);
   font-size: 1.2rem;
@@ -93,7 +93,8 @@
   font-family: var(--cl-font-display);
   font-size: 1.25rem;
   line-height: 1.25;
-  color: var(--cl-ivory);
+  color: #2a1e05;
+  text-shadow: 0 1px 0 rgba(255, 248, 225, 0.55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -101,9 +102,9 @@
 
 .cl-program-sub {
   margin: 0.1rem 0 0;
-  color: var(--cl-muted);
+  color: #4a3510;
   font-size: 0.76rem;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -115,21 +116,21 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.4rem 0.75rem;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 0.74rem;
   font-weight: 800;
 }
 
 .cl-program-state.is-live {
-  border: 1px solid rgba(61, 220, 151, 0.4);
-  background: rgba(61, 220, 151, 0.14);
+  border: 1px solid rgba(43, 30, 7, 0.45);
+  background: #1c1305;
   color: #9bf0c8;
 }
 
 .cl-program-state:not(.is-live) {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--cl-muted);
+  border: 1px solid rgba(43, 30, 7, 0.4);
+  background: rgba(28, 19, 5, 0.75);
+  color: var(--cl-gold-100);
 }
 
 .cl-program-state i {

@@ -119,3 +119,60 @@
 .channel-gpu-quality-item input {
   margin: 0;
 }
+
+.hls-quality-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.hls-quality-head {
+  align-items: center;
+}
+
+.hls-quality-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hls-quality-list li {
+  margin: 0;
+}
+
+.hls-quality-row {
+  display: block;
+  width: 100%;
+  text-align: start;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.hls-quality-list li:last-child .hls-quality-row {
+  border-bottom: 0;
+}
+
+.hls-quality-row:hover:not(:disabled) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.hls-quality-row.is-on {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
+}
+
+.hls-quality-row:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

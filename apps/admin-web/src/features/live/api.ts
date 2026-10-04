@@ -10,6 +10,7 @@ import type {
   EncodingSettings,
   EncodingSourceOptionsResponse,
   HdmiCaptureDevice,
+  HlsProbeResult,
 } from './types';
 
 export function listChannelSections() {
@@ -121,5 +122,13 @@ export function updateEncodingSettings(input: {
   return api<EncodingSettings>('/live/encoding/settings', {
     method: 'PATCH',
     body: JSON.stringify(input),
+  });
+}
+
+/** تحليل master HLS واستخراج مستويات الجودة (مباشر ffmpeg) */
+export function probeHlsUrl(url: string) {
+  return api<HlsProbeResult>('/live/source/hls-probe', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
   });
 }

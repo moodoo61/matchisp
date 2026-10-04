@@ -41,9 +41,10 @@
 .cl-playlist-tab {
   flex: 0 0 auto;
   margin: 0;
-  padding: 0.42rem 0.8rem;
+  min-width: 2.4rem;
+  padding: 0.42rem 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--cl-muted);
   font: inherit;

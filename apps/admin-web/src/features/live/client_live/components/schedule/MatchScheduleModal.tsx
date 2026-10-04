@@ -24,7 +24,6 @@ function findNearestMatchId(items: PublicSportMatch[], nowMs: number) {
   for (const match of items) {
     const kickoff = new Date(match.kickoffAt).getTime();
     if (Number.isNaN(kickoff)) continue;
-    // مباراة جارية خلال ساعتين من البداية لها أولوية أعلى قليلاً
     const elapsed = nowMs - kickoff;
     const score =
       elapsed >= 0 && elapsed <= 2 * 60 * 60 * 1000
@@ -38,32 +37,31 @@ function findNearestMatchId(items: PublicSportMatch[], nowMs: number) {
   return bestId;
 }
 
-function TeamCell({
+function TeamLogo({
   name,
   logoUrl,
 }: {
   name: string;
   logoUrl: string | null;
 }) {
+  if (logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={logoUrl} alt="" className="cl-schedule-logo" title={name} />
+    );
+  }
   return (
-    <span className="cl-schedule-team">
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt="" className="cl-schedule-logo" />
-      ) : (
-        <span className="cl-schedule-logo is-empty" aria-hidden />
-      )}
-      <span>{name}</span>
+    <span className="cl-schedule-logo is-empty" aria-hidden>
+      {name.slice(0, 1)}
     </span>
   );
 }
 
-/** نافذة جدول مباريات اليوم */
+/** نافذة جدول مباريات اليوم — بطاقة من 3 مربعات */
 export function MatchScheduleModal({ open, onClose, onSelectChannel }: Props) {
   const [items, setItems] = useState<PublicSportMatch[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const bodyRef = useRef<HTMLDivElement | null>(null);
   const nearestRef = useRef<HTMLButtonElement | null>(null);
 
   const sortedItems = useMemo(
@@ -151,7 +149,7 @@ export function MatchScheduleModal({ open, onClose, onSelectChannel }: Props) {
           </button>
         </header>
 
-        <div className="cl-schedule-body" ref={bodyRef}>
+        <div className="cl-schedule-body">
           {busy ? <p className="cl-schedule-hint">جاري التحميل…</p> : null}
           {!busy && error ? (
             <p className="cl-schedule-hint is-error">{error}</p>
@@ -161,54 +159,64 @@ export function MatchScheduleModal({ open, onClose, onSelectChannel }: Props) {
           ) : null}
 
           {!busy && sortedItems.length ? (
-            <>
-              <div className="cl-schedule-cols" aria-hidden>
-                <span>الوقت</span>
-                <span>المباراة</span>
-                <span>البطولة</span>
-                <span>القناة</span>
-              </div>
-              <ul className="cl-schedule-list">
-                {sortedItems.map((match) => {
-                  const isNearest = match.id === nearestId;
-                  return (
-                    <li key={match.id}>
-                      <button
-                        type="button"
-                        className={
-                          isNearest
-                            ? 'cl-schedule-row is-nearest'
-                            : 'cl-schedule-row'
-                        }
-                        ref={isNearest ? nearestRef : undefined}
-                        onClick={() => selectMatch(match)}
-                      >
-                        <span className="cl-schedule-time">
-                          {formatTime(match.kickoffAt)}
-                        </span>
-                        <span className="cl-schedule-fixture">
-                          <TeamCell
-                            name={match.homeTeam.name}
-                            logoUrl={match.homeTeam.logoUrl}
-                          />
-                          <span className="cl-schedule-vs">×</span>
-                          <TeamCell
-                            name={match.awayTeam.name}
-                            logoUrl={match.awayTeam.logoUrl}
-                          />
-                        </span>
-                        <span className="cl-schedule-tournament">
+            <ul className="cl-schedule-list">
+              {sortedItems.map((match) => {
+                const isNearest = match.id === nearestId;
+                return (
+                  <li key={match.id}>
+                    <button
+                      type="button"
+                      className={
+                        isNearest
+                          ? 'cl-schedule-card is-nearest'
+                          : 'cl-schedule-card'
+                      }
+                      ref={isNearest ? nearestRef : undefined}
+                      onClick={() => selectMatch(match)}
+                    >
+                      {/* المربع 1: البطولة + شعار/اسم الفريق الأول */}
+                      <span className="cl-schedule-cell">
+                        <span className="cl-schedule-meta">
                           {match.tournament}
                         </span>
+                        <TeamLogo
+                          name={match.homeTeam.name}
+                          logoUrl={match.homeTeam.logoUrl}
+                        />
+                        <span className="cl-schedule-team-name">
+                          {match.homeTeam.name}
+                        </span>
+                      </span>
+
+                      {/* المربع 2: VS بمحاذاة الشعارات + القناة */}
+                      <span className="cl-schedule-cell cl-schedule-cell-mid">
+                        <span className="cl-schedule-meta is-spacer" aria-hidden>
+                          &nbsp;
+                        </span>
+                        <span className="cl-schedule-vs">VS</span>
                         <span className="cl-schedule-channel">
                           {match.channel.label}
                         </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
+                      </span>
+
+                      {/* المربع 3: الموعد + شعار/اسم الفريق الثاني */}
+                      <span className="cl-schedule-cell">
+                        <span className="cl-schedule-meta cl-schedule-time">
+                          {formatTime(match.kickoffAt)}
+                        </span>
+                        <TeamLogo
+                          name={match.awayTeam.name}
+                          logoUrl={match.awayTeam.logoUrl}
+                        />
+                        <span className="cl-schedule-team-name">
+                          {match.awayTeam.name}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           ) : null}
         </div>
       </div>

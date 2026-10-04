@@ -67,10 +67,11 @@ export class PublicClientLiveService {
         const channels = section.channels
           .filter((channel) => !hidden.has(channel.id))
           .map((channel) => {
+            const stats = activeStats.get(channel.name);
             const mist = this.mist.statusFor(
               channel.name,
               mistStatuses,
-              activeStats.get(channel.name)?.viewers ?? 0,
+              stats?.viewers ?? 0,
             );
             return {
               id: channel.id,

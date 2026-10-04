@@ -5,6 +5,7 @@ import { ChannelSectionsController } from './controllers/channel_sections.contro
 import { ChannelsController } from './controllers/channels.controller';
 import { HdmiDevicesController } from './controllers/hdmi_devices.controller';
 import { EncodingStatusController } from './controllers/encoding_status.controller';
+import { SourceProbeController } from './controllers/source_probe.controller';
 import { ChannelSectionsService } from './service/channel-sections/channel_sections.service';
 import { ChannelSectionUniquenessService } from './service/channel-sections/section-uniqueness';
 import { ChannelsService } from './service/channels/channels.service';
@@ -13,6 +14,8 @@ import { ChannelUploadService } from './service/channels/channel_upload.service'
 import { ChannelUniquenessService } from './service/channels/channel-uniqueness';
 import { HdmiDevicesService } from './service/hdmi/hdmi_devices.service';
 import { EncodingStatusService } from './service/encoding/encoding-status.service';
+import { HlsMasterProbeService } from './service/encoding/source-options/passthrough-ffmpeg/hls-master-probe.service';
+import { HlsMasterPlaylistService } from './service/encoding/source-options/passthrough-ffmpeg/hls-master-playlist.service';
 import { EncodingSettingsService } from './service/encoding/encoding-settings.service';
 import { EncodingQualityService } from './service/encoding/quality/encoding-quality.service';
 import { MistServerClient } from './service/mist/mist-server.client';
@@ -42,6 +45,7 @@ import { SportMatchesAutoClearService } from './sports_events/service/sport-matc
     ChannelsController,
     HdmiDevicesController,
     EncodingStatusController,
+    SourceProbeController,
     ViewingPageController,
     ViewingChannelsController,
     PublicClientLiveController,
@@ -59,6 +63,8 @@ import { SportMatchesAutoClearService } from './sports_events/service/sport-matc
     ChannelUploadService,
     ChannelUniquenessService,
     HdmiDevicesService,
+    HlsMasterProbeService,
+    HlsMasterPlaylistService,
     EncodingStatusService,
     EncodingSettingsService,
     EncodingQualityService,

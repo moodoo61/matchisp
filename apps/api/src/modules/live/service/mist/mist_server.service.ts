@@ -8,8 +8,13 @@ import {
   ACTIVE_STREAM_STAT_FIELDS,
   parseActiveStreamStats,
 } from './mist-active-stats';
+import {
+  INPUT_CLIENT_REQUEST,
+  parseInputStats,
+} from './mist-input-stats';
 import type {
   MistActiveStreamStats,
+  MistInputStats,
   MistStreamPayload,
   MistStreamStatus,
 } from './mist-types';
@@ -54,6 +59,9 @@ export class MistServerService {
           source: typeof raw?.source === 'string' ? raw.source : null,
           active: active.has(name),
           viewers: 0,
+          connectedSec: null,
+          downBytes: null,
+          downBps: null,
         });
       }
     } catch (err) {
@@ -85,10 +93,31 @@ export class MistServerService {
     }
   }
 
+  /** Current inputs — clients API كما في صفحة حالة الستريم */
+  async listInputStats(): Promise<Map<string, MistInputStats>> {
+    const empty = new Map<string, MistInputStats>();
+    if (!this.client.enabled()) return empty;
+
+    try {
+      const data = await this.client.request({
+        clients: INPUT_CLIENT_REQUEST,
+      });
+      return parseInputStats(data.clients);
+    } catch (err) {
+      this.logger.warn(
+        `تعذر جلب مدخلات MistServer: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return empty;
+    }
+  }
+
   statusFor(
     name: string,
     all: Map<string, MistStreamStatus>,
     viewers = 0,
+    input: MistInputStats | null = null,
   ): MistStreamStatus {
     const base = all.get(name) ?? {
       name,
@@ -98,8 +127,17 @@ export class MistServerService {
       source: null,
       active: false,
       viewers: 0,
+      connectedSec: null,
+      downBytes: null,
+      downBps: null,
     };
-    return { ...base, viewers };
+    return {
+      ...base,
+      viewers,
+      connectedSec: input && input.conntime > 0 ? input.conntime : null,
+      downBytes: input ? input.down : null,
+      downBps: input ? input.downbps : null,
+    };
   }
 
   async upsertStream(payload: MistStreamPayload) {

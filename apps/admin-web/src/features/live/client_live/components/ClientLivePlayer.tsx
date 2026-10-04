@@ -18,14 +18,21 @@ type Props = {
   posterUrl?: string | null;
   /** شعار العلامة يظهر في المنتصف عند الإيقاف */
   brandLogoUrl?: string | null;
+  /** تشغيل تلقائي عند التحميل — من إعدادات صفحة المشاهدة */
+  autoplay?: boolean;
 };
 
 /** مشغّل نظيف — أدوات تشغيل فقط بدون أي نص مكرر */
-export function ClientLivePlayer({ hlsUrl, posterUrl, brandLogoUrl }: Props) {
+export function ClientLivePlayer({
+  hlsUrl,
+  posterUrl,
+  brandLogoUrl,
+  autoplay = true,
+}: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const qualityMenuRef = useRef<HTMLDivElement | null>(null);
-  const [stopped, setStopped] = useState(false);
+  const [stopped, setStopped] = useState(!autoplay);
   const [qualityOpen, setQualityOpen] = useState(false);
   const [pipActive, setPipActive] = useState(false);
   const [pipSupported, setPipSupported] = useState(false);
@@ -47,12 +54,12 @@ export function ClientLivePlayer({ hlsUrl, posterUrl, brandLogoUrl }: Props) {
     setMuted,
     setVolume,
     seekToProgress,
-  } = useHlsPlayback(hlsUrl, videoRef);
+  } = useHlsPlayback(hlsUrl, videoRef, { autoplay });
 
   useEffect(() => {
-    setStopped(false);
+    setStopped(!autoplay);
     setQualityOpen(false);
-  }, [hlsUrl]);
+  }, [hlsUrl, autoplay]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -189,7 +196,7 @@ export function ClientLivePlayer({ hlsUrl, posterUrl, brandLogoUrl }: Props) {
         ref={videoRef}
         className="client-live-video"
         playsInline
-        autoPlay
+        autoPlay={autoplay}
         muted={muted}
         poster={posterUrl ?? undefined}
         aria-label="البث المباشر"

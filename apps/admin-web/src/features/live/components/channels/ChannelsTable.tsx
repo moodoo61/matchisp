@@ -19,6 +19,11 @@ import {
   useToast,
   type Column,
 } from '@/shared/ui';
+import {
+  formatMistBitrate,
+  formatMistBytes,
+  formatMistDuration,
+} from './mist-duration';
 import { mistStatusLabel } from './mist-status';
 
 type Props = {
@@ -93,6 +98,27 @@ export function ChannelsTable({
           </span>
         );
       },
+    },
+    {
+      key: 'connectedSec',
+      header: 'Connected',
+      render: (row) => (
+        <span dir="ltr">{formatMistDuration(row.mist?.connectedSec)}</span>
+      ),
+    },
+    {
+      key: 'downBytes',
+      header: 'Data downloaded',
+      render: (row) => (
+        <span dir="ltr">{formatMistBytes(row.mist?.downBytes)}</span>
+      ),
+    },
+    {
+      key: 'downBps',
+      header: 'Current bitrate',
+      render: (row) => (
+        <span dir="ltr">{formatMistBitrate(row.mist?.downBps)}</span>
+      ),
     },
     {
       key: 'alwaysOn',

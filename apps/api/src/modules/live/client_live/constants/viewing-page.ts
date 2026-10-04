@@ -28,6 +28,8 @@ export type ViewingPageSettings = {
   tagline: string;
   /** إظهار زر/جدول المباريات في صفحة العميل */
   showMatchSchedule: boolean;
+  /** تشغيل القناة تلقائياً عند دخول الصفحة */
+  autoplayOnEnter: boolean;
 };
 
 export const DEFAULT_VIEWING_PAGE_SETTINGS: ViewingPageSettings = {
@@ -44,4 +46,5 @@ export const DEFAULT_VIEWING_PAGE_SETTINGS: ViewingPageSettings = {
   pageTitle: 'البث المباشر',
   tagline: 'قنواتك في مكان واحد، بجودة واضحة',
   showMatchSchedule: true,
+  autoplayOnEnter: true,
 };

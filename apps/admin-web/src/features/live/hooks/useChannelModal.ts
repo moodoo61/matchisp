@@ -8,6 +8,7 @@ import {
   listChannelSections,
   listEncodingSourceOptions,
   listHdmiDevices,
+  probeHlsUrl,
   updateChannel,
 } from '@/features/live/api';
 import type {
@@ -18,6 +19,7 @@ import type {
   EncodingSourceMode,
   EncodingSourceOptionsResponse,
   HdmiCaptureDevice,
+  HlsVariant,
 } from '@/features/live/types';
 import { notifyMutation, useToast } from '@/shared/ui';
 
@@ -62,8 +64,51 @@ export function useChannelModal(
   const [devices, setDevices] = useState<HdmiCaptureDevice[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [devicesLoading, setDevicesLoading] = useState(false);
+  const [hlsVariants, setHlsVariants] = useState<HlsVariant[]>([]);
+  const [hlsIsMaster, setHlsIsMaster] = useState(false);
+  const [hlsProbeBusy, setHlsProbeBusy] = useState(false);
+  const [hlsProbeError, setHlsProbeError] = useState<string | null>(null);
+  const [selectedVariantUrls, setSelectedVariantUrls] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function resetHlsProbe() {
+    setHlsVariants([]);
+    setHlsIsMaster(false);
+    setHlsProbeBusy(false);
+    setHlsProbeError(null);
+    setSelectedVariantUrls([]);
+  }
+
+  function changeSourceUrl(value: string) {
+    setSourceUrl(value);
+    resetHlsProbe();
+  }
+
+  async function analyzeHlsSource() {
+    const url = sourceUrl.trim();
+    if (!url) {
+      setHlsProbeError('أدخل رابط المصدر أولاً');
+      return;
+    }
+    setHlsProbeBusy(true);
+    setHlsProbeError(null);
+    try {
+      const result = await probeHlsUrl(url);
+      setHlsVariants(result.variants);
+      setHlsIsMaster(result.isMaster);
+      if (result.variants.length === 1) {
+        setSelectedVariantUrls([result.variants[0]!.url]);
+      } else {
+        setSelectedVariantUrls([]);
+      }
+    } catch (err) {
+      resetHlsProbe();
+      setHlsProbeError(err instanceof Error ? err.message : 'تعذر التحليل');
+    } finally {
+      setHlsProbeBusy(false);
+    }
+  }
 
   async function reloadSections() {
     setSections(await listChannelSections());
@@ -111,6 +156,7 @@ export function useChannelModal(
       setQualityRungIds([]);
       setSortOrder(0);
       setSelectedDeviceId('');
+      resetHlsProbe();
       setError(null);
       return;
     }
@@ -130,6 +176,7 @@ export function useChannelModal(
     setQualityRungIds(state.qualityRungIds ?? []);
     setSortOrder(state.sortOrder);
     setSelectedDeviceId(state.videoDevice ?? '');
+    resetHlsProbe();
     setError(null);
   }, [state]);
 
@@ -225,6 +272,9 @@ export function useChannelModal(
     if (next === 'encode_gpu' && !qualityRungIds.length && qualityOptions.length) {
       setQualityRungIds(qualityOptions.map((item) => item.id));
     }
+    if (next !== 'passthrough_ffmpeg') {
+      resetHlsProbe();
+    }
   }
 
   async function submit(e: FormEvent) {
@@ -241,6 +291,16 @@ export function useChannelModal(
       setError('اختر جودة واحدة على الأقل لترميز GPU');
       return;
     }
+    if (
+      type === 'IPTV' &&
+      sourceMode === 'passthrough_ffmpeg' &&
+      hlsIsMaster &&
+      hlsVariants.length > 1 &&
+      selectedVariantUrls.length < 1
+    ) {
+      setError('اختر مستوى جودة واحداً أو أكثر بعد تحليل الرابط');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -249,6 +309,7 @@ export function useChannelModal(
         name: name.trim(),
         label: label.trim(),
         type,
+        // المصدر الأصلي (master) — السيرفر يبني الملف الموحّد من hlsVariantUrls
         sourceUrl: type === 'IPTV' ? sourceUrl.trim() : null,
         videoDevice: type === 'HDMI' ? videoDevice.trim() : null,
         audioDevice: type === 'HDMI' ? audioDevice.trim() : null,
@@ -257,6 +318,12 @@ export function useChannelModal(
         sourceMode,
         qualityRungIds:
           sourceMode === 'encode_gpu' ? qualityRungIds : undefined,
+        hlsVariantUrls:
+          type === 'IPTV' &&
+          sourceMode === 'passthrough_ffmpeg' &&
+          selectedVariantUrls.length
+            ? selectedVariantUrls
+            : undefined,
         sortOrder,
       };
       await notifyMutation(
@@ -297,7 +364,7 @@ export function useChannelModal(
     type,
     changeType,
     sourceUrl,
-    setSourceUrl,
+    setSourceUrl: changeSourceUrl,
     videoDevice,
     audioDevice,
     setAudioDevice,
@@ -311,6 +378,15 @@ export function useChannelModal(
     qualityOptions,
     qualityRungIds,
     setQualityRungIds,
+    showHlsVariantPicker:
+      type === 'IPTV' && sourceMode === 'passthrough_ffmpeg',
+    hlsVariants,
+    hlsIsMaster,
+    hlsProbeBusy,
+    hlsProbeError,
+    selectedVariantUrls,
+    setSelectedVariantUrls,
+    analyzeHlsSource,
     sortOrder,
     setSortOrder,
     devices,

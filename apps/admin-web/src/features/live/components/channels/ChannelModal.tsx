@@ -6,6 +6,7 @@ import { ChannelSectionPicker } from './ChannelSectionPicker';
 import { ChannelSourceFields } from './ChannelSourceFields';
 import { ChannelGpuQualityField } from './ChannelGpuQualityField';
 import { ChannelSourceModeField } from '../encoding/source-options/ChannelSourceModeField';
+import { HlsVariantPicker } from '../encoding/source-options/HlsVariantPicker';
 import {
   useChannelModal,
   type ChannelModalState,
@@ -166,6 +167,17 @@ export function ChannelModal({ state, onClose, onSaved }: Props) {
               disabled={form.busy}
               onChange={form.changeSourceMode}
             />
+
+            {form.showHlsVariantPicker ? (
+              <HlsVariantPicker
+                variants={form.hlsVariants}
+                selectedUrls={form.selectedVariantUrls}
+                busy={form.hlsProbeBusy}
+                error={form.hlsProbeError}
+                onAnalyze={() => void form.analyzeHlsSource()}
+                onChangeSelected={form.setSelectedVariantUrls}
+              />
+            ) : null}
 
             {form.sourceMode === 'encode_gpu' ? (
               <ChannelGpuQualityField

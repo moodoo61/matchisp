@@ -15,12 +15,18 @@ export type ChannelSection = {
 export type MistStreamRuntime = {
   name: string;
   configured: boolean;
-  /** 0=خطأ، 1=نشط، 2=غير نشط — حسب MistServer */
+  /** 1=نشط، 2=غير نشط، 0=متوقف/غير متاح — «خطأ» يُعرض فقط إن وُجدت رسالة error */
   online: 0 | 1 | 2 | null;
   error: string | null;
   source: string | null;
   active: boolean;
   viewers: number;
+  /** Connected — ثوانٍ من clients.conntime */
+  connectedSec?: number | null;
+  /** Data downloaded — بايت */
+  downBytes?: number | null;
+  /** Current bitrate — بايت/ث */
+  downBps?: number | null;
 };
 
 export type Channel = {
@@ -59,6 +65,8 @@ export type ChannelInput = {
   alwaysOn?: boolean;
   sourceMode?: EncodingSourceMode;
   qualityRungIds?: string[];
+  /** مستويات HLS المختارة — أكثر من واحد يولّد master موحّد */
+  hlsVariantUrls?: string[];
   sortOrder?: number;
 };
 
@@ -115,6 +123,23 @@ export type EncodingSourceMode =
   | 'passthrough_ffmpeg'
   | 'encode_cpu'
   | 'encode_gpu';
+
+/** مستوى جودة من master HLS (مباشر ffmpeg) */
+export type HlsVariant = {
+  url: string;
+  bandwidth: number | null;
+  averageBandwidth: number | null;
+  resolution: string | null;
+  frameRate: number | null;
+  name: string | null;
+  label: string;
+};
+
+export type HlsProbeResult = {
+  masterUrl: string;
+  isMaster: boolean;
+  variants: HlsVariant[];
+};
 
 export type EncodingSettings = {
   sourceMode: EncodingSourceMode;

@@ -95,26 +95,3 @@
   letter-spacing: 0.28em;
   text-shadow: 0 1px 0 rgba(255, 248, 225, 0.5);
 }
-
-/* نبضة البث */
-.cl-live-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.48rem 0.95rem;
-  border-radius: 999px;
-  border: 1px solid rgba(43, 30, 7, 0.55);
-  background: #1c1305;
-  color: var(--cl-gold-100);
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.cl-live-pill i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--cl-live);
-  animation: cl-pulse 1.8s ease-in-out infinite;
-}

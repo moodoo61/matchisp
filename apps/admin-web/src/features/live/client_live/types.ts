@@ -39,6 +39,8 @@ export type ViewingPageSettings = {
   pageTitle: string;
   tagline: string;
   showMatchSchedule: boolean;
+  /** تشغيل القناة تلقائياً عند دخول الصفحة */
+  autoplayOnEnter: boolean;
 };
 
 export type ViewingPageSettingsInput = Partial<ViewingPageSettings>;

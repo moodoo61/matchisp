@@ -22,14 +22,13 @@ import {
 
 function onlineLabel(online: 0 | 1 | 2 | null, active: boolean) {
   if (active || online === 1) return 'مباشر';
-  if (online === 2) return 'متوقف';
-  if (online === 0) return 'خطأ';
+  if (online === 2 || online === 0) return 'متوقف';
   return '—';
 }
 
 function onlineBadgeClass(online: 0 | 1 | 2 | null, active: boolean) {
   if (active || online === 1) return 'ok';
-  if (online === 2) return 'progress';
+  if (online === 2 || online === 0) return 'progress';
   return '';
 }
 

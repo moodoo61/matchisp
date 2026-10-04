@@ -79,11 +79,18 @@ function mapLevels(
     );
 }
 
+type Options = {
+  /** إن false: يُحمَّل البث ويتوقف حتى يضغط المستخدم تشغيل */
+  autoplay?: boolean;
+};
+
 /** منطق تشغيل HLS فقط — بدون أي عناصر عرض */
 export function useHlsPlayback(
   hlsUrl: string,
   videoRef: React.RefObject<HTMLVideoElement | null>,
+  options: Options = {},
 ) {
+  const autoplay = options.autoplay !== false;
   const hlsRef = useRef<Hls | null>(null);
   const timelineRef = useRef({ start: 0, end: 0, seekable: false });
   const [state, setState] = useState<PlaybackState>({
@@ -195,7 +202,12 @@ export function useHlsPlayback(
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         applyLevels();
-        void video.play().catch(() => undefined);
+        if (autoplay) {
+          void video.play().catch(() => undefined);
+        } else {
+          video.pause();
+          patch({ playing: false, buffering: false, ready: true });
+        }
       });
       hls.on(Hls.Events.LEVELS_UPDATED, applyLevels);
       hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
@@ -213,7 +225,12 @@ export function useHlsPlayback(
       // Safari/iOS — بدون تحكم يدوي بالجودة
       patch({ qualitySelectable: false, levels: [], level: -1 });
       video.src = hlsUrl;
-      void video.play().catch(() => undefined);
+      if (autoplay) {
+        void video.play().catch(() => undefined);
+      } else {
+        video.pause();
+        patch({ playing: false, buffering: false, ready: true });
+      }
     } else {
       patch({ error: 'المتصفح لا يدعم تشغيل HLS', buffering: false });
     }
@@ -233,7 +250,7 @@ export function useHlsPlayback(
       video.removeAttribute('src');
       video.load();
     };
-  }, [hlsUrl, videoRef]);
+  }, [hlsUrl, videoRef, autoplay]);
 
   const selectQuality = (next: number) => {
     const hls = hlsRef.current;

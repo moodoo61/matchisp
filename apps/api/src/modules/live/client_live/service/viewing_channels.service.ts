@@ -73,10 +73,11 @@ export class ViewingChannelsService {
         label: section.label,
         sortOrder: section.sortOrder,
         channels: section.channels.map((channel) => {
+          const stats = activeStats.get(channel.name);
           const mist = this.mist.statusFor(
             channel.name,
             mistStatuses,
-            activeStats.get(channel.name)?.viewers ?? 0,
+            stats?.viewers ?? 0,
           );
           const urls = this.playback.urlsFor(channel.name);
           return {

@@ -34,6 +34,7 @@ const EMPTY: ViewingPageSettings = {
   pageTitle: '',
   tagline: '',
   showMatchSchedule: true,
+  autoplayOnEnter: true,
 };
 
 type VisibilityKey =
@@ -41,7 +42,8 @@ type VisibilityKey =
   | 'showBrandLogo'
   | 'showBrandSubtitle'
   | 'showLiveBadge'
-  | 'showMatchSchedule';
+  | 'showMatchSchedule'
+  | 'autoplayOnEnter';
 
 /** بطاقة إعدادات صفحة بث العميل */
 export function ViewingPageSettingsCard() {
@@ -366,6 +368,33 @@ export function ViewingPageSettingsCard() {
               ) : (
                 <span className="muted">
                   {form.showMatchSchedule ? 'ظاهر' : 'مخفي'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="viewing-settings-row">
+            <span className="viewing-settings-label">التشغيل التلقائي</span>
+            <span className="viewing-settings-meta">
+              {form.autoplayOnEnter
+                ? 'يشتغل عند دخول الصفحة'
+                : 'يحتاج ضغط تشغيل'}
+            </span>
+            <div className="viewing-settings-actions">
+              {canUpdate ? (
+                <CardEnableToggle
+                  enabled={form.autoplayOnEnter}
+                  busy={busyKey === 'autoplayOnEnter'}
+                  onToggle={() =>
+                    void toggleVisibility('autoplayOnEnter', [
+                      'تم السماح بالتشغيل التلقائي',
+                      'تم منع التشغيل التلقائي',
+                    ])
+                  }
+                />
+              ) : (
+                <span className="muted">
+                  {form.autoplayOnEnter ? 'مسموح' : 'ممنوع'}
                 </span>
               )}
             </div>

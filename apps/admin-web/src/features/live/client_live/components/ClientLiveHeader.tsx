@@ -4,11 +4,9 @@ type Props = {
   brandTitle: string;
   brandLogoUrl?: string | null;
   brandSubtitle?: string;
-  liveBadgeText?: string;
   showBrandTitle?: boolean;
   showBrandLogo?: boolean;
   showBrandSubtitle?: boolean;
-  showLiveBadge?: boolean;
   showMatchSchedule?: boolean;
   onSelectChannel?: (channelId: string) => void;
 };
@@ -18,17 +16,14 @@ export function ClientLiveHeader({
   brandTitle,
   brandLogoUrl,
   brandSubtitle = 'LIVE • HD',
-  liveBadgeText = 'بث مباشر',
   showBrandTitle = true,
   showBrandLogo = true,
   showBrandSubtitle = true,
-  showLiveBadge = true,
   showMatchSchedule = true,
   onSelectChannel,
 }: Props) {
   const title = brandTitle.trim();
   const subtitle = brandSubtitle.trim();
-  const badge = liveBadgeText.trim();
   const logo = brandLogoUrl?.trim() || null;
   const initial = title.slice(0, 1) || 'L';
 
@@ -59,17 +54,11 @@ export function ClientLiveHeader({
           ) : null}
         </div>
 
-        <div className="cl-header-actions">
-          {showMatchSchedule ? (
+        {showMatchSchedule ? (
+          <div className="cl-header-actions">
             <MatchScheduleButton onSelectChannel={onSelectChannel} />
-          ) : null}
-          {showLiveBadge && badge ? (
-            <span className="cl-live-pill">
-              <i aria-hidden />
-              {badge}
-            </span>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     </header>
   );

@@ -22,6 +22,7 @@ const FALLBACK_SETTINGS: ViewingPageSettings = {
   pageTitle: 'البث المباشر',
   tagline: '',
   showMatchSchedule: true,
+  autoplayOnEnter: true,
 };
 
 /** الهيكل المستقل الجديد — ترويسة دنيا + مسرح + قائمة جانبية */
@@ -82,11 +83,9 @@ export function ClientLivePublicView() {
         brandTitle={settings.brandTitle}
         brandLogoUrl={settings.brandLogoAbsoluteUrl || settings.brandLogoUrl}
         brandSubtitle={settings.brandSubtitle}
-        liveBadgeText={settings.liveBadgeText}
         showBrandTitle={settings.showBrandTitle}
         showBrandLogo={settings.showBrandLogo}
         showBrandSubtitle={settings.showBrandSubtitle}
-        showLiveBadge={settings.showLiveBadge}
         showMatchSchedule={settings.showMatchSchedule}
         onSelectChannel={selectChannel}
       />
@@ -114,6 +113,7 @@ export function ClientLivePublicView() {
                   ? settings.brandLogoAbsoluteUrl || settings.brandLogoUrl
                   : null
               }
+              autoplay={settings.autoplayOnEnter}
             />
             <PlaylistPanel sections={sections} selectedId={selectedId} onSelect={selectChannel} />
           </div>
