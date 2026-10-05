@@ -132,6 +132,11 @@ export const PERMISSIONS = {
   SETTINGS_DATABASES_BACKUP: 'settings.databases:backup',
   SETTINGS_DATABASES_RESTORE: 'settings.databases:restore',
 
+  /** تحديث النظام من المستودع */
+  SETTINGS_UPDATES_READ: 'settings.updates:read',
+  SETTINGS_UPDATES_MANAGE: 'settings.updates:manage',
+  SETTINGS_UPDATES_APPLY: 'settings.updates:apply',
+
   /** الشبكة — منافذ، عنونة، توجيه، DNS */
   NETWORK_READ: 'network:read',
   NETWORK_MANAGE: 'network:manage',
@@ -241,6 +246,9 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'settings.databases:manage': 'حذف نسخ قواعد البيانات',
   'settings.databases:backup': 'إنشاء نسخة احتياطية لقاعدة',
   'settings.databases:restore': 'استعادة قاعدة من نسخة',
+  'settings.updates:read': 'عرض حالة التحديث',
+  'settings.updates:manage': 'إدارة التحديثات (الكل)',
+  'settings.updates:apply': 'تنزيل وتطبيق التحديثات',
   'network:read': 'عرض الشبكة (الكل)',
   'network:manage': 'إدارة الشبكة (الكل)',
   'network.interfaces:read': 'عرض منافذ الشبكة',
@@ -453,6 +461,24 @@ export function hasPermission(
     }
     if (['manage', 'backup', 'restore'].includes(action)) {
       return userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE);
+    }
+  }
+
+  if (required.startsWith('settings.updates:')) {
+    const action = required.slice('settings.updates:'.length);
+    if (action === 'read') {
+      return (
+        userPermissions.includes(PERMISSIONS.SETTINGS_READ) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_UPDATES_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_UPDATES_APPLY)
+      );
+    }
+    if (action === 'apply' || action === 'manage') {
+      return (
+        userPermissions.includes(PERMISSIONS.SETTINGS_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.SETTINGS_UPDATES_MANAGE)
+      );
     }
   }
 

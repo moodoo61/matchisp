@@ -57,8 +57,60 @@
   .cl-program h1 { font-size: 1.1rem; }
 
   .cl-player-controls {
+    inset-inline: 0.45rem;
+    bottom: 0.55rem;
+    padding: 0.35rem;
+    gap: 0.4rem;
+    border-radius: 12px;
+  }
+
+  .cl-player-controls-main,
+  .cl-player-controls-side {
+    gap: 0.28rem;
+  }
+
+  .cl-player-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .cl-player-button.is-primary {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .cl-player-button svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .cl-player-button.cl-quality-btn,
+  .cl-quality > .cl-player-button {
+    min-width: 32px;
+    padding-inline: 0.4rem;
+    gap: 0.22rem;
+  }
+
+  .cl-quality-badge {
+    font-size: 0.58rem;
+  }
+
+  .cl-volume:hover .cl-volume-slider,
+  .cl-volume:focus-within .cl-volume-slider {
+    width: 56px;
+  }
+
+  .cl-player-progress {
+    height: 12px;
+  }
+
+  .client-live-player-error {
+    bottom: 4rem;
     inset-inline: 0.6rem;
-    bottom: 0.6rem;
+    padding: 0.65rem 0.8rem;
+    font-size: 0.74rem;
   }
 }
 

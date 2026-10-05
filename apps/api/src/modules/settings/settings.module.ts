@@ -14,6 +14,8 @@ import { GeneralSettingsController } from './general/controller/general-settings
 import { GeneralLogoUploadService } from './general/service/general-logo-upload.service';
 import { GeneralPowerService } from './general/service/general-power.service';
 import { GeneralSettingsService } from './general/service/general-settings.service';
+import { UpdatesController } from './updates/controller/updates.controller';
+import { UpdatesService } from './updates/service/updates.service';
 
 @Module({
   imports: [AuditModule],
@@ -21,6 +23,7 @@ import { GeneralSettingsService } from './general/service/general-settings.servi
     GeneralSettingsController,
     DisksController,
     DatabasesController,
+    UpdatesController,
   ],
   providers: [
     GeneralSettingsService,
@@ -34,6 +37,7 @@ import { GeneralSettingsService } from './general/service/general-settings.servi
     DatabasesBackupService,
     DatabasesRestoreService,
     DatabasesInventoryService,
+    UpdatesService,
   ],
   exports: [GeneralSettingsService],
 })

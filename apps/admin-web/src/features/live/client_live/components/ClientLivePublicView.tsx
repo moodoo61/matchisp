@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getPublicViewingPageSettings, listPublicLiveSections } from '../api';
 import { useChannelKeyboard } from '../hooks/useChannelKeyboard';
+import { compareBySortOrderThenLabel } from '../lib/naturalSort';
 import type { PublicLiveSection, ViewingPageSettings } from '../types';
 import { ClientLiveHeader } from './ClientLiveHeader';
 import { ClientLiveStage } from './ClientLiveStage';
@@ -46,7 +47,11 @@ export function ClientLivePublicView() {
       const list = await listPublicLiveSections();
       setSections(list);
       setError(null);
-      const flat = list.flatMap((section) => section.channels);
+      const flat = [...list]
+        .sort(compareBySortOrderThenLabel)
+        .flatMap((section) =>
+          [...section.channels].sort(compareBySortOrderThenLabel),
+        );
       setSelectedId((current) => {
         if (current && flat.some((item) => item.id === current)) return current;
         return flat[0]?.id ?? null;
@@ -64,7 +69,15 @@ export function ClientLivePublicView() {
     return () => window.clearInterval(timer);
   }, [reload]);
 
-  const channels = useMemo(() => sections.flatMap((section) => section.channels), [sections]);
+  const channels = useMemo(
+    () =>
+      [...sections]
+        .sort(compareBySortOrderThenLabel)
+        .flatMap((section) =>
+          [...section.channels].sort(compareBySortOrderThenLabel),
+        ),
+    [sections],
+  );
   const channelIds = useMemo(() => channels.map((item) => item.id), [channels]);
   const selected = useMemo(
     () => channels.find((item) => item.id === selectedId) ?? null,

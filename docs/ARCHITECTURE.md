@@ -100,10 +100,13 @@ Guard عام JWT + Guard صلاحيات RBAC
 
 ## قسم الإعدادات (منفّذ جزئياً)
 - الاسم الظاهر: **الإعدادات** (قواعد: `db_settings` + `db_network` لفرع الشبكة)
-- فروع القائمة: إدارة الأقراص | قواعد البيانات | المنافذ والعنونة | التوجيه | DNS
+- فروع القائمة: عامة | إدارة الأقراص | قواعد البيانات | التحديث | الشبكة
 - الأقراص: `/settings/disks`
 - قواعد البيانات: `/settings/databases`
+- التحديث: `/settings/updates` — فحص وتنزيل من مستودع Git (`origin`)
 - الشبكة: `/settings/network/interfaces` و `/routes` و `/dns`
+- API التحديث: `GET /settings/updates` و `POST /settings/updates/check|apply`
+- صلاحيات التحديث: `settings.updates:read|apply|manage`
 - API الشبكة: `/settings/network/interfaces|routes|dns`
 - صلاحيات الشبكة: `network.interfaces|routes|dns:read|manage`
 

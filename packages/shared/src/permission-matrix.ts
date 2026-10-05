@@ -11,6 +11,7 @@ export const PERMISSION_ACTION_ORDER = [
   'unmount',
   'backup',
   'restore',
+  'apply',
   'reboot',
   'shutdown',
 ] as const;
@@ -29,6 +30,7 @@ export const PERMISSION_ACTION_LABELS: Record<PermissionAction, string> = {
   unmount: 'فصل',
   backup: 'نسخ',
   restore: 'استعادة',
+  apply: 'تطبيق',
   reboot: 'إعادة تشغيل',
   shutdown: 'إيقاف',
 };
@@ -58,6 +60,7 @@ export const PERMISSION_RESOURCE_LABELS: Record<string, string> = {
   'settings.general': 'عامة',
   'settings.disks': 'إدارة الأقراص',
   'settings.databases': 'قواعد البيانات',
+  'settings.updates': 'التحديث',
   network: 'الشبكة (الكل)',
   'network.interfaces': 'المنافذ',
   'network.routes': 'التوجيه',

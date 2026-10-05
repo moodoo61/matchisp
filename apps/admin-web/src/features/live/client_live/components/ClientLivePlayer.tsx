@@ -200,7 +200,6 @@ export function ClientLivePlayer({
         muted={muted}
         poster={posterUrl ?? undefined}
         aria-label="البث المباشر"
-        onClick={togglePlayback}
       />
 
       <div className="cl-player-shade" aria-hidden />

@@ -218,6 +218,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         PERMISSIONS.SETTINGS_DATABASES_MANAGE,
         PERMISSIONS.SETTINGS_DATABASES_BACKUP,
         PERMISSIONS.SETTINGS_DATABASES_RESTORE,
+        PERMISSIONS.SETTINGS_UPDATES_READ,
+        PERMISSIONS.SETTINGS_UPDATES_MANAGE,
+        PERMISSIONS.SETTINGS_UPDATES_APPLY,
         PERMISSIONS.NETWORK_READ,
         PERMISSIONS.NETWORK_MANAGE,
         PERMISSIONS.NETWORK_INTERFACES_READ,
@@ -273,6 +276,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         settingsChildren.push({
           href: '/settings/databases',
           label: 'قواعد البيانات',
+        });
+      }
+      if (
+        canAny([
+          PERMISSIONS.SETTINGS_READ,
+          PERMISSIONS.SETTINGS_MANAGE,
+          PERMISSIONS.SETTINGS_UPDATES_READ,
+          PERMISSIONS.SETTINGS_UPDATES_MANAGE,
+          PERMISSIONS.SETTINGS_UPDATES_APPLY,
+        ])
+      ) {
+        settingsChildren.push({
+          href: '/settings/updates',
+          label: 'التحديث',
         });
       }
       if (

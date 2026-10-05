@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { compareBySortOrderThenLabel } from '../../lib/naturalSort';
 import type { PublicLiveSection } from '../../types';
 import { PlaylistRow } from './PlaylistRow';
 
@@ -14,10 +15,7 @@ type Props = {
 export function PlaylistPanel({ sections, selectedId, onSelect }: Props) {
   const selectedRef = useRef<HTMLButtonElement | null>(null);
   const orderedSections = useMemo(
-    () =>
-      [...sections].sort(
-        (a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, 'ar'),
-      ),
+    () => [...sections].sort(compareBySortOrderThenLabel),
     [sections],
   );
 
@@ -88,11 +86,7 @@ export function PlaylistPanel({ sections, selectedId, onSelect }: Props) {
           activeSection.channels.length ? (
             <ul className="cl-playlist-list">
               {[...activeSection.channels]
-                .sort(
-                  (a, b) =>
-                    a.sortOrder - b.sortOrder ||
-                    a.label.localeCompare(b.label, 'ar'),
-                )
+                .sort(compareBySortOrderThenLabel)
                 .map((channel) => (
                   <PlaylistRow
                     key={channel.id}

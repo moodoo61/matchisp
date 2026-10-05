@@ -198,6 +198,15 @@ export const PERMISSION_TREE: readonly PermissionTreeNode[] = [
         ],
       },
       {
+        key: 'settings.updates',
+        label: 'التحديث',
+        codes: [
+          'settings.updates:read',
+          'settings.updates:manage',
+          'settings.updates:apply',
+        ],
+      },
+      {
         key: 'network',
         label: 'الشبكة',
         codes: ['network:read', 'network:manage'],
