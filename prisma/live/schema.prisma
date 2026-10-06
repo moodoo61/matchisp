@@ -89,14 +89,16 @@ enum SportTeamType {
 
 /// فريق رياضي (نادي أو منتخب)
 model SportTeam {
-  id        String         @id @default(uuid()) @db.Uuid
-  name      String
-  type      SportTeamType
-  logoUrl   String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  homeMatches SportMatch[] @relation("HomeTeam")
-  awayMatches SportMatch[] @relation("AwayTeam")
+  id         String         @id @default(uuid()) @db.Uuid
+  name       String
+  type       SportTeamType
+  logoUrl    String?
+  /// معرّف الفريق في المصدر الخارجي (إن وُجد)
+  externalId String?        @unique
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  homeMatches SportMatch[]  @relation("HomeTeam")
+  awayMatches SportMatch[]  @relation("AwayTeam")
 
   @@unique([name, type])
   @@index([type, name])
@@ -105,20 +107,30 @@ model SportTeam {
 
 /// مباراة ضمن أحداث اليوم / الجدول
 model SportMatch {
-  id          String    @id @default(uuid()) @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
   /// اسم البطولة
-  tournament  String
-  homeTeamId  String    @db.Uuid
-  homeTeam    SportTeam @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
-  awayTeamId  String    @db.Uuid
-  awayTeam    SportTeam @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+  tournament    String
+  homeTeamId    String    @db.Uuid
+  homeTeam      SportTeam @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeamId    String    @db.Uuid
+  awayTeam      SportTeam @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
   /// موعد المباراة
-  kickoffAt   DateTime
+  kickoffAt     DateTime
   /// اختياري — حذف القناة لا يمس المباراة (يُصفَّر الربط فقط)
-  channelId   String?   @db.Uuid
-  channel     Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  channelId     String?   @db.Uuid
+  channel       Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  /// معرّف المباراة في المصدر الخارجي
+  externalId    String?   @unique
+  /// حالة المباراة من المصدر (مثل: لم تبدأ / انتهت)
+  status        String?
+  homeGoals     Int?
+  awayGoals     Int?
+  /// تسميات القنوات كما وردت من المصدر
+  channelLabels String[]  @default([])
+  /// أحداث الأهداف من المصدر الخارجي
+  goalsJson     Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([kickoffAt])
   @@index([channelId])

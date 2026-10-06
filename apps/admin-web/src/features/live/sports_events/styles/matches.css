@@ -5,8 +5,74 @@
   gap: 0.75rem;
 }
 
+.sports-settings-fieldset {
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
+.sports-settings-fieldset legend {
+  padding-inline: 0.35rem;
+}
+
+.sports-sync-fields {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.sports-sync-mode {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.sports-interval-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.sports-match-groups {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.sports-match-group-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.sports-match-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sports-match-sync-meta {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.sports-match-goals {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.86rem;
+}
+
 @media (max-width: 480px) {
-  .match-kickoff-field {
+  .match-kickoff-field,
+  .sports-interval-fields {
     grid-template-columns: 1fr;
   }
 }

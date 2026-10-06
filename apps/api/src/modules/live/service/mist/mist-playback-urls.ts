@@ -5,6 +5,8 @@ export type MistPlaybackUrls = {
   hlsUrl: string;
   /** مسار أو رابط WHEP */
   whepUrl: string;
+  /** توكن JWT للمشاهدة إن وُجد */
+  token?: string | null;
 };
 
 /**
@@ -22,12 +24,13 @@ export function normalizeMistHttpBase(raw: string | null | undefined): string {
 export function buildMistPlaybackPaths(streamName: string): MistPlaybackUrls {
   const name = streamName.trim();
   if (!name) {
-    return { hlsUrl: '', whepUrl: '' };
+    return { hlsUrl: '', whepUrl: '', token: null };
   }
   const encoded = encodeURIComponent(name);
   return {
     hlsUrl: `/hls/${encoded}/index.m3u8`,
     whepUrl: `/webrtc/${encoded}`,
+    token: null,
   };
 }
 
@@ -38,15 +41,28 @@ export function buildMistPlaybackPaths(streamName: string): MistPlaybackUrls {
 export function buildMistPlaybackUrls(
   httpBase: string | null | undefined,
   streamName: string,
+  token?: string | null,
 ): MistPlaybackUrls {
   const paths = buildMistPlaybackPaths(streamName);
   if (!paths.hlsUrl) return paths;
 
   const base = normalizeMistHttpBase(httpBase);
-  if (!base) return paths;
+  const hlsUrl = base ? `${base}${paths.hlsUrl}` : paths.hlsUrl;
+  const whepUrl = base ? `${base}${paths.whepUrl}` : paths.whepUrl;
+  const signed = token?.trim() || '';
+
+  if (!signed) {
+    return { hlsUrl, whepUrl, token: null };
+  }
 
   return {
-    hlsUrl: `${base}${paths.hlsUrl}`,
-    whepUrl: `${base}${paths.whepUrl}`,
+    hlsUrl: appendQueryParam(hlsUrl, 'tkn', signed),
+    whepUrl: appendQueryParam(whepUrl, 'tkn', signed),
+    token: signed,
   };
+}
+
+function appendQueryParam(url: string, key: string, value: string): string {
+  const join = url.includes('?') ? '&' : '?';
+  return `${url}${join}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
 }

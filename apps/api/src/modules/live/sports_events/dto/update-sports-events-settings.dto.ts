@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   MaxLength,
   Min,
@@ -13,6 +14,10 @@ import {
 import {
   AUTO_CLEAR_HOURS_MAX,
   AUTO_CLEAR_HOURS_MIN,
+  SYNC_MINUTES_MAX,
+  SYNC_MINUTES_MIN,
+  SYNC_SECONDS_MAX,
+  SYNC_SECONDS_MIN,
   type SportsEventsAutoClearMode,
 } from '../constants/sports-events-settings';
 
@@ -66,4 +71,56 @@ export class UpdateSportsEventsSettingsDto {
   @Min(AUTO_CLEAR_HOURS_MIN)
   @Max(AUTO_CLEAR_HOURS_MAX)
   autoClearAfterHours?: number;
+
+  @ApiPropertyOptional({ description: 'تفعيل مزامنة المباريات من مصدر خارجي' })
+  @IsOptional()
+  @IsBoolean()
+  externalSyncEnabled?: boolean;
+
+  @ApiPropertyOptional({ description: 'رابط مصدر مباريات اليوم' })
+  @IsOptional()
+  @IsString()
+  @IsUrl({ require_tld: false })
+  @MaxLength(500)
+  externalSyncUrl?: string;
+
+  @ApiPropertyOptional({ description: 'تفعيل المزامنة العامة' })
+  @IsOptional()
+  @IsBoolean()
+  externalSyncGeneralEnabled?: boolean;
+
+  @ApiPropertyOptional({ description: 'دقائق فترة المزامنة العامة' })
+  @IsOptional()
+  @IsInt()
+  @Min(SYNC_MINUTES_MIN)
+  @Max(SYNC_MINUTES_MAX)
+  externalSyncGeneralIntervalMinutes?: number;
+
+  @ApiPropertyOptional({ description: 'ثوانٍ فترة المزامنة العامة' })
+  @IsOptional()
+  @IsInt()
+  @Min(SYNC_SECONDS_MIN)
+  @Max(SYNC_SECONDS_MAX)
+  externalSyncGeneralIntervalSeconds?: number;
+
+  @ApiPropertyOptional({
+    description: 'تفعيل مزامنة المباريات الجارية فقط',
+  })
+  @IsOptional()
+  @IsBoolean()
+  externalSyncLiveEnabled?: boolean;
+
+  @ApiPropertyOptional({ description: 'دقائق فترة مزامنة المباريات الجارية' })
+  @IsOptional()
+  @IsInt()
+  @Min(SYNC_MINUTES_MIN)
+  @Max(SYNC_MINUTES_MAX)
+  externalSyncLiveIntervalMinutes?: number;
+
+  @ApiPropertyOptional({ description: 'ثوانٍ فترة مزامنة المباريات الجارية' })
+  @IsOptional()
+  @IsInt()
+  @Min(SYNC_SECONDS_MIN)
+  @Max(SYNC_SECONDS_MAX)
+  externalSyncLiveIntervalSeconds?: number;
 }

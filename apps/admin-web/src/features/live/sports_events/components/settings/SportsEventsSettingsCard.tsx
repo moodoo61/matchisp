@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { PERMISSIONS } from '@isp/shared';
 import {
   getSportsEventsSettings,
+  syncExternalMatches,
   updateSportsEventsSettings,
 } from '@/features/live/sports_events/api';
 import type {
   SportsEventsAutoClearMode,
   SportsEventsSettings,
 } from '@/features/live/sports_events/types';
+import { DEFAULT_EXTERNAL_MATCHES_URL } from '@/features/live/sports_events/types';
 import { usePermissions } from '@/lib/usePermissions';
 import {
   CardEnableToggle,
@@ -25,7 +27,71 @@ const EMPTY: SportsEventsSettings = {
   autoClearEnabled: false,
   autoClearMode: 'after_hours',
   autoClearAfterHours: 6,
+  externalSyncEnabled: false,
+  externalSyncUrl: DEFAULT_EXTERNAL_MATCHES_URL,
+  externalSyncGeneralEnabled: true,
+  externalSyncGeneralIntervalMinutes: 5,
+  externalSyncGeneralIntervalSeconds: 0,
+  lastExternalSyncGeneralAt: null,
+  externalSyncLiveEnabled: false,
+  externalSyncLiveIntervalMinutes: 0,
+  externalSyncLiveIntervalSeconds: 30,
+  lastExternalSyncLiveAt: null,
+  lastExternalSyncAt: null,
 };
+
+function formatSyncAt(value: string | null | undefined) {
+  if (!value) return '—';
+  try {
+    return new Intl.DateTimeFormat('ar', {
+      dateStyle: 'medium',
+      timeStyle: 'medium',
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function IntervalFields({
+  minutes,
+  seconds,
+  disabled,
+  onMinutes,
+  onSeconds,
+}: {
+  minutes: number;
+  seconds: number;
+  disabled?: boolean;
+  onMinutes: (value: number) => void;
+  onSeconds: (value: number) => void;
+}) {
+  return (
+    <div className="sports-interval-fields">
+      <label>
+        دقائق
+        <input
+          type="number"
+          min={0}
+          max={180}
+          value={minutes}
+          disabled={disabled}
+          onChange={(e) => onMinutes(Number(e.target.value) || 0)}
+        />
+      </label>
+      <label>
+        ثوانٍ
+        <input
+          type="number"
+          min={0}
+          max={59}
+          value={seconds}
+          disabled={disabled}
+          onChange={(e) => onSeconds(Number(e.target.value) || 0)}
+        />
+      </label>
+    </div>
+  );
+}
 
 export function SportsEventsSettingsCard() {
   const { can } = usePermissions();
@@ -35,6 +101,7 @@ export function SportsEventsSettingsCard() {
   const [form, setForm] = useState<SportsEventsSettings>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const reload = useCallback(async () => {
     try {
@@ -63,6 +130,18 @@ export function SportsEventsSettingsCard() {
             autoClearEnabled: form.autoClearEnabled,
             autoClearMode: form.autoClearMode,
             autoClearAfterHours: form.autoClearAfterHours,
+            externalSyncEnabled: form.externalSyncEnabled,
+            externalSyncUrl: form.externalSyncUrl.trim(),
+            externalSyncGeneralEnabled: form.externalSyncGeneralEnabled,
+            externalSyncGeneralIntervalMinutes:
+              form.externalSyncGeneralIntervalMinutes,
+            externalSyncGeneralIntervalSeconds:
+              form.externalSyncGeneralIntervalSeconds,
+            externalSyncLiveEnabled: form.externalSyncLiveEnabled,
+            externalSyncLiveIntervalMinutes:
+              form.externalSyncLiveIntervalMinutes,
+            externalSyncLiveIntervalSeconds:
+              form.externalSyncLiveIntervalSeconds,
           }),
         { success: 'تم حفظ ضبط الأحداث الرياضية' },
       );
@@ -96,6 +175,28 @@ export function SportsEventsSettingsCard() {
     }
   }
 
+  async function onSyncNow() {
+    if (!canUpdate || !form.externalSyncEnabled) return;
+    setSyncing(true);
+    try {
+      const result = await notifyMutation(toast, () => syncExternalMatches(), {
+        success: 'تمت مزامنة المباريات من المصدر',
+        error: 'تعذرت المزامنة',
+      });
+      toast.info(
+        `جلب ${result.fetched} · جديد ${result.created} · تحديث ${result.updated}` +
+          (result.unmatchedChannels.length
+            ? ` · قنوات غير مربوطة: ${result.unmatchedChannels.join('، ')}`
+            : ''),
+      );
+      await reload();
+    } catch {
+      /* toast */
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   function setAutoClearMode(mode: SportsEventsAutoClearMode) {
     setForm((prev) => ({ ...prev, autoClearMode: mode }));
   }
@@ -126,7 +227,7 @@ export function SportsEventsSettingsCard() {
           />
         </label>
         <label>
-          المنطقة الزمنية (أحداث اليوم)
+          المنطقة الزمنية
           <input
             value={form.timezone}
             onChange={(e) => setForm({ ...form, timezone: e.target.value })}
@@ -137,16 +238,139 @@ export function SportsEventsSettingsCard() {
 
         <fieldset
           disabled={!canUpdate || busy}
-          style={{
-            border: '1px solid var(--border, #333)',
-            borderRadius: 8,
-            padding: '0.75rem 1rem',
-            margin: 0,
-          }}
+          className="sports-settings-fieldset"
         >
-          <legend style={{ paddingInline: '0.35rem' }}>
-            جدول مسح أحداث اليوم
-          </legend>
+          <legend>مزامنة المباريات من مصدر خارجي</legend>
+
+          <label className="check-row" style={{ marginBottom: '0.75rem' }}>
+            <input
+              type="checkbox"
+              checked={form.externalSyncEnabled}
+              onChange={(e) =>
+                setForm({ ...form, externalSyncEnabled: e.target.checked })
+              }
+            />
+            تفعيل المزامنة من المصدر
+          </label>
+
+          <div
+            className="sports-sync-fields"
+            style={{
+              opacity: form.externalSyncEnabled ? 1 : 0.5,
+              pointerEvents: form.externalSyncEnabled ? 'auto' : 'none',
+            }}
+          >
+            <label>
+              رابط المصدر
+              <input
+                value={form.externalSyncUrl}
+                onChange={(e) =>
+                  setForm({ ...form, externalSyncUrl: e.target.value })
+                }
+                placeholder={DEFAULT_EXTERNAL_MATCHES_URL}
+                dir="ltr"
+              />
+            </label>
+
+            <div className="sports-sync-mode">
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={form.externalSyncGeneralEnabled}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      externalSyncGeneralEnabled: e.target.checked,
+                    })
+                  }
+                />
+                مزامنة عامة
+              </label>
+              <p className="muted" style={{ margin: 0 }}>
+                تعمل بشكل دوري دائماً طالما كانت مفعّلة.
+              </p>
+              <IntervalFields
+                minutes={form.externalSyncGeneralIntervalMinutes}
+                seconds={form.externalSyncGeneralIntervalSeconds}
+                disabled={!form.externalSyncGeneralEnabled}
+                onMinutes={(value) =>
+                  setForm({
+                    ...form,
+                    externalSyncGeneralIntervalMinutes: value,
+                  })
+                }
+                onSeconds={(value) =>
+                  setForm({
+                    ...form,
+                    externalSyncGeneralIntervalSeconds: value,
+                  })
+                }
+              />
+              <p className="muted" style={{ margin: 0 }}>
+                آخر مزامنة عامة: {formatSyncAt(form.lastExternalSyncGeneralAt)}
+              </p>
+            </div>
+
+            <div className="sports-sync-mode">
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={form.externalSyncLiveEnabled}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      externalSyncLiveEnabled: e.target.checked,
+                    })
+                  }
+                />
+                مزامنة المباريات الجارية
+              </label>
+              <p className="muted" style={{ margin: 0 }}>
+                تعمل فقط عند وجود مباراة بدأت ولم تُعلَم منتهية بعد.
+              </p>
+              <IntervalFields
+                minutes={form.externalSyncLiveIntervalMinutes}
+                seconds={form.externalSyncLiveIntervalSeconds}
+                disabled={!form.externalSyncLiveEnabled}
+                onMinutes={(value) =>
+                  setForm({
+                    ...form,
+                    externalSyncLiveIntervalMinutes: value,
+                  })
+                }
+                onSeconds={(value) =>
+                  setForm({
+                    ...form,
+                    externalSyncLiveIntervalSeconds: value,
+                  })
+                }
+              />
+              <p className="muted" style={{ margin: 0 }}>
+                آخر مزامنة جارية: {formatSyncAt(form.lastExternalSyncLiveAt)}
+              </p>
+            </div>
+
+            <p className="muted" style={{ margin: 0 }}>
+              آخر مزامنة: {formatSyncAt(form.lastExternalSyncAt)}
+            </p>
+            {canUpdate ? (
+              <button
+                type="button"
+                className="btn secondary"
+                disabled={busy || syncing || !form.externalSyncEnabled}
+                onClick={() => void onSyncNow()}
+              >
+                {syncing ? 'جارٍ المزامنة…' : 'مزامنة الآن'}
+              </button>
+            ) : null}
+          </div>
+        </fieldset>
+
+        <fieldset
+          disabled={!canUpdate || busy}
+          className="sports-settings-fieldset"
+        >
+          <legend>جدول مسح المباريات</legend>
 
           <label className="check-row" style={{ marginBottom: '0.75rem' }}>
             <input
@@ -204,12 +428,6 @@ export function SportsEventsSettingsCard() {
                 }
               />
             </label>
-            <p className="muted" style={{ margin: 0 }}>
-              {form.autoClearMode === 'all'
-                ? 'يُمسح جدول أحداث اليوم بالكامل كل عدد الساعات المحدد.'
-                : 'تُحذف كل مباراة بعد مرور عدد الساعات المحدد على موعدها.'}{' '}
-              يُراجع الجدول كل بضع دقائق.
-            </p>
           </div>
         </fieldset>
 

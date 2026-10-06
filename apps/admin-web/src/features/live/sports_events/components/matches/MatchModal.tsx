@@ -195,6 +195,34 @@ export function MatchModal({ state, onClose, onSaved }: Props) {
             ))}
           </select>
         </label>
+
+        {state && state !== 'new' && state.externalId ? (
+          <div className="sports-match-sync-meta">
+            <p className="muted" style={{ margin: 0 }}>
+              مباراة مزامَنة من المصدر الخارجي
+              {state.status ? ` · الحالة: ${state.status}` : ''}
+              {state.homeGoals != null || state.awayGoals != null
+                ? ` · النتيجة: ${state.homeGoals ?? 0} – ${state.awayGoals ?? 0}`
+                : ''}
+            </p>
+            {state.channelLabels?.length ? (
+              <p className="muted" style={{ margin: 0 }}>
+                قنوات المصدر: {state.channelLabels.join(' · ')}
+              </p>
+            ) : null}
+            {Array.isArray(state.goalsJson) && state.goalsJson.length ? (
+              <ul className="sports-match-goals">
+                {state.goalsJson.map((goal, idx) => (
+                  <li key={`${goal.minuteLabel}-${goal.player}-${idx}`}>
+                    <strong>{goal.minuteLabel}</strong> {goal.player}
+                    {goal.assist ? ` (مساعدة: ${goal.assist})` : ''}
+                    {goal.detail ? ` — ${goal.detail}` : ''}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
       </form>
     </Modal>
   );

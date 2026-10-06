@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PERMISSIONS } from '@isp/shared';
-import { listTodayMatches } from '@/features/live/sports_events/api';
+import { listSportMatches } from '@/features/live/sports_events/api';
 import type { SportMatch } from '@/features/live/sports_events/types';
+import { groupSportMatchesByDate } from '@/features/live/sports_events/utils/groupMatchesByDate';
 import { usePermissions } from '@/lib/usePermissions';
 import { IconButton, IconPlus, TaskCard } from '@/shared/ui';
 import { MatchModal, type MatchModalState } from './MatchModal';
@@ -19,9 +20,11 @@ export function TodayMatchesCard() {
   const canUpdate = can(PERMISSIONS.LIVE_SPORTS_EVENTS_UPDATE);
   const canDelete = can(PERMISSIONS.LIVE_SPORTS_EVENTS_DELETE);
 
+  const groups = useMemo(() => groupSportMatchesByDate(items), [items]);
+
   async function reload() {
     try {
-      setItems(await listTodayMatches());
+      setItems(await listSportMatches());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطأ');
@@ -37,7 +40,7 @@ export function TodayMatchesCard() {
   return (
     <>
       <TaskCard
-        title="أحداث اليوم"
+        title="المباريات"
         actions={
           canCreate ? (
             <IconButton label="إضافة" onClick={() => setModal('new')}>
@@ -47,16 +50,23 @@ export function TodayMatchesCard() {
         }
       >
         {error ? <p className="error">{error}</p> : null}
-        {items.length ? (
-          <MatchesTable
-            matches={items}
-            canUpdate={canUpdate}
-            canDelete={canDelete}
-            onEdit={setModal}
-            onChanged={reload}
-          />
+        {groups.length ? (
+          <div className="sports-match-groups">
+            {groups.map((group) => (
+              <section key={group.key} className="sports-match-group">
+                <h3 className="sports-match-group-title">{group.label}</h3>
+                <MatchesTable
+                  matches={group.matches}
+                  canUpdate={canUpdate}
+                  canDelete={canDelete}
+                  onEdit={setModal}
+                  onChanged={reload}
+                />
+              </section>
+            ))}
+          </div>
         ) : (
-          <p className="muted">لا توجد مباريات لهذا اليوم.</p>
+          <p className="muted">لا توجد مباريات.</p>
         )}
       </TaskCard>
       {canCreate || canUpdate ? (

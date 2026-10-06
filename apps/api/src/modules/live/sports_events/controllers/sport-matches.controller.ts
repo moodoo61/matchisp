@@ -17,18 +17,28 @@ import {
 } from '../../../../common/guards';
 import { CreateSportMatchDto } from '../dto/create-sport-match.dto';
 import { UpdateSportMatchDto } from '../dto/update-sport-match.dto';
+import { SportMatchesExternalSyncService } from '../service/sport-matches-external-sync.service';
 import { SportMatchesService } from '../service/sport-matches.service';
 
 @ApiTags('live-sports-events-matches')
 @ApiBearerAuth()
 @Controller('live/sports-events/matches')
 export class SportMatchesController {
-  constructor(private readonly matches: SportMatchesService) {}
+  constructor(
+    private readonly matches: SportMatchesService,
+    private readonly externalSync: SportMatchesExternalSyncService,
+  ) {}
 
   @Get('today')
   @RequirePermissions(PERMISSIONS.LIVE_SPORTS_EVENTS_READ)
   listToday() {
     return this.matches.listToday();
+  }
+
+  @Post('sync-external')
+  @RequirePermissions(PERMISSIONS.LIVE_SPORTS_EVENTS_UPDATE)
+  syncExternal(@CurrentUser() user: RequestUser) {
+    return this.externalSync.syncNow(user.id);
   }
 
   @Get()

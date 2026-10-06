@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaLiveService } from '../../../../database/database.module';
 import { AuditService } from '../../../audit/audit.service';
 import { GeneralSettingsService } from '../../../settings/general/service/general-settings.service';
+import { MistJwtService } from '../../service/mist/mist-jwt.service';
 import {
   DEFAULT_VIEWING_PAGE_SETTINGS,
   VIEWING_PAGE_META_KEY,
@@ -31,12 +32,28 @@ function optionalText(
 }
 
 @Injectable()
-export class ViewingPageService {
+export class ViewingPageService implements OnModuleInit {
+  private readonly logger = new Logger(ViewingPageService.name);
+
   constructor(
     private readonly prisma: PrismaLiveService,
     private readonly generalSettings: GeneralSettingsService,
     private readonly audit: AuditService,
+    private readonly mistJwt: MistJwtService,
   ) {}
+
+  /** يعيد تطبيق حماية المشاهدة إن كانت مفعّلة، لتصحيح مفتاح قديم بدون حظر USER_NEW */
+  async onModuleInit() {
+    try {
+      const stored = await this.loadStoredSettings();
+      if (!stored.jwtPlaybackEnabled) return;
+      await this.mistJwt.ensureViewerProtection();
+    } catch (err) {
+      this.logger.warn(
+        `تعذر مزامنة حماية JWT مع Mist عند الإقلاع: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
 
   async getSettings(): Promise<ViewingPageSettings> {
     return this.loadSettings();
@@ -48,6 +65,14 @@ export class ViewingPageService {
 
   async updateSettings(dto: UpdateViewingPageDto, actorId: string) {
     const current = await this.loadStoredSettings();
+    const nextJwt = boolOr(dto.jwtPlaybackEnabled, current.jwtPlaybackEnabled);
+
+    if (nextJwt) {
+      await this.mistJwt.ensureViewerProtection();
+    } else if (current.jwtPlaybackEnabled) {
+      await this.mistJwt.removeViewerProtection();
+    }
+
     const next: StoredViewingPageSettings = {
       enabled: dto.enabled ?? current.enabled,
       pageTitle: normalizeText(dto.pageTitle, current.pageTitle, 120),
@@ -75,6 +100,7 @@ export class ViewingPageService {
         current.showMatchSchedule,
       ),
       autoplayOnEnter: boolOr(dto.autoplayOnEnter, current.autoplayOnEnter),
+      jwtPlaybackEnabled: nextJwt,
     };
 
     await this.prisma.sectionMeta.upsert({
@@ -91,7 +117,10 @@ export class ViewingPageService {
       action: 'update',
       resource: 'live.viewing_page',
       resourceId: VIEWING_PAGE_META_KEY,
-      metadata: { enabled: next.enabled },
+      metadata: {
+        enabled: next.enabled,
+        jwtPlaybackEnabled: next.jwtPlaybackEnabled,
+      },
     });
 
     return this.withBrandFromGeneral(next);
@@ -115,6 +144,7 @@ export class ViewingPageService {
       showLiveBadge: DEFAULT_VIEWING_PAGE_SETTINGS.showLiveBadge,
       showMatchSchedule: DEFAULT_VIEWING_PAGE_SETTINGS.showMatchSchedule,
       autoplayOnEnter: DEFAULT_VIEWING_PAGE_SETTINGS.autoplayOnEnter,
+      jwtPlaybackEnabled: DEFAULT_VIEWING_PAGE_SETTINGS.jwtPlaybackEnabled,
     };
 
     const row = await this.prisma.sectionMeta.findUnique({
@@ -152,6 +182,10 @@ export class ViewingPageService {
         autoplayOnEnter: boolOr(
           parsed.autoplayOnEnter,
           defaults.autoplayOnEnter,
+        ),
+        jwtPlaybackEnabled: boolOr(
+          parsed.jwtPlaybackEnabled,
+          defaults.jwtPlaybackEnabled,
         ),
       };
     } catch {

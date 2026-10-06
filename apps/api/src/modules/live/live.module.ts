@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { AuditModule } from '../audit/audit.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ChannelSectionsController } from './controllers/channel_sections.controller';
@@ -26,6 +27,7 @@ import { ViewingPageController } from './client_live/controllers/viewing_page.co
 import { PublicClientLiveService } from './client_live/service/public_client_live.service';
 import { ViewingChannelsService } from './client_live/service/viewing_channels.service';
 import { ViewingPageService } from './client_live/service/viewing_page.service';
+import { MistJwtService } from './service/mist/mist-jwt.service';
 import { MistPlaybackService } from './service/mist/mist-playback.service';
 import { SportTeamsController } from './sports_events/controllers/sport-teams.controller';
 import { SportMatchesController } from './sports_events/controllers/sport-matches.controller';
@@ -37,9 +39,11 @@ import { SportTeamUploadService } from './sports_events/service/sport-team-uploa
 import { SportMatchesService } from './sports_events/service/sport-matches.service';
 import { SportsEventsSettingsService } from './sports_events/service/sports-events-settings.service';
 import { SportMatchesAutoClearService } from './sports_events/service/sport-matches-auto-clear.service';
+import { SportMatchesExternalSyncService } from './sports_events/service/sport-matches-external-sync.service';
+import { SportMatchesExternalSyncScheduler } from './sports_events/service/sport-matches-external-sync.scheduler';
 
 @Module({
-  imports: [AuditModule, SettingsModule],
+  imports: [AuditModule, SettingsModule, JwtModule.register({})],
   controllers: [
     ChannelSectionsController,
     ChannelsController,
@@ -70,6 +74,7 @@ import { SportMatchesAutoClearService } from './sports_events/service/sport-matc
     EncodingQualityService,
     MistServerClient,
     MistServerService,
+    MistJwtService,
     MistPlaybackService,
     PublicClientLiveService,
     ViewingPageService,
@@ -79,6 +84,8 @@ import { SportMatchesAutoClearService } from './sports_events/service/sport-matc
     SportMatchesService,
     SportsEventsSettingsService,
     SportMatchesAutoClearService,
+    SportMatchesExternalSyncService,
+    SportMatchesExternalSyncScheduler,
   ],
 })
 export class LiveModule {}

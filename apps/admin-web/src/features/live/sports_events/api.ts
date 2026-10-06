@@ -1,5 +1,6 @@
 import { api, apiUpload } from '@/lib/api';
 import type {
+  ExternalSyncResult,
   SportMatch,
   SportMatchInput,
   SportTeam,
@@ -43,6 +44,10 @@ export function listTodayMatches() {
   return api<SportMatch[]>('/live/sports-events/matches/today');
 }
 
+export function listSportMatches() {
+  return api<SportMatch[]>('/live/sports-events/matches');
+}
+
 export function listSportMatchChannelOptions() {
   return api<Array<{ id: string; name: string; label: string }>>(
     '/live/sports-events/channel-options',
@@ -79,5 +84,11 @@ export function updateSportsEventsSettings(
   return api<SportsEventsSettings>('/live/sports-events/settings', {
     method: 'PATCH',
     body: JSON.stringify(input),
+  });
+}
+
+export function syncExternalMatches() {
+  return api<ExternalSyncResult>('/live/sports-events/matches/sync-external', {
+    method: 'POST',
   });
 }

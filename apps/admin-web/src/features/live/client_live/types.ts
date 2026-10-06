@@ -12,6 +12,7 @@ export type PublicLiveChannel = {
   playback: {
     hlsUrl: string;
     whepUrl: string;
+    token?: string | null;
   };
 };
 
@@ -41,6 +42,8 @@ export type ViewingPageSettings = {
   showMatchSchedule: boolean;
   /** تشغيل القناة تلقائياً عند دخول الصفحة */
   autoplayOnEnter: boolean;
+  /** حماية روابط المشاهدة بـ JWT/JWK عبر MistServer */
+  jwtPlaybackEnabled: boolean;
 };
 
 export type ViewingPageSettingsInput = Partial<ViewingPageSettings>;
@@ -58,7 +61,7 @@ export type ViewingPageAdminChannel = {
   online: 0 | 1 | 2 | null;
   active: boolean;
   viewers: number;
-  playback: { hlsUrl: string; whepUrl: string };
+  playback: { hlsUrl: string; whepUrl: string; token?: string | null };
 };
 
 export type ViewingPageAdminSection = {
@@ -82,11 +85,34 @@ export type PublicSportMatchTeam = {
   logoUrl: string | null;
 };
 
+export type PublicSportMatchGoal = {
+  minute: number | null;
+  extraMinute: number | null;
+  minuteLabel: string;
+  player: string;
+  assist: string | null;
+  team: string;
+  isHome: boolean;
+  detail: string;
+};
+
+export type PublicSportMatchChannel = {
+  id: string;
+  name: string;
+  label: string;
+};
+
 export type PublicSportMatch = {
   id: string;
   tournament: string;
   kickoffAt: string;
+  status?: string | null;
+  homeGoals?: number | null;
+  awayGoals?: number | null;
+  channelLabels?: string[];
+  goals?: PublicSportMatchGoal[];
   homeTeam: PublicSportMatchTeam;
   awayTeam: PublicSportMatchTeam;
-  channel: { id: string; name: string; label: string };
+  channel: PublicSportMatchChannel | null;
+  channels?: PublicSportMatchChannel[];
 };

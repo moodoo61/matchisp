@@ -89,7 +89,9 @@ export class PublicClientLiveService {
               online: mist.online,
               active: mist.active,
               viewers: mist.viewers,
-              playback: this.playback.urlsFor(channel.name),
+              playback: this.playback.urlsFor(channel.name, {
+                signed: settings.jwtPlaybackEnabled,
+              }),
             };
           });
         return {

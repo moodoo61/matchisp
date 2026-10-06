@@ -21,6 +21,16 @@ type Props = {
   onChanged: () => Promise<void>;
 };
 
+function formatScore(row: SportMatch) {
+  if (row.homeGoals == null && row.awayGoals == null) return '—';
+  return `${row.homeGoals ?? 0} – ${row.awayGoals ?? 0}`;
+}
+
+function formatChannels(row: SportMatch) {
+  if (row.channelLabels?.length) return row.channelLabels.join(' · ');
+  return row.channel?.label ?? '—';
+}
+
 export function MatchesTable({
   matches,
   canUpdate,
@@ -43,9 +53,21 @@ export function MatchesTable({
       render: (row) => row.homeTeam?.name ?? '—',
     },
     {
+      key: 'score',
+      header: 'النتيجة',
+      render: (row) => (
+        <span className="sports-match-score">{formatScore(row)}</span>
+      ),
+    },
+    {
       key: 'away',
       header: 'الفريق الثاني',
       render: (row) => row.awayTeam?.name ?? '—',
+    },
+    {
+      key: 'status',
+      header: 'الحالة',
+      render: (row) => row.status || '—',
     },
     {
       key: 'kickoff',
@@ -55,7 +77,7 @@ export function MatchesTable({
     {
       key: 'channel',
       header: 'القناة',
-      render: (row) => row.channel?.label ?? '—',
+      render: (row) => formatChannels(row),
     },
   ];
 

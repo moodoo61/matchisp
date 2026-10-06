@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { listPublicTodayMatches } from '../../api';
 import type { PublicSportMatch } from '../../types';
+import { MatchScheduleCard } from './MatchScheduleCard';
+import {
+  findNearestMatchId,
+  groupMatchesByDate,
+} from './matchScheduleUtils';
 
 type Props = {
   open: boolean;
@@ -10,72 +15,21 @@ type Props = {
   onSelectChannel?: (channelId: string) => void;
 };
 
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-}
-
-/** أقرب مباراة للوقت الحالي (جارية أو القادمة) */
-function findNearestMatchId(items: PublicSportMatch[], nowMs: number) {
-  if (!items.length) return null;
-  let bestId = items[0].id;
-  let bestScore = Number.POSITIVE_INFINITY;
-  for (const match of items) {
-    const kickoff = new Date(match.kickoffAt).getTime();
-    if (Number.isNaN(kickoff)) continue;
-    const elapsed = nowMs - kickoff;
-    const score =
-      elapsed >= 0 && elapsed <= 2 * 60 * 60 * 1000
-        ? elapsed / 4
-        : Math.abs(elapsed);
-    if (score < bestScore) {
-      bestScore = score;
-      bestId = match.id;
-    }
-  }
-  return bestId;
-}
-
-function TeamLogo({
-  name,
-  logoUrl,
-}: {
-  name: string;
-  logoUrl: string | null;
-}) {
-  if (logoUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={logoUrl} alt="" className="cl-schedule-logo" title={name} />
-    );
-  }
-  return (
-    <span className="cl-schedule-logo is-empty" aria-hidden>
-      {name.slice(0, 1)}
-    </span>
-  );
-}
-
-/** نافذة جدول مباريات اليوم — بطاقة من 3 مربعات */
+/** نافذة جدول المباريات — مجمّعة بالتاريخ مع أهداف وقنوات متعددة */
 export function MatchScheduleModal({ open, onClose, onSelectChannel }: Props) {
   const [items, setItems] = useState<PublicSportMatch[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const nearestRef = useRef<HTMLButtonElement | null>(null);
+  const nearestRef = useRef<HTMLDivElement | null>(null);
 
-  const sortedItems = useMemo(
-    () =>
-      [...items].sort(
-        (a, b) =>
-          new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime(),
-      ),
-    [items],
+  const groups = useMemo(() => groupMatchesByDate(items), [items]);
+  const flatSorted = useMemo(
+    () => groups.flatMap((group) => group.matches),
+    [groups],
   );
-
   const nearestId = useMemo(
-    () => findNearestMatchId(sortedItems, Date.now()),
-    [sortedItems],
+    () => findNearestMatchId(flatSorted, Date.now()),
+    [flatSorted],
   );
 
   useEffect(() => {
@@ -119,12 +73,12 @@ export function MatchScheduleModal({ open, onClose, onSelectChannel }: Props) {
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [open, busy, nearestId, sortedItems.length]);
+  }, [open, busy, nearestId, flatSorted.length]);
 
   if (!open) return null;
 
-  const selectMatch = (match: PublicSportMatch) => {
-    onSelectChannel?.(match.channel.id);
+  const selectChannel = (channelId: string) => {
+    onSelectChannel?.(channelId);
     onClose();
   };
 
@@ -154,69 +108,33 @@ export function MatchScheduleModal({ open, onClose, onSelectChannel }: Props) {
           {!busy && error ? (
             <p className="cl-schedule-hint is-error">{error}</p>
           ) : null}
-          {!busy && !error && !sortedItems.length ? (
-            <p className="cl-schedule-hint">لا توجد مباريات لهذا اليوم.</p>
+          {!busy && !error && !groups.length ? (
+            <p className="cl-schedule-hint">لا توجد مباريات في الجدول.</p>
           ) : null}
 
-          {!busy && sortedItems.length ? (
-            <ul className="cl-schedule-list">
-              {sortedItems.map((match) => {
-                const isNearest = match.id === nearestId;
-                return (
-                  <li key={match.id}>
-                    <button
-                      type="button"
-                      className={
-                        isNearest
-                          ? 'cl-schedule-card is-nearest'
-                          : 'cl-schedule-card'
-                      }
-                      ref={isNearest ? nearestRef : undefined}
-                      onClick={() => selectMatch(match)}
-                    >
-                      {/* المربع 1: البطولة + شعار/اسم الفريق الأول */}
-                      <span className="cl-schedule-cell">
-                        <span className="cl-schedule-meta">
-                          {match.tournament}
-                        </span>
-                        <TeamLogo
-                          name={match.homeTeam.name}
-                          logoUrl={match.homeTeam.logoUrl}
-                        />
-                        <span className="cl-schedule-team-name">
-                          {match.homeTeam.name}
-                        </span>
-                      </span>
-
-                      {/* المربع 2: VS بمحاذاة الشعارات + القناة */}
-                      <span className="cl-schedule-cell cl-schedule-cell-mid">
-                        <span className="cl-schedule-meta is-spacer" aria-hidden>
-                          &nbsp;
-                        </span>
-                        <span className="cl-schedule-vs">VS</span>
-                        <span className="cl-schedule-channel">
-                          {match.channel.label}
-                        </span>
-                      </span>
-
-                      {/* المربع 3: الموعد + شعار/اسم الفريق الثاني */}
-                      <span className="cl-schedule-cell">
-                        <span className="cl-schedule-meta cl-schedule-time">
-                          {formatTime(match.kickoffAt)}
-                        </span>
-                        <TeamLogo
-                          name={match.awayTeam.name}
-                          logoUrl={match.awayTeam.logoUrl}
-                        />
-                        <span className="cl-schedule-team-name">
-                          {match.awayTeam.name}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+          {!busy && groups.length ? (
+            <div className="cl-schedule-groups">
+              {groups.map((group) => (
+                <section key={group.key} className="cl-schedule-group">
+                  <h3 className="cl-schedule-group-title">{group.label}</h3>
+                  <ul className="cl-schedule-list">
+                    {group.matches.map((match) => {
+                      const isNearest = match.id === nearestId;
+                      return (
+                        <li key={match.id}>
+                          <MatchScheduleCard
+                            match={match}
+                            nearest={isNearest}
+                            cardRef={isNearest ? nearestRef : undefined}
+                            onSelectChannel={selectChannel}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
           ) : null}
         </div>
       </div>

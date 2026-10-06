@@ -19,7 +19,7 @@ function isLive(channel: PublicLiveChannel) {
 export function ClientLiveStage({
   channel,
   brandLogoUrl,
-  autoplay = true,
+  autoplay = false,
 }: Props) {
   const live = isLive(channel);
   const hlsUrl = useMemo(
@@ -33,7 +33,6 @@ export function ClientLiveStage({
         <div className="cl-screen">
           {hlsUrl ? (
             <ClientLivePlayer
-              key={channel.id}
               hlsUrl={hlsUrl}
               posterUrl={channel.imageUrl}
               brandLogoUrl={brandLogoUrl}

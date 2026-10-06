@@ -34,37 +34,71 @@ export class SportMatchesService {
     });
   }
 
-  /** مباريات اليوم للواجهة العامة (صفحة المشاهدة) */
+  /** مباريات الجدول للواجهة العامة (صفحة المشاهدة) — أمس/اليوم/غداً */
   async listTodayPublic() {
     const settings = await this.settings.getSettings();
     if (!settings.enabled) return [];
 
-    const rows = await this.listToday();
-    // بدون قناة لا فائدة من عرضها في صفحة المشاهدة (لا يمكن التبديل إليها)
+    const { timezone } = settings;
+    const now = new Date();
+    const { start: todayStart, end: todayEnd } = zonedDayBounds(now, timezone);
+    const rangeStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    const rangeEnd = new Date(todayEnd.getTime() + 24 * 60 * 60 * 1000);
+
+    const [rows, channels] = await Promise.all([
+      this.prisma.sportMatch.findMany({
+        where: { kickoffAt: { gte: rangeStart, lt: rangeEnd } },
+        include: matchInclude,
+        orderBy: { kickoffAt: 'asc' },
+      }),
+      this.prisma.channel.findMany({
+        select: { id: true, name: true, label: true },
+      }),
+    ]);
+
+    const channelByLabel = new Map(
+      channels.map((c) => [normalizeChannelLabel(c.label), c]),
+    );
+    const channelById = new Map(channels.map((c) => [c.id, c]));
+
     return rows
-      .filter((row) => row.channel != null)
-      .map((row) => ({
-        id: row.id,
-        tournament: row.tournament,
-        kickoffAt: row.kickoffAt.toISOString(),
-        homeTeam: {
-          id: row.homeTeam.id,
-          name: row.homeTeam.name,
-          type: row.homeTeam.type,
-          logoUrl: row.homeTeam.logoUrl,
-        },
-        awayTeam: {
-          id: row.awayTeam.id,
-          name: row.awayTeam.name,
-          type: row.awayTeam.type,
-          logoUrl: row.awayTeam.logoUrl,
-        },
-        channel: {
-          id: row.channel!.id,
-          name: row.channel!.name,
-          label: row.channel!.label,
-        },
-      }));
+      .map((row) => {
+        const resolved = resolveMatchChannels(
+          row.channelLabels,
+          row.channelId,
+          channelByLabel,
+          channelById,
+        );
+        if (!resolved.length && !row.channelLabels?.length) {
+          return null;
+        }
+        const primary = resolved[0] ?? null;
+        return {
+          id: row.id,
+          tournament: row.tournament,
+          kickoffAt: row.kickoffAt.toISOString(),
+          status: row.status,
+          homeGoals: row.homeGoals,
+          awayGoals: row.awayGoals,
+          channelLabels: row.channelLabels,
+          goals: Array.isArray(row.goalsJson) ? row.goalsJson : [],
+          homeTeam: {
+            id: row.homeTeam.id,
+            name: row.homeTeam.name,
+            type: row.homeTeam.type,
+            logoUrl: row.homeTeam.logoUrl,
+          },
+          awayTeam: {
+            id: row.awayTeam.id,
+            name: row.awayTeam.name,
+            type: row.awayTeam.type,
+            logoUrl: row.awayTeam.logoUrl,
+          },
+          channel: primary,
+          channels: resolved,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row != null);
   }
 
   list() {
@@ -201,4 +235,36 @@ export class SportMatchesService {
       if (!channel) throw new NotFoundException('القناة غير موجودة');
     }
   }
+}
+
+type ChannelRef = { id: string; name: string; label: string };
+
+function normalizeChannelLabel(value: string) {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
+function resolveMatchChannels(
+  labels: string[] | null | undefined,
+  channelId: string | null,
+  byLabel: Map<string, ChannelRef>,
+  byId: Map<string, ChannelRef>,
+): ChannelRef[] {
+  const out: ChannelRef[] = [];
+  const seen = new Set<string>();
+
+  for (const raw of labels ?? []) {
+    const hit = byLabel.get(normalizeChannelLabel(raw));
+    if (!hit || seen.has(hit.id)) continue;
+    seen.add(hit.id);
+    out.push(hit);
+  }
+
+  if (channelId) {
+    const linked = byId.get(channelId);
+    if (linked && !seen.has(linked.id)) {
+      out.unshift(linked);
+    }
+  }
+
+  return out;
 }

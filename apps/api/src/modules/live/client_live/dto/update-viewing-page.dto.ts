@@ -76,4 +76,12 @@ export class UpdateViewingPageDto {
   @IsOptional()
   @IsBoolean()
   autoplayOnEnter?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'تفعيل حماية روابط المشاهدة بـ JWT/JWK (MistServer) — اختياري',
+  })
+  @IsOptional()
+  @IsBoolean()
+  jwtPlaybackEnabled?: boolean;
 }

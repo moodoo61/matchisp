@@ -23,7 +23,8 @@ const FALLBACK_SETTINGS: ViewingPageSettings = {
   pageTitle: 'البث المباشر',
   tagline: '',
   showMatchSchedule: true,
-  autoplayOnEnter: true,
+  autoplayOnEnter: false,
+  jwtPlaybackEnabled: false,
 };
 
 /** الهيكل المستقل الجديد — ترويسة دنيا + مسرح + قائمة جانبية */
@@ -33,6 +34,10 @@ export function ClientLivePublicView() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** يزيد مع كل اختيار صريح لإعادة تهيئة المشغّل حتى لنفس القناة */
+  const [playSession, setPlaySession] = useState(0);
+  /** بعد ضغط المستخدم: تشغيل دائماً بغض النظر عن autoplayOnEnter */
+  const [userStarted, setUserStarted] = useState(false);
 
   const reload = useCallback(async () => {
     try {
@@ -86,9 +91,13 @@ export function ClientLivePublicView() {
 
   const selectChannel = useCallback((id: string) => {
     setSelectedId(id);
+    setUserStarted(true);
+    setPlaySession((n) => n + 1);
   }, []);
 
   useChannelKeyboard(channelIds, selectedId, selectChannel, settings.enabled && channels.length > 1);
+
+  const shouldAutoplay = userStarted || settings.autoplayOnEnter;
 
   return (
     <div className="cl-app">
@@ -120,13 +129,14 @@ export function ClientLivePublicView() {
         {settings.enabled && selected ? (
           <div className="cl-layout">
             <ClientLiveStage
+              key={`${selected.id}:${playSession}`}
               channel={selected}
               brandLogoUrl={
                 settings.showBrandLogo
                   ? settings.brandLogoAbsoluteUrl || settings.brandLogoUrl
                   : null
               }
-              autoplay={settings.autoplayOnEnter}
+              autoplay={shouldAutoplay}
             />
             <PlaylistPanel sections={sections} selectedId={selectedId} onSelect={selectChannel} />
           </div>

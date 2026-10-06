@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
 import { useHlsPlayback } from '../hooks/useHlsPlayback';
+import { stripPlaybackToken } from '../lib/playbackUrlIdentity';
 import {
   FullscreenIcon,
   MutedIcon,
@@ -27,11 +28,12 @@ export function ClientLivePlayer({
   hlsUrl,
   posterUrl,
   brandLogoUrl,
-  autoplay = true,
+  autoplay = false,
 }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const qualityMenuRef = useRef<HTMLDivElement | null>(null);
+  const streamKey = stripPlaybackToken(hlsUrl);
   const [stopped, setStopped] = useState(!autoplay);
   const [qualityOpen, setQualityOpen] = useState(false);
   const [pipActive, setPipActive] = useState(false);
@@ -50,6 +52,8 @@ export function ClientLivePlayer({
     progress,
     buffered,
     seekable,
+    startPlayback,
+    haltPlayback,
     selectQuality,
     setMuted,
     setVolume,
@@ -59,7 +63,12 @@ export function ClientLivePlayer({
   useEffect(() => {
     setStopped(!autoplay);
     setQualityOpen(false);
-  }, [hlsUrl, autoplay]);
+  }, [streamKey, autoplay]);
+
+  // إن بدأ التشغيل فعلياً ألغِ حالة الإيقاف حتى يظهر الفيديو
+  useEffect(() => {
+    if (playing) setStopped(false);
+  }, [playing]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -104,21 +113,14 @@ export function ClientLivePlayer({
     if (!video) return;
     if (stopped || video.paused) {
       setStopped(false);
-      void video.play().catch(() => undefined);
+      startPlayback();
       return;
     }
     video.pause();
   };
 
   const stopPlayback = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.pause();
-    try {
-      video.currentTime = 0;
-    } catch {
-      /* live may reject seek */
-    }
+    haltPlayback();
     setStopped(true);
     setQualityOpen(false);
   };
@@ -157,7 +159,7 @@ export function ClientLivePlayer({
       } else {
         if (stopped) {
           setStopped(false);
-          await video.play().catch(() => undefined);
+          startPlayback();
         }
         await video.requestPictureInPicture();
       }
@@ -173,18 +175,28 @@ export function ClientLivePlayer({
 
   const showPlaying = playing && !stopped;
   const brandLogo = brandLogoUrl?.trim() || null;
+  const showVideo = (ready || playing) && !stopped;
 
   return (
     <div
       ref={rootRef}
       className={[
         'client-live-player',
-        ready && !stopped ? 'is-ready' : 'is-loading',
+        showVideo ? 'is-ready' : 'is-loading',
         stopped ? 'is-stopped' : '',
       ]
         .filter(Boolean)
         .join(' ')}
       onDoubleClick={enterFullscreen}
+      onClick={(event) => {
+        // ضغطة على السطح (ليس الأزرار) تشغّل إن كان متوقفاً — إيماءة مستخدم
+        if ((event.target as HTMLElement).closest('button, input, .cl-quality-menu')) {
+          return;
+        }
+        if (stopped || (!playing && videoRef.current?.paused)) {
+          togglePlayback();
+        }
+      }}
     >
       {posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

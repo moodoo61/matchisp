@@ -43,6 +43,9 @@ export type MistActiveStreamStats = {
 export type MistApiResponse = {
   LTS?: number;
   authorize?: { status?: string };
+  config?: {
+    triggers?: Record<string, unknown>;
+  };
   active_streams?:
     | string[]
     | Record<string, number[] | Record<string, number>>;

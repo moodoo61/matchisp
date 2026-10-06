@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { SectionTabs } from '@/shared/ui';
 
-/** تبويبات الأحداث الرياضية: أحداث اليوم | الفرق | ضبط */
+/** تبويبات الأحداث الرياضية: المباريات | الفرق | ضبط */
 export function SportsEventsTabs() {
   const pathname = usePathname();
   const isTeams = pathname.startsWith('/live/sports-events/teams');
@@ -14,7 +14,7 @@ export function SportsEventsTabs() {
       tabs={[
         {
           href: '/live/sports-events',
-          label: 'أحداث اليوم',
+          label: 'المباريات',
           active: !isTeams && !isSettings,
         },
         {

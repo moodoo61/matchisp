@@ -10,6 +10,7 @@ describe('mist-playback-urls', () => {
     expect(buildMistPlaybackPaths('sport1')).toEqual({
       hlsUrl: '/hls/sport1/index.m3u8',
       whepUrl: '/webrtc/sport1',
+      token: null,
     });
   });
 
@@ -17,10 +18,12 @@ describe('mist-playback-urls', () => {
     expect(buildMistPlaybackUrls('', 'ch1')).toEqual({
       hlsUrl: '/hls/ch1/index.m3u8',
       whepUrl: '/webrtc/ch1',
+      token: null,
     });
     expect(buildMistPlaybackUrls('auto', 'ch1')).toEqual({
       hlsUrl: '/hls/ch1/index.m3u8',
       whepUrl: '/webrtc/ch1',
+      token: null,
     });
   });
 
@@ -28,6 +31,15 @@ describe('mist-playback-urls', () => {
     expect(buildMistPlaybackUrls('http://mist.example:8080/', 'sport1')).toEqual({
       hlsUrl: 'http://mist.example:8080/hls/sport1/index.m3u8',
       whepUrl: 'http://mist.example:8080/webrtc/sport1',
+      token: null,
+    });
+  });
+
+  it('يرفق tkn عند تمرير توكن', () => {
+    expect(buildMistPlaybackUrls('', 'ch1', 'abc.token')).toEqual({
+      hlsUrl: '/hls/ch1/index.m3u8?tkn=abc.token',
+      whepUrl: '/webrtc/ch1?tkn=abc.token',
+      token: 'abc.token',
     });
   });
 

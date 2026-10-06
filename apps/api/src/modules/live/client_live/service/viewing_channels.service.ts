@@ -12,6 +12,7 @@ import {
   type ViewingChannelsVisibility,
 } from '../constants/viewing-channels';
 import { UpdateViewingChannelVisibilityDto } from '../dto/update-viewing-channel-visibility.dto';
+import { ViewingPageService } from './viewing_page.service';
 
 export type ViewingPageChannelRow = {
   id: string;
@@ -36,6 +37,7 @@ export class ViewingChannelsService {
     private readonly prisma: PrismaLiveService,
     private readonly mist: MistServerService,
     private readonly playback: MistPlaybackService,
+    private readonly viewingPage: ViewingPageService,
     private readonly audit: AuditService,
   ) {}
 
@@ -49,21 +51,24 @@ export class ViewingChannelsService {
       channels: ViewingPageChannelRow[];
     }>;
   }> {
-    const [visibility, sections, mistStatuses, activeStats] = await Promise.all([
-      this.loadVisibility(),
-      this.prisma.channelSection.findMany({
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-        include: {
-          channels: {
-            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    const [visibility, sections, mistStatuses, activeStats, pageSettings] =
+      await Promise.all([
+        this.loadVisibility(),
+        this.prisma.channelSection.findMany({
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            channels: {
+              orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+            },
           },
-        },
-      }),
-      this.mist.listStreamStatuses(),
-      this.mist.listActiveStreamStats(),
-    ]);
+        }),
+        this.mist.listStreamStatuses(),
+        this.mist.listActiveStreamStats(),
+        this.viewingPage.getSettings(),
+      ]);
 
     const hidden = new Set(visibility.hiddenChannelIds);
+    const signed = pageSettings.jwtPlaybackEnabled;
 
     return {
       httpBase: this.playback.httpBase(),
@@ -79,7 +84,7 @@ export class ViewingChannelsService {
             mistStatuses,
             stats?.viewers ?? 0,
           );
-          const urls = this.playback.urlsFor(channel.name);
+          const urls = this.playback.urlsFor(channel.name, { signed });
           return {
             id: channel.id,
             name: channel.name,

@@ -30,6 +30,11 @@ export type ViewingPageSettings = {
   showMatchSchedule: boolean;
   /** تشغيل القناة تلقائياً عند دخول الصفحة */
   autoplayOnEnter: boolean;
+  /**
+   * حماية روابط المشاهدة بـ JWT/JWK عبر MistServer.
+   * false = الروابط المفتوحة الحالية · true = يتطلب توكن tkn
+   */
+  jwtPlaybackEnabled: boolean;
 };
 
 export const DEFAULT_VIEWING_PAGE_SETTINGS: ViewingPageSettings = {
@@ -46,5 +51,6 @@ export const DEFAULT_VIEWING_PAGE_SETTINGS: ViewingPageSettings = {
   pageTitle: 'البث المباشر',
   tagline: 'قنواتك في مكان واحد، بجودة واضحة',
   showMatchSchedule: true,
-  autoplayOnEnter: true,
+  autoplayOnEnter: false,
+  jwtPlaybackEnabled: false,
 };

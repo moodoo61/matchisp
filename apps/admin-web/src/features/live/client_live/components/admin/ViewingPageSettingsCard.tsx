@@ -34,7 +34,8 @@ const EMPTY: ViewingPageSettings = {
   pageTitle: '',
   tagline: '',
   showMatchSchedule: true,
-  autoplayOnEnter: true,
+  autoplayOnEnter: false,
+  jwtPlaybackEnabled: false,
 };
 
 type VisibilityKey =
@@ -43,7 +44,8 @@ type VisibilityKey =
   | 'showBrandSubtitle'
   | 'showLiveBadge'
   | 'showMatchSchedule'
-  | 'autoplayOnEnter';
+  | 'autoplayOnEnter'
+  | 'jwtPlaybackEnabled';
 
 /** بطاقة إعدادات صفحة بث العميل */
 export function ViewingPageSettingsCard() {
@@ -377,8 +379,8 @@ export function ViewingPageSettingsCard() {
             <span className="viewing-settings-label">التشغيل التلقائي</span>
             <span className="viewing-settings-meta">
               {form.autoplayOnEnter
-                ? 'يشتغل عند دخول الصفحة'
-                : 'يحتاج ضغط تشغيل'}
+                ? 'خيار إضافي: يشتغل عند دخول الصفحة'
+                : 'الافتراضي: يحتاج ضغط تشغيل'}
             </span>
             <div className="viewing-settings-actions">
               {canUpdate ? (
@@ -395,6 +397,33 @@ export function ViewingPageSettingsCard() {
               ) : (
                 <span className="muted">
                   {form.autoplayOnEnter ? 'مسموح' : 'ممنوع'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="viewing-settings-row">
+            <span className="viewing-settings-label">حماية JWT / JWK</span>
+            <span className="viewing-settings-meta">
+              {form.jwtPlaybackEnabled
+                ? 'مشاهدة فقط: يتطلب tkn، وبدون مفتاح إدخال أو مصادقة API'
+                : 'روابط مفتوحة — التوكن وحده لا يمنع المشاهدة'}
+            </span>
+            <div className="viewing-settings-actions">
+              {canUpdate ? (
+                <CardEnableToggle
+                  enabled={form.jwtPlaybackEnabled}
+                  busy={busyKey === 'jwtPlaybackEnabled'}
+                  onToggle={() =>
+                    void toggleVisibility('jwtPlaybackEnabled', [
+                      'تم تفعيل حماية روابط المشاهدة',
+                      'تم تعطيل حماية روابط المشاهدة',
+                    ])
+                  }
+                />
+              ) : (
+                <span className="muted">
+                  {form.jwtPlaybackEnabled ? 'مفعّل' : 'معطّل'}
                 </span>
               )}
             </div>
