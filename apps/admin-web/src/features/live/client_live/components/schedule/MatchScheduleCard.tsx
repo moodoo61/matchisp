@@ -7,6 +7,7 @@ import {
   formatMatchTime,
   goalsForSide,
   matchCenterLabel,
+  matchStatusTone,
 } from './matchScheduleUtils';
 
 type Props = {
@@ -57,14 +58,21 @@ export function MatchScheduleCard({
       ),
   );
 
+  const tone = matchStatusTone(match);
+  const statusText = match.status?.trim() || '—';
+
   return (
     <div
       ref={cardRef}
-      className={nearest ? 'cl-schedule-card is-nearest' : 'cl-schedule-card'}
+      className={`cl-schedule-card tone-${tone}${
+        nearest ? ' is-nearest' : ''
+      }`}
     >
       <div className="cl-schedule-card-main">
         <span className="cl-schedule-cell">
-          <span className="cl-schedule-meta">{match.tournament}</span>
+          <span className="cl-schedule-meta is-spacer" aria-hidden>
+            &nbsp;
+          </span>
           <TeamLogo
             name={match.homeTeam.name}
             logoUrl={match.homeTeam.logoUrl}
@@ -82,8 +90,8 @@ export function MatchScheduleCard({
         </span>
 
         <span className="cl-schedule-cell cl-schedule-cell-mid">
-          <span className="cl-schedule-status">
-            {match.status?.trim() || '\u00a0'}
+          <span className="cl-schedule-meta cl-schedule-tournament">
+            {match.tournament}
           </span>
           <span
             className={
@@ -98,8 +106,8 @@ export function MatchScheduleCard({
         </span>
 
         <span className="cl-schedule-cell">
-          <span className="cl-schedule-meta cl-schedule-time">
-            {formatMatchTime(match.kickoffAt)}
+          <span className="cl-schedule-meta is-spacer" aria-hidden>
+            &nbsp;
           </span>
           <TeamLogo
             name={match.awayTeam.name}
@@ -118,26 +126,30 @@ export function MatchScheduleCard({
         </span>
       </div>
 
-      <div className="cl-schedule-channels" aria-label="قنوات المباراة">
-        {linkedChannels.map((channel) => (
-          <button
-            key={channel.id}
-            type="button"
-            className="cl-schedule-channel"
-            onClick={() => onSelectChannel?.(channel.id)}
-          >
-            {channel.label}
-          </button>
-        ))}
-        {unmatchedLabels.map((label) => (
-          <span key={label} className="cl-schedule-channel is-unlinked">
-            {label}
-          </span>
-        ))}
-        {!linkedChannels.length && !unmatchedLabels.length ? (
-          <span className="cl-schedule-channel is-unlinked">بدون قناة</span>
-        ) : null}
-      </div>
+      <footer className="cl-schedule-tail">
+        <span className="cl-schedule-tail-channels" aria-label="قنوات المباراة">
+          {linkedChannels.map((channel) => (
+            <button
+              key={channel.id}
+              type="button"
+              className="cl-schedule-channel"
+              onClick={() => onSelectChannel?.(channel.id)}
+            >
+              {channel.label}
+            </button>
+          ))}
+          {unmatchedLabels.map((label) => (
+            <span key={label} className="cl-schedule-channel is-unlinked">
+              {label}
+            </span>
+          ))}
+          {!linkedChannels.length && !unmatchedLabels.length ? (
+            <span className="cl-schedule-channel is-unlinked">بدون قناة</span>
+          ) : null}
+        </span>
+        <span className="cl-schedule-tail-time">{formatMatchTime(match.kickoffAt)}</span>
+        <span className="cl-schedule-tail-status">{statusText}</span>
+      </footer>
     </div>
   );
 }

@@ -129,12 +129,13 @@
   gap: 0.65rem;
 }
 
-/* البطاقة = فرق + وسط + قنوات */
+/* البطاقة = فرق + وسط + ذيل (قنوات + حالة) */
 .cl-schedule-card {
   width: 100%;
   display: grid;
-  gap: 0.55rem;
-  padding: 0.55rem;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
   border-radius: var(--cl-radius-md);
   border: 1px solid rgba(200, 164, 93, 0.2);
   background: #2a3558;
@@ -160,31 +161,70 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   gap: 0.35rem;
-  align-items: start;
+  align-items: stretch;
+  padding: 0.4rem 0.55rem 0.5rem;
 }
 
 .cl-schedule-cell {
   min-width: 0;
   display: grid;
-  grid-template-rows: 1.4rem 2.75rem auto;
+  grid-template-rows: 1.15rem 2.6rem auto;
   align-items: center;
   justify-items: center;
-  gap: 0.2rem;
-  padding: 0.45rem 0.35rem;
+  gap: 0.15rem;
+  padding: 0.2rem 0.35rem 0.45rem;
   border-radius: 10px;
   background: transparent;
   text-align: center;
 }
 
 .cl-schedule-cell-mid {
-  width: 5.8rem;
-  grid-template-rows: 1.4rem 2.75rem auto;
+  width: 7rem;
+  align-self: stretch;
+  /* الصف الأوسط يتمدد ليعادل مساحة الشعار + الاسم، والنتيجة تتوسطه */
+  grid-template-rows: 1.15rem 1fr auto;
+  justify-items: center;
 }
 
-/* البطولة من أول السطر (بداية الاتجاه) وليس وسط العمود */
-.cl-schedule-cell > .cl-schedule-meta:not(.cl-schedule-time):not(.is-spacer) {
+/* البطولة في العمود الأوسط — خط أبيض يتلاشى من الطرفين */
+.cl-schedule-tournament {
+  position: relative;
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  padding-bottom: 0.35rem;
+}
+
+.cl-schedule-tournament::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.95) 22%,
+    rgba(255, 255, 255, 0.95) 78%,
+    transparent 100%
+  );
+}
+
+/* البطولة من أول السطر (بداية الاتجاه) في خليتي الفريقين فقط */
+.cl-schedule-cell:not(.cl-schedule-cell-mid)
+  > .cl-schedule-meta:not(.cl-schedule-time):not(.is-spacer) {
   justify-self: stretch;
   text-align: start;
+}
+
+/* خلايا الفريقين ترصّ صفوفها للأعلى حتى لا يتباعد الاسم عن الشعار */
+.cl-schedule-cell:not(.cl-schedule-cell-mid) {
+  align-content: start;
 }
 
 /* الوقت في الطرف الأيسر من مساحة المربع الثالث */
@@ -198,7 +238,7 @@
   width: 100%;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--cl-muted);
+  color: var(--cl-ivory);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -207,18 +247,6 @@
 
 .cl-schedule-meta.is-spacer {
   visibility: hidden;
-}
-
-.cl-schedule-status {
-  width: 100%;
-  min-height: 1.4rem;
-  display: grid;
-  place-items: center;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--cl-gold-100);
-  line-height: 1.2;
-  text-align: center;
 }
 
 .cl-schedule-time {
@@ -254,18 +282,21 @@
   min-width: 2.5rem;
   height: 2.5rem;
   padding-inline: 0.2rem;
-  color: var(--cl-gold-300);
+  color: var(--cl-gold-100);
   font-family: var(--cl-font-display);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: 0.06em;
+  white-space: nowrap;
 }
 
 .cl-schedule-vs.is-score {
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
-  color: var(--cl-ivory);
-  font-size: 1.05rem;
+  color: #ffd97a;
+  font-family: Tahoma, 'Segoe UI', Arial, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 900;
 }
 
 .cl-schedule-team-name {
@@ -282,12 +313,13 @@
 
 .cl-schedule-goals {
   list-style: none;
-  margin: 0.15rem 0 0;
+  margin: 0.15rem auto 0;
   padding: 0;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   display: grid;
   gap: 0.12rem;
-  justify-items: center;
+  justify-items: stretch;
 }
 
 .cl-schedule-goals li {
@@ -299,62 +331,194 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
+  direction: ltr;
 }
 
-.cl-schedule-channels {
+/* ذيل البطاقة — القنوات يمين (80%) والحالة شمال، ممتد وملاصق للحواف */
+.cl-schedule-tail {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.35rem;
-  padding-top: 0.15rem;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  min-height: 2.5rem;
+  overflow: hidden;
+  border-top: 1px solid rgba(200, 164, 93, 0.2);
+  border-radius: 0 0 calc(var(--cl-radius-md) - 1px)
+    calc(var(--cl-radius-md) - 1px);
+  background: rgba(8, 12, 24, 0.45);
 }
 
-/* تمييز القناة — شارة ذهبية مطفية */
+.cl-schedule-tail-channels {
+  min-width: 0;
+  flex: 7 1 0;
+  display: flex;
+  align-items: stretch;
+}
+
+/* زر القناة: خلفية ذهبية تملأ الذيل طولاً وعرضاً — بلا شكل مستقل */
 .cl-schedule-channel {
   appearance: none;
-  width: auto;
-  max-width: 100%;
-  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
   align-items: center;
-  gap: 0.28rem;
+  justify-content: center;
   margin: 0;
-  padding: 0.22rem 0.55rem;
-  border-radius: 8px;
-  border: 1px solid rgba(200, 164, 93, 0.45);
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-radius: 0;
   background: var(--cl-gold-gradient);
   color: #2a1e05;
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   font-weight: 800;
+  line-height: 1.25;
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.25;
-  cursor: pointer;
 }
 
-.cl-schedule-channel::before {
-  content: '';
-  flex: 0 0 auto;
-  width: 0.42rem;
-  height: 0.42rem;
-  border-radius: 2px;
-  background: #1c1305;
+.cl-schedule-channel + .cl-schedule-channel {
+  border-inline-start: 1px solid rgba(43, 30, 7, 0.3);
 }
 
 .cl-schedule-channel:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.07);
 }
 
 .cl-schedule-channel.is-unlinked {
   cursor: default;
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(247, 243, 232, 0.75);
+  background: transparent;
+  color: var(--cl-muted);
+  font-weight: 700;
 }
 
-.cl-schedule-channel.is-unlinked::before {
-  background: rgba(247, 243, 232, 0.45);
+.cl-schedule-channel.is-unlinked:hover {
+  filter: none;
+}
+
+.cl-schedule-channel.is-unlinked {
+  cursor: default;
+  color: var(--cl-muted);
+  font-weight: 700;
+}
+
+.cl-schedule-channel.is-unlinked:hover {
+  background: transparent;
+}
+
+.cl-schedule-tail-time {
+  flex: 1.5 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.4rem;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--cl-gold-100);
+  font-size: 0.74rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-schedule-tail-status {
+  flex: 1.5 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.4rem;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-schedule-tail-status::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--cl-muted);
+}
+
+/* تمييز كل حالة بلون مختلف */
+.cl-schedule-card.tone-live .cl-schedule-tail {
+  border-top-color: rgba(61, 220, 151, 0.45);
+  background: rgba(61, 220, 151, 0.12);
+}
+
+.cl-schedule-card.tone-live .cl-schedule-tail-status {
+  color: #9bf0c8;
+}
+
+.cl-schedule-card.tone-live .cl-schedule-tail-status::before {
+  background: #3ddc97;
+  animation: cl-pulse 1.8s ease-in-out infinite;
+}
+
+.cl-schedule-card.tone-upcoming .cl-schedule-tail {
+  border-top-color: rgba(200, 164, 93, 0.45);
+  background: rgba(200, 164, 93, 0.1);
+}
+
+.cl-schedule-card.tone-upcoming .cl-schedule-tail-status {
+  color: var(--cl-gold-100);
+}
+
+.cl-schedule-card.tone-upcoming .cl-schedule-tail-status::before {
+  background: #60a5fa;
+}
+
+.cl-schedule-card.tone-break .cl-schedule-tail {
+  border-top-color: rgba(96, 165, 250, 0.45);
+  background: rgba(96, 165, 250, 0.12);
+}
+
+.cl-schedule-card.tone-break .cl-schedule-tail-status {
+  color: #bfdbfe;
+}
+
+.cl-schedule-card.tone-break .cl-schedule-tail-status::before {
+  background: #3ddc97;
+}
+
+.cl-schedule-card.tone-finished .cl-schedule-tail {
+  border-top-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cl-schedule-card.tone-finished .cl-schedule-tail-status {
+  color: var(--cl-muted);
+}
+
+.cl-schedule-card.tone-finished .cl-schedule-tail-status::before {
+  background: #f87171;
+}
+
+.cl-schedule-card.tone-cancelled .cl-schedule-tail {
+  border-top-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.cl-schedule-card.tone-cancelled .cl-schedule-tail-status {
+  color: #fecaca;
+}
+
+.cl-schedule-card.tone-cancelled .cl-schedule-tail-status::before {
+  background: #3ddc97;
 }
 
 @keyframes cl-schedule-fade {
@@ -379,23 +543,32 @@
 
 @media (max-width: 520px) {
   .cl-schedule-cell {
-    padding: 0.35rem 0.2rem;
-    grid-template-rows: 1.25rem 2.35rem auto;
+    padding: 0.15rem 0.2rem 0.35rem;
+    grid-template-rows: 1.05rem 2.25rem auto;
   }
 
   .cl-schedule-cell-mid {
-    width: 4.6rem;
+    width: auto;
+    min-width: 4.5rem;
+    grid-template-rows: 1.05rem 1fr auto;
   }
 
-  .cl-schedule-logo,
-  .cl-schedule-vs {
+  .cl-schedule-logo {
     width: 2.15rem;
     height: 2.15rem;
-    min-width: 2.15rem;
+  }
+
+  .cl-schedule-vs {
+    width: auto;
+    min-width: 0;
+    height: 2.15rem;
+    padding-inline: 0.2rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
   }
 
   .cl-schedule-vs.is-score {
-    font-size: 0.92rem;
+    font-size: 1.05rem;
   }
 
   .cl-schedule-team-name {
@@ -404,7 +577,8 @@
 
   .cl-schedule-meta,
   .cl-schedule-channel,
-  .cl-schedule-status {
+  .cl-schedule-tail-status,
+  .cl-schedule-tail-time {
     font-size: 0.62rem;
   }
 

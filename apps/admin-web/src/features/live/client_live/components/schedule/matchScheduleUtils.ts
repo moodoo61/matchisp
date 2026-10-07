@@ -41,6 +41,33 @@ export function matchCenterLabel(match: PublicSportMatch, nowMs = Date.now()) {
   return 'VS';
 }
 
+export type MatchStatusTone =
+  | 'live'
+  | 'break'
+  | 'upcoming'
+  | 'finished'
+  | 'cancelled';
+
+/** تصنيف نص الحالة الحر إلى فئة لونية للتمييز البصري */
+export function matchStatusTone(match: PublicSportMatch): MatchStatusTone {
+  const raw = (match.status ?? '').trim().toLowerCase();
+  if (!raw) return matchHasStarted(match) ? 'live' : 'upcoming';
+  if (/انته|نهائ|full\s?-?time|finished|ended/.test(raw)) return 'finished';
+  if (/ملغ|cancel|أ?جل|postpon/.test(raw)) return 'cancelled';
+  if (
+    /استراح|بين الشوط|half[\s-]?time|ht\b|الشوط/.test(raw) ||
+    /توقف مؤقت|paused/.test(raw)
+  )
+    return 'break';
+  if (
+    /جار|مباشر|live|الشوط الأول|الشوط الثاني|الشوط الاضافي|تمديد/.test(raw)
+  )
+    return 'live';
+  if (/لم تبدأ|قادم|لم تنطلق|scheduled|upcoming|not started/.test(raw))
+    return 'upcoming';
+  return matchHasStarted(match) ? 'live' : 'upcoming';
+}
+
 export function goalsForSide(
   goals: PublicSportMatchGoal[] | undefined,
   isHome: boolean,
