@@ -62,8 +62,8 @@
   height: 48px;
   object-fit: contain;
   border-radius: 14px;
-  background: #1a2340;
-  border: 1px solid rgba(43, 30, 7, 0.6);
+  background: #ffffff00;
+  border: 1px solid rgba(43, 30, 7, 0.35);
   padding: 4px;
 }
 

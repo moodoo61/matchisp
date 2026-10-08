@@ -16,6 +16,48 @@
   margin-top: 0.25rem;
 }
 
+.general-font-field {
+  max-width: 100%;
+}
+
+.general-font-select {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.general-font-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.general-font-select-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.general-font-select-row .btn {
+  flex-shrink: 0;
+  min-width: 5.5rem;
+  height: 2.65rem;
+}
+
+.general-font-hint {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.general-font-preview {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
 .general-logo-compact {
   display: grid;
   gap: 0.35rem;

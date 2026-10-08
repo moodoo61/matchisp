@@ -9,6 +9,8 @@ import {
   uploadGeneralLogo,
 } from '@/features/settings/general/api';
 import { CompactLogoUpload } from '@/features/settings/general/components/CompactLogoUpload';
+import { GeneralFontSelect } from '@/features/settings/general/components/GeneralFontSelect';
+import { applyUiFont } from '@/features/settings/general/lib/apply-ui-font';
 import type { GeneralSettings } from '@/features/settings/general/types';
 import { usePermissions } from '@/lib/usePermissions';
 import { TaskCard, notifyMutation, useToast } from '@/shared/ui';
@@ -24,6 +26,7 @@ export function GeneralSettingsCard() {
   const [logoUrl, setLogoUrl] = useState('');
   const [brandName, setBrandName] = useState('');
   const [brandLogoUrl, setBrandLogoUrl] = useState('');
+  const [uiFontId, setUiFontId] = useState('ibm-plex-sans-arabic');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -36,6 +39,11 @@ export function GeneralSettingsCard() {
       setLogoUrl(row.logoUrl);
       setBrandName(row.brandName);
       setBrandLogoUrl(row.brandLogoUrl);
+      setUiFontId(row.uiFontId);
+      applyUiFont({
+        family: row.uiFontFamily,
+        faces: row.uiFontFaces,
+      });
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر جلب الإعدادات العامة');
@@ -52,21 +60,30 @@ export function GeneralSettingsCard() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!canManage) return;
-    await notifyMutation(
-      toast,
-      () =>
-        updateGeneralSettings({
-          systemName: systemName.trim(),
-          logoUrl: logoUrl.trim(),
-          brandName: brandName.trim(),
-          brandLogoUrl: brandLogoUrl.trim(),
-        }),
-      {
-        success: 'تم حفظ الإعدادات العامة',
-        error: 'تعذر حفظ الإعدادات',
-      },
-    );
-    await reload();
+    try {
+      const saved = await notifyMutation(
+        toast,
+        () =>
+          updateGeneralSettings({
+            systemName: systemName.trim(),
+            logoUrl: logoUrl.trim(),
+            brandName: brandName.trim(),
+            brandLogoUrl: brandLogoUrl.trim(),
+            uiFontId,
+          }),
+        {
+          success: 'تم حفظ الإعدادات العامة',
+          error: 'تعذر حفظ الإعدادات',
+        },
+      );
+      applyUiFont({
+        family: saved.uiFontFamily,
+        faces: saved.uiFontFaces,
+      });
+      await reload();
+    } catch {
+      // أُبلِغ عبر toast
+    }
   }
 
   if (!canRead) return null;
@@ -160,6 +177,29 @@ export function GeneralSettingsCard() {
               )}
             </label>
           </div>
+
+          <label className="general-font-field">
+            خط الواجهة
+            {canManage ? (
+              <GeneralFontSelect
+                value={uiFontId}
+                disabled={busy}
+                onChange={setUiFontId}
+                onLocalReadyChange={(fontId, ready) => {
+                  setData((prev) =>
+                    prev && prev.uiFontId === fontId
+                      ? { ...prev, uiFontLocalReady: ready }
+                      : prev,
+                  );
+                }}
+              />
+            ) : (
+              <p className="muted">
+                {data.uiFontFamily}
+                {data.uiFontLocalReady ? ' (محلي)' : ' (غير منزّل)'}
+              </p>
+            )}
+          </label>
 
           {canManage ? (
             <div className="general-settings-actions">

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { UiFontApplicator } from '@/features/settings/general/components/UiFontApplicator';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,19 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <UiFontApplicator />
+        {children}
+      </body>
     </html>
   );
 }

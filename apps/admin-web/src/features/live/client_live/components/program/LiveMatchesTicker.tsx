@@ -69,7 +69,6 @@ export function LiveMatchesTicker({ onSelectChannel }: Props) {
       className="cl-program-ticker"
       dir="ltr"
       aria-label="مباريات جارية"
-      data-empty={text ? undefined : 'true'}
     >
       {text ? (
         <>
@@ -93,9 +92,7 @@ export function LiveMatchesTicker({ onSelectChannel }: Props) {
             />
           </div>
         </>
-      ) : (
-        <span className="cl-program-ticker-empty">لا توجد مباريات جارية الآن</span>
-      )}
+      ) : null}
     </div>
   );
 }

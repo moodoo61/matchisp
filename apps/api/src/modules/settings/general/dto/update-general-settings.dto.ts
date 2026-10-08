@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { GENERAL_UI_FONT_IDS } from '../constants/general-fonts';
 
 export class UpdateGeneralSettingsDto {
   @ApiPropertyOptional({ description: 'اسم النظام' })
@@ -26,4 +27,13 @@ export class UpdateGeneralSettingsDto {
   @IsString()
   @MaxLength(500)
   brandLogoUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'معرّف خط واجهة الإدارة',
+    enum: GENERAL_UI_FONT_IDS,
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn([...GENERAL_UI_FONT_IDS])
+  uiFontId?: string;
 }

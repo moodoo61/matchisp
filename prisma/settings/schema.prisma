@@ -37,6 +37,8 @@ model GeneralSettings {
   logoUrl      String   @default("")
   brandName    String   @default("")
   brandLogoUrl String   @default("")
+  /// معرّف خط واجهة الإدارة (مخزَّن محلياً تحت uploads/general-fonts)
+  uiFontId     String   @default("ibm-plex-sans-arabic")
   updatedAt    DateTime @updatedAt
 
   @@map("general_settings")

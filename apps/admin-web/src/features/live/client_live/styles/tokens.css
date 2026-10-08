@@ -30,8 +30,10 @@
   --cl-live-deep: #1faa6c;
   --cl-ok: #3ddc97;
 
-  --cl-font-display: var(--cl-font-brand), "El Messiri", serif;
-  --cl-font-body: var(--cl-font-body), "Tajawal", system-ui, sans-serif;
+  /* تُستبدل بخط الإعدادات العامة عبر applyUiFont */
+  --cl-font-brand: "Segoe UI", Tahoma, sans-serif;
+  --cl-font-display: var(--cl-font-brand);
+  --cl-font-body: var(--cl-font-brand);
 
   --cl-max: 1680px;
   --cl-radius-sm: 10px;

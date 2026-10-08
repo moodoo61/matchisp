@@ -294,7 +294,7 @@
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   color: #ffd97a;
-  font-family: Tahoma, 'Segoe UI', Arial, sans-serif;
+  font-family: var(--cl-font-display);
   font-size: 1.3rem;
   font-weight: 900;
 }

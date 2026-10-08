@@ -86,21 +86,6 @@
   );
 }
 
-.cl-program-ticker[data-empty='true'] {
-  opacity: 0.55;
-}
-
-.cl-program-ticker-empty {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  color: #2a1e05;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-  opacity: 0.75;
-}
-
 .cl-program-ticker-measure {
   position: absolute;
   left: 0;

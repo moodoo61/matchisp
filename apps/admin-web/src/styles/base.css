@@ -11,8 +11,9 @@
   --danger: #d46565;
   --warning: #d4a017;
   --radius: 12px;
-  --font-display: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  /* يُستبدل بخط محلي عبر UiFontApplicator بعد التنزيل من الإعدادات العامة */
+  --font-display: "Segoe UI", Tahoma, sans-serif;
+  --font-body: "Segoe UI", Tahoma, sans-serif;
 }
 
 * {

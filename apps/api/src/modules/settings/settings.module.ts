@@ -11,6 +11,7 @@ import { DisksMountService } from './disks/service/disks-mount.service';
 import { DisksNotesService } from './disks/service/disks-notes.service';
 import { DisksSmartService } from './disks/service/disks-smart.service';
 import { GeneralSettingsController } from './general/controller/general-settings.controller';
+import { GeneralFontStorageService } from './general/service/general-font-storage.service';
 import { GeneralLogoUploadService } from './general/service/general-logo-upload.service';
 import { GeneralPowerService } from './general/service/general-power.service';
 import { GeneralSettingsService } from './general/service/general-settings.service';
@@ -27,6 +28,7 @@ import { UpdatesService } from './updates/service/updates.service';
   ],
   providers: [
     GeneralSettingsService,
+    GeneralFontStorageService,
     GeneralLogoUploadService,
     GeneralPowerService,
     DisksInventoryService,

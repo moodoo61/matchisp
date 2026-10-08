@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Patch,
   Post,
   UploadedFile,
@@ -13,6 +14,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@isp/shared';
 import {
   CurrentUser,
+  Public,
   RequirePermissions,
   type RequestUser,
 } from '../../../../common/guards';
@@ -38,6 +40,28 @@ export class GeneralSettingsController {
   @RequirePermissions(PERMISSIONS.SETTINGS_GENERAL_READ)
   get() {
     return this.settings.get();
+  }
+
+  /** ثيم الواجهة (خط محلي) — عام لتطبيقه على صفحة الدخول أيضاً */
+  @Get('ui-theme')
+  @Public()
+  getUiTheme() {
+    return this.settings.getUiTheme();
+  }
+
+  @Get('fonts')
+  @RequirePermissions(PERMISSIONS.SETTINGS_GENERAL_READ)
+  listFonts() {
+    return this.settings.listFonts();
+  }
+
+  @Post('fonts/:fontId/download')
+  @RequirePermissions(PERMISSIONS.SETTINGS_GENERAL_MANAGE)
+  downloadFont(
+    @Param('fontId') fontId: string,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.settings.downloadFont(fontId, user.id);
   }
 
   @Patch()
