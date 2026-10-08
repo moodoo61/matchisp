@@ -7,6 +7,7 @@ import {
   formatMatchTime,
   goalsForSide,
   matchCenterLabel,
+  matchStatusDisplay,
   matchStatusTone,
 } from './matchScheduleUtils';
 
@@ -59,7 +60,7 @@ export function MatchScheduleCard({
   );
 
   const tone = matchStatusTone(match);
-  const statusText = match.status?.trim() || '—';
+  const statusText = matchStatusDisplay(match);
 
   return (
     <div

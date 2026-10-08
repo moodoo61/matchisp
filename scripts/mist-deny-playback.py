@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""USER_NEW: يسمح بالمشاهدة مع tkn صالح (JWT HS256 أو توكن قصير v1)."""
+from __future__ import annotations
+
+import base64
+import hashlib
+import hmac
+import json
+import os
+import sys
+import time
+from urllib.parse import parse_qs, urlsplit
+
+SECRET_CANDIDATES = (
+    os.environ.get("MIST_VIEWER_SECRET_FILE", "").strip(),
+    "/opt/match/var/live/mist-viewer.secret",
+)
+
+
+def b64url_decode(raw: str) -> bytes:
+    pad = "=" * (-len(raw) % 4)
+    return base64.urlsafe_b64decode(raw + pad)
+
+
+def read_secret() -> bytes:
+    for path in SECRET_CANDIDATES:
+        if path and os.path.isfile(path):
+            with open(path, "rb") as fh:
+                value = fh.read().strip()
+            if value:
+                return value
+    return b""
+
+
+def extract_tkn(request_url: str) -> str:
+    if not request_url:
+        return ""
+    query = urlsplit(request_url).query
+    if not query:
+        if "tkn=" in request_url:
+            query = request_url.split("?", 1)[-1]
+        else:
+            return ""
+    values = parse_qs(query).get("tkn") or []
+    return values[0] if values else ""
+
+
+def valid_short_token(stream: str, token: str, secret: bytes) -> bool:
+    if not stream or not token or not secret:
+        return False
+    try:
+        raw = b64url_decode(token)
+    except Exception:
+        return False
+    # v1: 1 + exp_u32 + mac6 = 11 بايت
+    if len(raw) != 11 or raw[0] != 1:
+        return False
+    exp = int.from_bytes(raw[1:5], "big")
+    mac = raw[5:11]
+    now = int(time.time())
+    if exp < now or exp > now + 7200:
+        return False
+    msg = f"v1|{stream}|{exp}".encode("utf-8")
+    expect = hmac.new(secret, msg, hashlib.sha256).digest()[:6]
+    return hmac.compare_digest(mac, expect)
+
+
+def valid_jwt(stream: str, token: str, secret: bytes) -> bool:
+    """JWT HS256 — sub يجب أن يطابق اسم القناة."""
+    if not stream or not token or not secret or token.count(".") != 2:
+        return False
+    try:
+        header_b64, payload_b64, sig_b64 = token.split(".")
+        data = f"{header_b64}.{payload_b64}".encode("ascii")
+        expect = hmac.new(secret, data, hashlib.sha256).digest()
+        # مقارنة base64url
+        got = b64url_decode(sig_b64)
+        if not hmac.compare_digest(got, expect):
+            return False
+        payload = json.loads(b64url_decode(payload_b64).decode("utf-8"))
+        sub = str(payload.get("sub") or "")
+        exp = payload.get("exp")
+        now = int(time.time())
+        if sub != stream:
+            return False
+        if not isinstance(exp, (int, float)) or int(exp) < now:
+            return False
+        return True
+    except Exception:
+        return False
+
+
+def valid_token(stream: str, token: str, secret: bytes) -> bool:
+    if valid_jwt(stream, token, secret):
+        return True
+    return valid_short_token(stream, token, secret)
+
+
+def main() -> None:
+    payload = sys.stdin.read().split("\n")
+    stream = payload[0].strip() if len(payload) > 0 else ""
+    # USER_NEW: stream, ip, connection_id, protocol, request_url, session_id
+    request_url = payload[4].strip() if len(payload) > 4 else ""
+    protocol = payload[3].strip().upper() if len(payload) > 3 else ""
+    # ملفات المشغّل HTTP لا تحتاج توكن
+    if protocol in ("HTTP", "HTTPS"):
+        sys.stdout.write("true")
+        return
+    token = extract_tkn(request_url)
+    secret = read_secret()
+    if valid_token(stream, token, secret):
+        sys.stdout.write("true")
+    else:
+        sys.stdout.write("false")
+
+
+if __name__ == "__main__":
+    main()

@@ -138,3 +138,25 @@ model SportMatch {
   @@index([awayTeamId])
   @@map("sport_matches")
 }
+
+/// جلسة مشاهدة من مشغّل Mist USER_END
+/// @see https://docs.mistserver.org/mistserver/integration/triggers/list/USER_END
+model ViewingSessionReport {
+  id                 String   @id @default(uuid()) @db.Uuid
+  /// معرّف الجلسة من Mist (hex)
+  sessionId          String
+  streamName         String
+  connector          String   @default("")
+  connectionAddress  String   @default("")
+  durationSec        Int      @default(0)
+  uploadedBytes      BigInt   @default(0)
+  downloadedBytes    BigInt   @default(0)
+  tags               String   @default("")
+  endedAt            DateTime @default(now())
+  createdAt          DateTime @default(now())
+
+  @@index([endedAt])
+  @@index([streamName, endedAt])
+  @@index([sessionId])
+  @@map("viewing_session_reports")
+}

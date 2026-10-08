@@ -84,6 +84,13 @@ Guard عام JWT + Guard صلاحيات RBAC
   - `GET /api/public/login/services`
   - `GET /api/public/status/services`
 
+## قسم البث المباشر — تقارير المشاهدة (منفّذ)
+- الاسم الظاهر: **تقارير المشاهدة** (ضمن `db_live`)
+- واجهة Admin: `/live/viewing-reports`
+- API: `/live/viewing-reports/settings|summary|by-day|timeline|sessions`
+- استقبال عام: `POST /api/public/live/viewing-reports/user-end`
+- صلاحيات: `live.viewing_reports:read|update|delete|manage`
+
 ## قسم الوكلاء (منفّذ)
 - الاسم الظاهر: **الوكلاء** (قاعدة البيانات التقنية: `db_partners`)
 - حقول الوكيل: اسم الوكيل، اسم المحل، العنوان، رقم الهاتف

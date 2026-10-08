@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { AuditModule } from '../audit/audit.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ChannelSectionsController } from './controllers/channel_sections.controller';
@@ -28,6 +27,7 @@ import { PublicClientLiveService } from './client_live/service/public_client_liv
 import { ViewingChannelsService } from './client_live/service/viewing_channels.service';
 import { ViewingPageService } from './client_live/service/viewing_page.service';
 import { MistJwtService } from './service/mist/mist-jwt.service';
+import { MistIntegrationBootstrapService } from './service/mist/mist-integration-bootstrap.service';
 import { MistPlaybackService } from './service/mist/mist-playback.service';
 import { SportTeamsController } from './sports_events/controllers/sport-teams.controller';
 import { SportMatchesController } from './sports_events/controllers/sport-matches.controller';
@@ -41,9 +41,13 @@ import { SportsEventsSettingsService } from './sports_events/service/sports-even
 import { SportMatchesAutoClearService } from './sports_events/service/sport-matches-auto-clear.service';
 import { SportMatchesExternalSyncService } from './sports_events/service/sport-matches-external-sync.service';
 import { SportMatchesExternalSyncScheduler } from './sports_events/service/sport-matches-external-sync.scheduler';
+import { PublicViewingReportsController } from './viewing_reports/controllers/public_viewing_reports.controller';
+import { ViewingReportsController } from './viewing_reports/controllers/viewing_reports.controller';
+import { ViewingReportsService } from './viewing_reports/service/viewing-reports.service';
+import { ViewingReportsSettingsService } from './viewing_reports/service/viewing-reports-settings.service';
 
 @Module({
-  imports: [AuditModule, SettingsModule, JwtModule.register({})],
+  imports: [AuditModule, SettingsModule],
   controllers: [
     ChannelSectionsController,
     ChannelsController,
@@ -58,6 +62,8 @@ import { SportMatchesExternalSyncScheduler } from './sports_events/service/sport
     SportsEventsSettingsController,
     SportMatchChannelOptionsController,
     PublicSportsEventsController,
+    ViewingReportsController,
+    PublicViewingReportsController,
   ],
   providers: [
     ChannelSectionsService,
@@ -75,6 +81,7 @@ import { SportMatchesExternalSyncScheduler } from './sports_events/service/sport
     MistServerClient,
     MistServerService,
     MistJwtService,
+    MistIntegrationBootstrapService,
     MistPlaybackService,
     PublicClientLiveService,
     ViewingPageService,
@@ -86,6 +93,8 @@ import { SportMatchesExternalSyncScheduler } from './sports_events/service/sport
     SportMatchesAutoClearService,
     SportMatchesExternalSyncService,
     SportMatchesExternalSyncScheduler,
+    ViewingReportsService,
+    ViewingReportsSettingsService,
   ],
 })
 export class LiveModule {}

@@ -75,8 +75,30 @@ describe('permissions foundation', () => {
     expect(ALL_PERMISSIONS).toContain(PERMISSIONS.LIVE_VIEWING_PAGE_READ);
     expect(ALL_PERMISSIONS).toContain(PERMISSIONS.LIVE_VIEWING_PAGE_UPDATE);
     expect(ALL_PERMISSIONS).toContain(PERMISSIONS.LIVE_VIEWING_PAGE_TOGGLE);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.LIVE_VIEWING_REPORTS_READ);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.LIVE_VIEWING_REPORTS_MANAGE);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.LIVE_VIEWING_REPORTS_UPDATE);
+    expect(ALL_PERMISSIONS).toContain(PERMISSIONS.LIVE_VIEWING_REPORTS_DELETE);
     expect(
       hasPermission([PERMISSIONS.LIVE_MANAGE], PERMISSIONS.LIVE_CHANNELS_CREATE),
+    ).toBe(true);
+    expect(
+      hasPermission(
+        [PERMISSIONS.LIVE_READ],
+        PERMISSIONS.LIVE_VIEWING_REPORTS_READ,
+      ),
+    ).toBe(true);
+    expect(
+      hasPermission(
+        [PERMISSIONS.LIVE_MANAGE],
+        PERMISSIONS.LIVE_VIEWING_REPORTS_UPDATE,
+      ),
+    ).toBe(true);
+    expect(
+      hasPermission(
+        [PERMISSIONS.LIVE_VIEWING_REPORTS_MANAGE],
+        PERMISSIONS.LIVE_VIEWING_REPORTS_DELETE,
+      ),
     ).toBe(true);
     expect(
       hasPermission(

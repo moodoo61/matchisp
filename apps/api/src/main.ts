@@ -3,9 +3,9 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
-import type { NextFunction, Request, Response } from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { AppModule } from './app.module';
 
 function resolveCorsOrigins(): string | string[] | boolean {
@@ -26,7 +26,10 @@ function resolveCorsOrigins(): string | string[] | boolean {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // نعطّل parser الافتراضي حتى يسبق express.text مسار USER_END
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
 
   const uploadsRoot = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsRoot)) {
@@ -69,6 +72,14 @@ async function bootstrap() {
   app.useStaticAssets(uploadsRoot, { prefix: '/api/uploads' });
 
   app.setGlobalPrefix('api');
+  // Mist USER_END يرسل نصاً بأسطر — قبل json للمسار فقط
+  // @see https://docs.mistserver.org/mistserver/integration/triggers/list/USER_END
+  app.use(
+    '/api/public/live/viewing-reports/user-end',
+    express.text({ type: '*/*', limit: '256kb' }),
+  );
+  app.use(express.json({ limit: '2mb' }));
+  app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
   app.enableCors({
     origin: resolveCorsOrigins(),
@@ -94,6 +105,14 @@ async function bootstrap() {
   const port = Number(process.env.API_PORT ?? 3001);
   const host = process.env.HOST ?? '0.0.0.0';
   await app.listen(port, host);
+  // ملف يقرأه سكربت USER_END (Mist → localhost)
+  try {
+    const varLive = join(process.cwd(), 'var', 'live');
+    mkdirSync(varLive, { recursive: true });
+    writeFileSync(join(varLive, 'api.port'), `${port}\n`, { encoding: 'utf8' });
+  } catch {
+    /* غير حرج */
+  }
   // eslint-disable-next-line no-console
   console.log(`API listening on http://${host}:${port}`);
   // eslint-disable-next-line no-console

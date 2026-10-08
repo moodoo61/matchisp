@@ -16,7 +16,6 @@ import {
 
 type Props = {
   hlsUrl: string;
-  posterUrl?: string | null;
   /** شعار العلامة يظهر في المنتصف عند الإيقاف */
   brandLogoUrl?: string | null;
   /** تشغيل تلقائي عند التحميل — من إعدادات صفحة المشاهدة */
@@ -26,7 +25,6 @@ type Props = {
 /** مشغّل نظيف — أدوات تشغيل فقط بدون أي نص مكرر */
 export function ClientLivePlayer({
   hlsUrl,
-  posterUrl,
   brandLogoUrl,
   autoplay = false,
 }: Props) {
@@ -198,19 +196,13 @@ export function ClientLivePlayer({
         }
       }}
     >
-      {posterUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="client-live-poster" src={posterUrl} alt="" aria-hidden />
-      ) : (
-        <div className="client-live-poster is-blank" aria-hidden />
-      )}
+      <div className="client-live-poster is-blank" aria-hidden />
       <video
         ref={videoRef}
         className="client-live-video"
         playsInline
         autoPlay={autoplay}
         muted={muted}
-        poster={posterUrl ?? undefined}
         aria-label="البث المباشر"
       />
 

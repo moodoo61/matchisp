@@ -78,17 +78,17 @@ export const PERMISSIONS = {
   /** طرد الجلسات / الإيقاف القسري */
   LIVE_CHANNELS_CONTROL: 'live.channels:control',
 
-  LIVE_ENCODING_READ: 'live.encoding:read',
-  /** اختصار: تعديل الجودة والترميز */
-  LIVE_ENCODING_MANAGE: 'live.encoding:manage',
-  LIVE_ENCODING_UPDATE: 'live.encoding:update',
-
   LIVE_VIEWING_PAGE_READ: 'live.viewing_page:read',
   /** اختصار: كل مهام صفحة المشاهدة اليدوية */
   LIVE_VIEWING_PAGE_MANAGE: 'live.viewing_page:manage',
   LIVE_VIEWING_PAGE_UPDATE: 'live.viewing_page:update',
   /** تفعيل/إيقاف الصفحة العامة + إظهار/إخفاء قناة */
   LIVE_VIEWING_PAGE_TOGGLE: 'live.viewing_page:toggle',
+
+  LIVE_ENCODING_READ: 'live.encoding:read',
+  /** اختصار: تعديل الجودة والترميز */
+  LIVE_ENCODING_MANAGE: 'live.encoding:manage',
+  LIVE_ENCODING_UPDATE: 'live.encoding:update',
 
   /** الأحداث الرياضية */
   LIVE_SPORTS_EVENTS_READ: 'live.sports_events:read',
@@ -97,6 +97,12 @@ export const PERMISSIONS = {
   LIVE_SPORTS_EVENTS_CREATE: 'live.sports_events:create',
   LIVE_SPORTS_EVENTS_UPDATE: 'live.sports_events:update',
   LIVE_SPORTS_EVENTS_DELETE: 'live.sports_events:delete',
+
+  /** تقارير المشاهدة (USER_END) */
+  LIVE_VIEWING_REPORTS_READ: 'live.viewing_reports:read',
+  LIVE_VIEWING_REPORTS_MANAGE: 'live.viewing_reports:manage',
+  LIVE_VIEWING_REPORTS_UPDATE: 'live.viewing_reports:update',
+  LIVE_VIEWING_REPORTS_DELETE: 'live.viewing_reports:delete',
 
   /** الوكلاء (قسم partners) */
   PARTNERS_READ: 'partners:read',
@@ -213,18 +219,22 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'live.channels:delete': 'حذف قناة أو قسم',
   'live.channels:toggle': 'تفعيل/تعطيل التشغيل الدائم',
   'live.channels:control': 'طرد الجلسات والإيقاف القسري',
-  'live.encoding:read': 'عرض الجودة والترميز',
-  'live.encoding:manage': 'إدارة الجودة والترميز (الكل)',
-  'live.encoding:update': 'تعديل الجودة والترميز',
   'live.viewing_page:read': 'عرض صفحة المشاهدة',
   'live.viewing_page:manage': 'إدارة صفحة المشاهدة (الكل)',
   'live.viewing_page:update': 'تعديل إعدادات صفحة المشاهدة',
   'live.viewing_page:toggle': 'تفعيل الصفحة وإظهار/إخفاء القنوات',
+  'live.encoding:read': 'عرض الجودة والترميز',
+  'live.encoding:manage': 'إدارة الجودة والترميز (الكل)',
+  'live.encoding:update': 'تعديل الجودة والترميز',
   'live.sports_events:read': 'عرض الأحداث الرياضية',
   'live.sports_events:manage': 'إدارة الأحداث الرياضية (الكل)',
   'live.sports_events:create': 'إضافة فريق أو مباراة',
   'live.sports_events:update': 'تعديل فريق أو مباراة أو الضبط',
   'live.sports_events:delete': 'حذف فريق أو مباراة',
+  'live.viewing_reports:read': 'عرض تقارير المشاهدة',
+  'live.viewing_reports:manage': 'إدارة تقارير المشاهدة (الكل)',
+  'live.viewing_reports:update': 'تعديل إعدادات تقارير المشاهدة',
+  'live.viewing_reports:delete': 'حذف سجلات تقارير المشاهدة',
   'partners:read': 'عرض الوكلاء',
   'partners:create': 'إضافة وكيل',
   'partners:update': 'تعديل وكيل',
@@ -280,6 +290,12 @@ const LIVE_SPORTS_WRITE_ACTIONS = new Set([
   'manage',
 ]);
 
+const LIVE_VIEWING_REPORTS_WRITE_ACTIONS = new Set([
+  'update',
+  'delete',
+  'manage',
+]);
+
 const PAGE_FEATURE_WRITE_ACTIONS = new Set([
   'create',
   'update',
@@ -293,6 +309,7 @@ export function hasPermission(
   userPermissions: readonly string[],
   required: string,
 ): boolean {
+  if (typeof required !== 'string' || !required) return false;
   if (userPermissions.includes(required)) return true;
 
   if (required.endsWith(':read')) {
@@ -384,6 +401,23 @@ export function hasPermission(
         userPermissions.includes(PERMISSIONS.LIVE_READ) ||
         userPermissions.includes(PERMISSIONS.LIVE_MANAGE) ||
         userPermissions.includes(PERMISSIONS.LIVE_SPORTS_EVENTS_MANAGE)
+      );
+    }
+  }
+
+  if (required.startsWith('live.viewing_reports:')) {
+    const action = required.slice('live.viewing_reports:'.length);
+    if (LIVE_VIEWING_REPORTS_WRITE_ACTIONS.has(action)) {
+      if (userPermissions.includes(PERMISSIONS.LIVE_VIEWING_REPORTS_MANAGE)) {
+        return true;
+      }
+      if (userPermissions.includes(PERMISSIONS.LIVE_MANAGE)) return true;
+    }
+    if (action === 'read') {
+      return (
+        userPermissions.includes(PERMISSIONS.LIVE_READ) ||
+        userPermissions.includes(PERMISSIONS.LIVE_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.LIVE_VIEWING_REPORTS_MANAGE)
       );
     }
   }
@@ -563,7 +597,10 @@ export function hasAnyPermission(
   userPermissions: readonly string[],
   required: readonly string[],
 ): boolean {
-  return required.some((code) => hasPermission(userPermissions, code));
+  if (!Array.isArray(required) || !required.length) return false;
+  return required.some(
+    (code) => typeof code === 'string' && hasPermission(userPermissions, code),
+  );
 }
 
 /** ربط مفتاح تفعيل البطاقة بصلاحية التفعيل/التعطيل */

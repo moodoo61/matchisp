@@ -53,8 +53,9 @@
     padding: 0.7rem 0.8rem;
   }
 
-  .cl-program-mark { width: 44px; height: 44px; }
-  .cl-program h1 { font-size: 1.1rem; }
+  .cl-program-mark { width: 40px; height: 40px; }
+  .cl-program-channel { max-width: 10.5rem; }
+  .cl-program-channel-title { font-size: 1.05rem; }
 
   .cl-player-controls {
     inset-inline: 0.45rem;

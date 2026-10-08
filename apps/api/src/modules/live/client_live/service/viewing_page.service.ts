@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaLiveService } from '../../../../database/database.module';
 import { AuditService } from '../../../audit/audit.service';
 import { GeneralSettingsService } from '../../../settings/general/service/general-settings.service';
@@ -32,28 +32,13 @@ function optionalText(
 }
 
 @Injectable()
-export class ViewingPageService implements OnModuleInit {
-  private readonly logger = new Logger(ViewingPageService.name);
-
+export class ViewingPageService {
   constructor(
     private readonly prisma: PrismaLiveService,
     private readonly generalSettings: GeneralSettingsService,
     private readonly audit: AuditService,
     private readonly mistJwt: MistJwtService,
   ) {}
-
-  /** يعيد تطبيق حماية المشاهدة إن كانت مفعّلة، لتصحيح مفتاح قديم بدون حظر USER_NEW */
-  async onModuleInit() {
-    try {
-      const stored = await this.loadStoredSettings();
-      if (!stored.jwtPlaybackEnabled) return;
-      await this.mistJwt.ensureViewerProtection();
-    } catch (err) {
-      this.logger.warn(
-        `تعذر مزامنة حماية JWT مع Mist عند الإقلاع: ${err instanceof Error ? err.message : err}`,
-      );
-    }
-  }
 
   async getSettings(): Promise<ViewingPageSettings> {
     return this.loadSettings();

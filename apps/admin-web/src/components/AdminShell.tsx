@@ -92,6 +92,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         PERMISSIONS.LIVE_CHANNELS_READ,
         PERMISSIONS.LIVE_ENCODING_READ,
         PERMISSIONS.LIVE_VIEWING_PAGE_READ,
+        PERMISSIONS.LIVE_VIEWING_REPORTS_READ,
         PERMISSIONS.LIVE_SPORTS_EVENTS_READ,
         PERMISSIONS.LIVE_MANAGE,
         PERMISSIONS.LIVE_CHANNELS_MANAGE,
@@ -100,15 +101,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         PERMISSIONS.LIVE_CHANNELS_DELETE,
         PERMISSIONS.LIVE_CHANNELS_TOGGLE,
         PERMISSIONS.LIVE_CHANNELS_CONTROL,
-        PERMISSIONS.LIVE_ENCODING_MANAGE,
-        PERMISSIONS.LIVE_ENCODING_UPDATE,
         PERMISSIONS.LIVE_VIEWING_PAGE_MANAGE,
         PERMISSIONS.LIVE_VIEWING_PAGE_UPDATE,
         PERMISSIONS.LIVE_VIEWING_PAGE_TOGGLE,
+        PERMISSIONS.LIVE_ENCODING_MANAGE,
+        PERMISSIONS.LIVE_ENCODING_UPDATE,
         PERMISSIONS.LIVE_SPORTS_EVENTS_MANAGE,
         PERMISSIONS.LIVE_SPORTS_EVENTS_CREATE,
         PERMISSIONS.LIVE_SPORTS_EVENTS_UPDATE,
         PERMISSIONS.LIVE_SPORTS_EVENTS_DELETE,
+        PERMISSIONS.LIVE_VIEWING_REPORTS_MANAGE,
+        PERMISSIONS.LIVE_VIEWING_REPORTS_UPDATE,
+        PERMISSIONS.LIVE_VIEWING_REPORTS_DELETE,
       ])
     ) {
       const liveChildren: NonNullable<NavItem['children']> = [];
@@ -146,20 +150,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       if (
         canAny([
           PERMISSIONS.LIVE_READ,
-          PERMISSIONS.LIVE_ENCODING_READ,
-          PERMISSIONS.LIVE_MANAGE,
-          PERMISSIONS.LIVE_ENCODING_MANAGE,
-          PERMISSIONS.LIVE_ENCODING_UPDATE,
-        ])
-      ) {
-        liveChildren.push({
-          href: '/live/encoding',
-          label: 'الجودة والترميز',
-        });
-      }
-      if (
-        canAny([
-          PERMISSIONS.LIVE_READ,
           PERMISSIONS.LIVE_VIEWING_PAGE_READ,
           PERMISSIONS.LIVE_MANAGE,
           PERMISSIONS.LIVE_VIEWING_PAGE_MANAGE,
@@ -170,6 +160,35 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         liveChildren.push({
           href: '/live/viewing-page',
           label: 'صفحة المشاهدة',
+        });
+      }
+      if (
+        canAny([
+          PERMISSIONS.LIVE_READ,
+          PERMISSIONS.LIVE_VIEWING_REPORTS_READ,
+          PERMISSIONS.LIVE_MANAGE,
+          PERMISSIONS.LIVE_VIEWING_REPORTS_MANAGE,
+          PERMISSIONS.LIVE_VIEWING_REPORTS_UPDATE,
+          PERMISSIONS.LIVE_VIEWING_REPORTS_DELETE,
+        ])
+      ) {
+        liveChildren.push({
+          href: '/live/viewing-reports',
+          label: 'تقارير المشاهدة',
+        });
+      }
+      if (
+        canAny([
+          PERMISSIONS.LIVE_READ,
+          PERMISSIONS.LIVE_ENCODING_READ,
+          PERMISSIONS.LIVE_MANAGE,
+          PERMISSIONS.LIVE_ENCODING_MANAGE,
+          PERMISSIONS.LIVE_ENCODING_UPDATE,
+        ])
+      ) {
+        liveChildren.push({
+          href: '/live/encoding',
+          label: 'الجودة والترميز',
         });
       }
       if (liveChildren.length) {

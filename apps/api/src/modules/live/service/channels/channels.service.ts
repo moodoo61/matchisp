@@ -11,7 +11,9 @@ import { PrismaLiveService } from '../../../../database/database.module';
 import { AuditService } from '../../../audit/audit.service';
 import { CreateChannelDto } from '../../dto/channels/create-channel.dto';
 import { UpdateChannelDto } from '../../dto/channels/update-channel.dto';
+import { MistJwtService } from '../mist/mist-jwt.service';
 import { MistServerService } from '../mist/mist_server.service';
+import { ViewingReportsSettingsService } from '../../viewing_reports/service/viewing-reports-settings.service';
 import {
   assertSourceOptionAvailable,
   buildMistSourceForMode,
@@ -36,6 +38,8 @@ export class ChannelsService {
     private readonly prisma: PrismaLiveService,
     private readonly audit: AuditService,
     private readonly mist: MistServerService,
+    private readonly mistJwt: MistJwtService,
+    private readonly viewingReportsSettings: ViewingReportsSettingsService,
     private readonly uniqueness: ChannelUniquenessService,
     private readonly encodingQuality: EncodingQualityService,
     private readonly hlsProbe: HlsMasterProbeService,
@@ -291,6 +295,8 @@ export class ChannelsService {
           abrProfileKey,
         },
       });
+      await this.mistJwt.syncViewerProtectionIfEnabled();
+      await this.viewingReportsSettings.syncIfEnabled().catch(() => undefined);
       return item;
     } catch (err) {
       await this.mist.deleteStream(name).catch(() => undefined);
@@ -402,6 +408,10 @@ export class ChannelsService {
         ...(alwaysOnOnly ? { alwaysOn: dto.alwaysOn } : { abrProfileKey }),
       },
     });
+    if (!alwaysOnOnly) {
+      await this.mistJwt.syncViewerProtectionIfEnabled();
+      await this.viewingReportsSettings.syncIfEnabled().catch(() => undefined);
+    }
     return item;
   }
 
@@ -471,6 +481,8 @@ export class ChannelsService {
       resourceId: id,
       metadata: { name: current.name, label: current.label },
     });
+    await this.mistJwt.syncViewerProtectionIfEnabled();
+    await this.viewingReportsSettings.syncIfEnabled().catch(() => undefined);
     return { success: true };
   }
 

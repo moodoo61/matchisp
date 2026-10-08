@@ -113,15 +113,6 @@ export const PERMISSION_TREE: readonly PermissionTreeNode[] = [
         ],
       },
       {
-        key: 'live.encoding',
-        label: 'الجودة والترميز',
-        codes: [
-          'live.encoding:read',
-          'live.encoding:manage',
-          'live.encoding:update',
-        ],
-      },
-      {
         key: 'live.viewing_page',
         label: 'صفحة المشاهدة',
         codes: [
@@ -129,6 +120,25 @@ export const PERMISSION_TREE: readonly PermissionTreeNode[] = [
           'live.viewing_page:manage',
           'live.viewing_page:update',
           'live.viewing_page:toggle',
+        ],
+      },
+      {
+        key: 'live.viewing_reports',
+        label: 'تقارير المشاهدة',
+        codes: [
+          'live.viewing_reports:read',
+          'live.viewing_reports:manage',
+          'live.viewing_reports:update',
+          'live.viewing_reports:delete',
+        ],
+      },
+      {
+        key: 'live.encoding',
+        label: 'الجودة والترميز',
+        codes: [
+          'live.encoding:read',
+          'live.encoding:manage',
+          'live.encoding:update',
         ],
       },
     ],

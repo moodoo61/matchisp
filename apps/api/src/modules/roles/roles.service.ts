@@ -31,6 +31,32 @@ export class RolesService {
         create: { code, name, description: name },
       });
     }
+
+    // مدير النظام يحصل تلقائياً على أي صلاحية جديدة في النظام
+    const superAdmin = await this.prisma.role.findUnique({
+      where: { code: 'super_admin' },
+      select: { id: true },
+    });
+    if (!superAdmin) return;
+
+    const permissions = await this.prisma.permission.findMany({
+      select: { id: true },
+    });
+    for (const permission of permissions) {
+      await this.prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: superAdmin.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: superAdmin.id,
+          permissionId: permission.id,
+        },
+      });
+    }
   }
 
   async listRoles() {

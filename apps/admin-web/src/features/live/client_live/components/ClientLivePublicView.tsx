@@ -137,6 +137,7 @@ export function ClientLivePublicView() {
                   : null
               }
               autoplay={shouldAutoplay}
+              onSelectChannel={selectChannel}
             />
             <PlaylistPanel sections={sections} selectedId={selectedId} onSelect={selectChannel} />
           </div>

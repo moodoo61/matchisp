@@ -25,13 +25,71 @@ export function formatMatchDateLabel(iso: string) {
   }).format(d);
 }
 
-/** بدأت المباراة: حان الموعد أو الحالة ليست «لم تبدأ» */
+/** نافذة اعتبار المباراة جارية بعد الموعد إن لم تُحدَّث الحالة من المصدر */
+const LIVE_WINDOW_MS = 2.5 * 60 * 60 * 1000;
+
+export type MatchStatusTone =
+  | 'live'
+  | 'break'
+  | 'upcoming'
+  | 'finished'
+  | 'cancelled';
+
+function toneFromStatusText(raw: string): MatchStatusTone | null {
+  if (!raw) return null;
+  if (/انته|نهائ|full\s?-?time|finished|ended/.test(raw)) return 'finished';
+  if (/ملغ|cancel|أ?جل|postpon/.test(raw)) return 'cancelled';
+  if (
+    /استراح|بين الشوط|half[\s-]?time|\bht\b|توقف مؤقت|paused/.test(raw)
+  )
+    return 'break';
+  if (
+    /جار|مباشر|\blive\b|الشوط الأول|الشوط الثاني|الشوط الاضافي|تمديد/.test(
+      raw,
+    )
+  )
+    return 'live';
+  if (/لم تبدأ|قادم|لم تنطلق|scheduled|upcoming|not started/.test(raw))
+    return 'upcoming';
+  return null;
+}
+
+/** تقدير الحالة من الموعد عند غياب/تعارض نص المزامنة */
+function toneFromKickoff(
+  kickoffAt: string,
+  nowMs: number,
+): MatchStatusTone {
+  const kickoff = new Date(kickoffAt).getTime();
+  if (Number.isNaN(kickoff)) return 'upcoming';
+  if (nowMs < kickoff) return 'upcoming';
+  if (nowMs <= kickoff + LIVE_WINDOW_MS) return 'live';
+  return 'finished';
+}
+
+/**
+ * تصنيف الحالة: نص المزامنة الصريح أولاً، ثم الموعد تلقائياً.
+ * «لم تبدأ» بعد انطلاق الموعد تُتجاوز لصالح التقدير الزمني.
+ */
+export function matchStatusTone(
+  match: PublicSportMatch,
+  nowMs = Date.now(),
+): MatchStatusTone {
+  const raw = (match.status ?? '').trim().toLowerCase();
+  const fromText = toneFromStatusText(raw);
+  const fromTime = toneFromKickoff(match.kickoffAt, nowMs);
+
+  if (fromText === 'finished' || fromText === 'cancelled' || fromText === 'break') {
+    return fromText;
+  }
+  if (fromText === 'live') return 'live';
+  if (fromText === 'upcoming' && fromTime === 'upcoming') return 'upcoming';
+  // نص غائب أو «لم تبدأ» بعد الموعد → الاعتماد على الوقت
+  return fromTime;
+}
+
 export function matchHasStarted(match: PublicSportMatch, nowMs = Date.now()) {
-  const kickoff = new Date(match.kickoffAt).getTime();
-  if (!Number.isNaN(kickoff) && kickoff <= nowMs) return true;
-  const status = match.status?.trim();
-  if (status && status !== 'لم تبدأ') return true;
-  return false;
+  const tone = matchStatusTone(match, nowMs);
+  return tone === 'live' || tone === 'break' || tone === 'finished';
 }
 
 export function matchCenterLabel(match: PublicSportMatch, nowMs = Date.now()) {
@@ -41,31 +99,53 @@ export function matchCenterLabel(match: PublicSportMatch, nowMs = Date.now()) {
   return 'VS';
 }
 
-export type MatchStatusTone =
-  | 'live'
-  | 'break'
-  | 'upcoming'
-  | 'finished'
-  | 'cancelled';
+/** نص الحالة للعرض — صريح من المصدر أو مستنتج من الموعد */
+export function matchStatusDisplay(
+  match: PublicSportMatch,
+  nowMs = Date.now(),
+): string {
+  const explicit = match.status?.trim();
+  if (explicit && explicit !== 'لم تبدأ') return explicit;
+  if (explicit === 'لم تبدأ' && matchStatusTone(match, nowMs) === 'upcoming') {
+    return explicit;
+  }
+  switch (matchStatusTone(match, nowMs)) {
+    case 'live':
+      return 'جارية';
+    case 'break':
+      return 'استراحة';
+    case 'finished':
+      return 'انتهت';
+    case 'cancelled':
+      return explicit || 'ملغاة';
+    default:
+      return explicit || 'لم تبدأ';
+  }
+}
 
-/** تصنيف نص الحالة الحر إلى فئة لونية للتمييز البصري */
-export function matchStatusTone(match: PublicSportMatch): MatchStatusTone {
-  const raw = (match.status ?? '').trim().toLowerCase();
-  if (!raw) return matchHasStarted(match) ? 'live' : 'upcoming';
-  if (/انته|نهائ|full\s?-?time|finished|ended/.test(raw)) return 'finished';
-  if (/ملغ|cancel|أ?جل|postpon/.test(raw)) return 'cancelled';
-  if (
-    /استراح|بين الشوط|half[\s-]?time|ht\b|الشوط/.test(raw) ||
-    /توقف مؤقت|paused/.test(raw)
-  )
-    return 'break';
-  if (
-    /جار|مباشر|live|الشوط الأول|الشوط الثاني|الشوط الاضافي|تمديد/.test(raw)
-  )
-    return 'live';
-  if (/لم تبدأ|قادم|لم تنطلق|scheduled|upcoming|not started/.test(raw))
-    return 'upcoming';
-  return matchHasStarted(match) ? 'live' : 'upcoming';
+/** مباراة جارية الآن (مباشر أو استراحة بين الشوطين) */
+export function isMatchLiveNow(
+  match: PublicSportMatch,
+  nowMs = Date.now(),
+): boolean {
+  const tone = matchStatusTone(match, nowMs);
+  return tone === 'live' || tone === 'break';
+}
+
+/** سطر شريط المباريات المباشرة */
+export function formatLiveMatchTickerLine(match: PublicSportMatch): string {
+  const home = match.homeTeam.name.trim();
+  const away = match.awayTeam.name.trim();
+  const score = `${match.homeGoals ?? 0} – ${match.awayGoals ?? 0}`;
+  return `${home} ${score} ${away}`;
+}
+
+/** أول قناة مربوطة بالمباراة (للانتقال من الشريط) */
+export function matchPrimaryChannelId(
+  match: PublicSportMatch,
+): string | null {
+  if (match.channels?.length) return match.channels[0]?.id ?? null;
+  return match.channel?.id ?? null;
 }
 
 export function goalsForSide(

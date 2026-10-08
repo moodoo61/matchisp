@@ -31,8 +31,9 @@ export type ViewingPageSettings = {
   /** تشغيل القناة تلقائياً عند دخول الصفحة */
   autoplayOnEnter: boolean;
   /**
-   * حماية روابط المشاهدة بـ JWT/JWK عبر MistServer.
-   * false = الروابط المفتوحة الحالية · true = يتطلب توكن tkn
+   * حماية روابط المشاهدة بـ JWK + JWT عبر MistServer.
+   * false = روابط مفتوحة · true = يتطلب tkn
+   * @see https://docs.mistserver.org/mistserver/integration/jwt/
    */
   jwtPlaybackEnabled: boolean;
 };

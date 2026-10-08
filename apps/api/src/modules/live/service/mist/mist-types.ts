@@ -46,6 +46,13 @@ export type MistApiResponse = {
   config?: {
     triggers?: Record<string, unknown>;
   };
+  config_backup?: {
+    config?: {
+      triggers?: Record<string, unknown>;
+    };
+  };
+  jwks?: unknown;
+  addjwks?: unknown;
   active_streams?:
     | string[]
     | Record<string, number[] | Record<string, number>>;

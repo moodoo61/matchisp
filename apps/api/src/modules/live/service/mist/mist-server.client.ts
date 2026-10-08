@@ -6,10 +6,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { MistApiResponse } from './mist-types';
 
-/** عميل HTTP لـ MistServer api2 */
+/** عميل HTTP لـ MistServer api2 — مع قفل لتعديلات المشغّلات */
 @Injectable()
 export class MistServerClient {
   private readonly logger = new Logger(MistServerClient.name);
+  /** يمنع سباق read-modify-write على config.triggers */
+  private triggersChain: Promise<void> = Promise.resolve();
 
   constructor(private readonly config: ConfigService) {}
 
@@ -74,4 +76,42 @@ export class MistServerClient {
       };
     }
   }
+
+  /** قراءة مشغّلات Mist (من config ثم النسخة الاحتياطية) */
+  async readTriggers(): Promise<Record<string, unknown>> {
+    const data = await this.request({ config: true, config_backup: true });
+    const fromConfig = asTriggerMap(data.config?.triggers);
+    if (Object.keys(fromConfig).length) return fromConfig;
+    return asTriggerMap(data.config_backup?.config?.triggers);
+  }
+
+  /**
+   * تعديل مشغّلات بشكل متسلسل (قراءة → تعديل → كتابة) دون سباق مع عمليات أخرى.
+   * إن أعاد المُعدِّل نفس المرجع دون تغيير جوهري يمكنه إرجاع null لتخطي الكتابة.
+   */
+  async updateTriggers(
+    mutator: (
+      current: Record<string, unknown>,
+    ) =>
+      | Record<string, unknown>
+      | null
+      | Promise<Record<string, unknown> | null>,
+  ): Promise<void> {
+    const run = this.triggersChain.then(async () => {
+      const current = await this.readTriggers();
+      const next = await mutator({ ...current });
+      if (!next) return;
+      await this.request({ config: { triggers: next } });
+    });
+    this.triggersChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    await run;
+  }
+}
+
+function asTriggerMap(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return { ...(value as Record<string, unknown>) };
 }

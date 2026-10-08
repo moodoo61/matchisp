@@ -8,6 +8,7 @@ import {
   updateViewingPageSettings,
 } from '@/features/live/client_live/api';
 import type { ViewingPageSettings } from '@/features/live/client_live/types';
+import { ViewingReportsEnableRow } from '@/features/live/viewing_reports/components/ViewingReportsEnableRow';
 import { usePermissions } from '@/lib/usePermissions';
 import {
   CardEnableToggle,
@@ -403,11 +404,11 @@ export function ViewingPageSettingsCard() {
           </div>
 
           <div className="viewing-settings-row">
-            <span className="viewing-settings-label">حماية JWT / JWK</span>
+            <span className="viewing-settings-label">حماية روابط المشاهدة</span>
             <span className="viewing-settings-meta">
               {form.jwtPlaybackEnabled
-                ? 'مشاهدة فقط: يتطلب tkn، وبدون مفتاح إدخال أو مصادقة API'
-                : 'روابط مفتوحة — التوكن وحده لا يمنع المشاهدة'}
+                ? 'JWK + USER_NEW على قنوات اللوحة'
+                : 'روابط مفتوحة بدون توكن'}
             </span>
             <div className="viewing-settings-actions">
               {canUpdate ? (
@@ -428,6 +429,8 @@ export function ViewingPageSettingsCard() {
               )}
             </div>
           </div>
+
+          <ViewingReportsEnableRow />
 
           {!canUpdate && !canToggle ? (
             <p className="muted">عرض فقط — لا صلاحية تعديل</p>
