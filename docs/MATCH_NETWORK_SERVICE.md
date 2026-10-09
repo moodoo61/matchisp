@@ -1,26 +1,24 @@
-# خدمة الشبكة المستقلة: `match-network`
+# إطار شبكة Match المستقل
 
-وحدة systemd **منفصلة عن التطبيق** تضمن أن NetworkManager جاهز وأن اتصالات `match-*`
-(التي تكتبها لوحة الإدارة) تُفعَّل عند الإقلاع — حتى لو فشلت خدمة `tsetisp` أو مشروع Node.
+وحدات systemd **منفصلة عن التطبيق** (`tsetisp` / Node) لضمان الشبكة بعد الإقلاع.
 
-| الملف | الغرض |
-| --- | --- |
-| [`infra/systemd/match-network.service`](../infra/systemd/match-network.service) | تعريف الخدمة (oneshot) |
-| [`infra/scripts/match-network-ensure.sh`](../infra/scripts/match-network-ensure.sh) | منطق الضمان عبر `nmcli` |
-| [`infra/scripts/install-match-network-service.sh`](../infra/scripts/install-match-network-service.sh) | التثبيت في `/etc/systemd/system` |
+| الوحدة | الملف | الدور |
+| --- | --- | --- |
+| `match-network` | [`match-network.service`](../infra/systemd/match-network.service) | NetworkManager + اتصالات `match-*` |
+| `match-sstp` | [`match-sstp.service`](../infra/systemd/match-sstp.service) | حارس SSTP من `var/sstp/boot.env` |
+| التثبيت | [`install-match-network-service.sh`](../infra/scripts/install-match-network-service.sh) | تثبّت الوحدتين معاً |
 
-## لماذا خدمة مستقلة؟
+## لماذا إطار مستقل؟
 
-- إعدادات المنافذ/العناوين/DNS تُحفظ في NetworkManager (ملفات اتصال)، وليس في عملية الـ API.
-- عند فشل تشغيل المشروع أو غياب Node، تبقى الشبكة النظامية قابلة للإقلاع والتفعيل.
-- `tsetisp` يعتمد على الشبكة؛ هذه الخدمة تعمل **قبله** ولا تعتمد عليه.
+- المنافذ/العناوين/DNS تُحفظ في NetworkManager.
+- SSTP يُعاد تشغيله عبر `sstpc` دون انتظار API أو Postgres (بعد أن تحفظ اللوحة `boot.env`).
+- عند فشل المشروع تبقى الطبقة الشبكية قابلة للعمل.
 
-## التثبيت (على الخادم الهدف)
+## التثبيت
 
 ```bash
 cd /opt/match
-# تأكد من وجود network-manager
-sudo apt install -y network-manager
+sudo apt install -y network-manager sstp-client ppp
 sudo systemctl enable --now NetworkManager
 
 sudo bash infra/scripts/install-match-network-service.sh \
@@ -28,23 +26,34 @@ sudo bash infra/scripts/install-match-network-service.sh \
   --enable --start
 ```
 
-## أوامر يومية
+ثم من الواجهة: **الإعدادات ← الشبكة ← SSTP** — احفظ الإعدادات (أو فعّل الاتصال مرة) ليُكتب:
+
+`/opt/match/var/sstp/boot.env` (صلاحيات `0600`)
+
+بدون هذا الملف لن يحاول `match-sstp` الاتصال.
+
+## أوامر
 
 ```bash
-sudo systemctl status match-network
-sudo systemctl restart match-network
-journalctl -u match-network -f
+sudo systemctl status match-network match-sstp
+sudo systemctl restart match-network match-sstp
+journalctl -u match-network -u match-sstp -f
+ls -la /opt/match/var/sstp/
 nmcli connection show
-nmcli device status
 ```
 
-## ماذا تفعل الخدمة؟
+## ماذا تفعل كل وحدة؟
 
-1. تتأكد أن `NetworkManager` يعمل.
-2. تعيد تحميل إعدادات NM (بما فيها `99-match-managed-ifaces.conf`).
-3. تفعّل اتصالات الاسم `match-*` ذات `autoconnect=yes`.
+### `match-network` (oneshot)
+1. تشغيل NetworkManager وإعادة تحميل الإعدادات.
+2. تفعيل اتصالات `match-*` ذات `autoconnect=yes`.
 
-ضبط المنافذ من الواجهة يبقى عبر API؛ هذه الخدمة **تطبّق عند الإقلاع** ما حُفظ مسبقاً.
+### `match-sstp` (simple + Restart)
+1. يقرأ `var/sstp/boot.env`.
+2. إن `AUTO_CONNECT=1` وبيانات الدخول موجودة وليس `sstpc` شغّالاً → يشغّله.
+3. يعيد المحاولة كل 30 ثانية تقريباً.
+
+ضبط الواجهة يبقى عبر API؛ هذه الخدمات **تطبّق/تحرس** ما حُفظ.
 
 ## الإزالة
 
@@ -57,7 +66,8 @@ sudo bash infra/scripts/install-match-network-service.sh --uninstall
 | الخدمة | تعتمد على | الدور |
 | --- | --- | --- |
 | `NetworkManager` | النظام | محرّك الشبكة |
-| `match-network` | NetworkManager فقط | ضمان اتصالات اللوحة بعد الإقلاع |
-| `tsetisp` | الشبكة + Postgres/Redis… | تشغيل مشروع التطوير |
+| `match-network` | NM | منافذ `match-*` |
+| `match-sstp` | الشبكة + `boot.env` + `sstpc` | نفق SSTP |
+| `tsetisp` | الشبكة + DB… | لوحة التطوير |
 
-يُفضَّل تثبيت `match-network` قبل الاعتماد على واجهة الشبكة في اللوحة.
+`tsetisp` يمكنه أيضاً إدارة SSTP؛ الحارسان يتشاركان ملف PID ويتجنبان تشغيل نسختين إن كانت العملية تعمل.

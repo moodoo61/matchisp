@@ -29,6 +29,7 @@ import { ViewingPageService } from './client_live/service/viewing_page.service';
 import { MistJwtService } from './service/mist/mist-jwt.service';
 import { MistIntegrationBootstrapService } from './service/mist/mist-integration-bootstrap.service';
 import { MistPlaybackService } from './service/mist/mist-playback.service';
+import { MistStreamWakeService } from './service/mist/mist-stream-wake.service';
 import { SportTeamsController } from './sports_events/controllers/sport-teams.controller';
 import { SportMatchesController } from './sports_events/controllers/sport-matches.controller';
 import { SportsEventsSettingsController } from './sports_events/controllers/sports-events-settings.controller';
@@ -83,6 +84,7 @@ import { ViewingReportsSettingsService } from './viewing_reports/service/viewing
     MistJwtService,
     MistIntegrationBootstrapService,
     MistPlaybackService,
+    MistStreamWakeService,
     PublicClientLiveService,
     ViewingPageService,
     ViewingChannelsService,

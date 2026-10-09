@@ -1,10 +1,11 @@
 [Unit]
 Description=ISP Admin (تطوير مؤقت) — tsetisp عبر dev.sh
 Documentation=file:///opt/match/docs/REQUIREMENTS.md
-After=network-online.target postgresql.service redis-server.service match-network.service
+After=network-online.target postgresql.service redis-server.service match-network.service match-sstp.service
 Wants=network-online.target
-# شبكة اللوحة الدائمة مستقلة — إن وُجدت لا نربط نجاح tsetisp بها إجبارياً
+# إطار الشبكة المستقل — لا نربط نجاح tsetisp به إجبارياً
 Wants=match-network.service
+Wants=match-sstp.service
 # إن وُجدت خدمات Postgres/Redis المحلية لا تنتظر الفشل إن كانت بأسماء مختلفة
 After=postgresql.service redis-server.service redis.service
 

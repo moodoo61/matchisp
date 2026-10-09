@@ -9,9 +9,17 @@ import type {
   ViewingPageSettingsInput,
 } from './types';
 
+type PublicFetchInit = {
+  method?: 'GET' | 'POST';
+};
+
 /** جلب عام بدون اعتماد على جلسة لوحة التحكم */
-async function publicFetch<T>(path: string): Promise<T> {
+async function publicFetch<T>(
+  path: string,
+  init: PublicFetchInit = {},
+): Promise<T> {
   const res = await fetch(path, {
+    method: init.method ?? 'GET',
     headers: { Accept: 'application/json' },
     cache: 'no-store',
   });
@@ -39,7 +47,15 @@ export function listPublicLiveSections() {
   return publicFetch<PublicLiveSection[]>('/api/public/live/sections');
 }
 
-/** جاهزية قناة واحدة (online / جودات / روابط) أثناء إيقاظ Mist */
+/** إيقاظ ستريم Mist بطلب رابط التشغيل الحقيقي من السيرفر */
+export function wakePublicChannel(channelId: string) {
+  return publicFetch<PublicChannelPlaybackReady>(
+    `/api/public/live/channels/${encodeURIComponent(channelId)}/wake`,
+    { method: 'POST' },
+  );
+}
+
+/** جاهزية قناة واحدة (online / جودات / روابط) أثناء التنشيط */
 export function getPublicChannelPlaybackReady(channelId: string) {
   return publicFetch<PublicChannelPlaybackReady>(
     `/api/public/live/channels/${encodeURIComponent(channelId)}/playback-ready`,

@@ -1,11 +1,14 @@
 import type { TsQualityFromMist } from '../types';
 import type { ViewingPlayerId } from './players';
 
-/** فترة استطلاع جاهزية القناة أثناء الإيقاظ */
-export const CHANNEL_WAKE_POLL_MS = 1500;
+/** فترة استطلاع online/جودات أثناء التنشيط */
+export const CHANNEL_WAKE_POLL_MS = 1000;
 
-/** أقصى انتظار لتنشيط القناة وجلب الجودات */
-export const CHANNEL_WAKE_TIMEOUT_MS = 12_000;
+/** أقصى انتظار حتى يتحول Mist إلى online=1 ثم تتوفر الجودات */
+export const CHANNEL_WAKE_TIMEOUT_MS = 30_000;
+
+/** بعد online=1: انتظار إضافي لظهور مسارات الجودة قبل الرابط الرئيسي */
+export const CHANNEL_QUALITIES_GRACE_MS = 5_000;
 
 export type PlaybackGatePhase =
   | 'deciding'
@@ -15,7 +18,6 @@ export type PlaybackGatePhase =
 
 export type PlaybackGatePlan = {
   phase: PlaybackGatePhase;
-  /** هل نحتاج إيقاظ/انتظار قبل إنشاء المشغّل */
   needsWake: boolean;
   player: ViewingPlayerId;
   /** تشغيل TS بالرابط الرئيسي دون ?video= */
@@ -40,24 +42,22 @@ export function hasPlayableTsQualities(
   });
 }
 
-/** القناة نشطة على Mist وجاهزة للتشغيل */
-export function isChannelStreamLive(input: {
-  online: 0 | 1 | 2 | null;
-  active: boolean;
-}): boolean {
-  return input.online === 1 && input.active === true;
+/**
+ * أخضر Mist = online === 1 (نشط).
+ * @see MistServer streams API: online 0=error, 1=active, 2=inactive
+ */
+export function isMistStreamOnline(online: 0 | 1 | 2 | null): boolean {
+  return online === 1;
 }
 
 /**
- * قرار أولي قبل إنشاء المشغّل.
- * TS بدون جودات أو بقناة نائمة → إيقاظ؛ HLS يمر مباشرة.
+ * قرار أولي: TS يحتاج تنشيطاً إن لم يكن أخضر أو بلا جودات.
+ * لا يوجد تحويل تلقائي إلى HLS من البوابة.
  */
 export function planInitialPlayback(input: {
   preferredPlayer: ViewingPlayerId;
   online: 0 | 1 | 2 | null;
-  active: boolean;
   tsQualities: TsQualityFromMist[] | null | undefined;
-  canFallbackToHls: boolean;
 }): PlaybackGatePlan {
   if (input.preferredPlayer === 'hls') {
     return {
@@ -69,10 +69,10 @@ export function planInitialPlayback(input: {
     };
   }
 
-  const live = isChannelStreamLive(input);
+  const online = isMistStreamOnline(input.online);
   const qualitiesOk = hasPlayableTsQualities(input.tsQualities);
 
-  if (live && qualitiesOk) {
+  if (online && qualitiesOk) {
     return {
       phase: 'ready',
       needsWake: false,
@@ -87,29 +87,31 @@ export function planInitialPlayback(input: {
     needsWake: true,
     player: 'ts',
     useMainTsUrl: false,
-    message: live
-      ? 'جاري تجهيز مسارات الجودة…'
-      : 'جاري تنشيط القناة…',
+    message: online
+      ? 'القناة نشطة — جاري جلب مسارات الجودة…'
+      : 'جاري تنشيط القناة عبر Mist…',
   };
 }
 
 /**
- * قرار بعد انتهاء الانتظار / وصول عيّنة جاهزية.
- * أولوية: TS بجودة → TS رابط رئيسي إن نشطت → HLS → فشل.
+ * بعد عيّنة جاهزية من الـ API.
+ * الترتيب: انتظر الأخضر → جودات → تشغيل؛ بلا HLS.
  */
-export function planAfterWakeAttempt(input: {
+export function planAfterWakeSample(input: {
   online: 0 | 1 | 2 | null;
-  active: boolean;
   tsQualities: TsQualityFromMist[] | null | undefined;
   tsReady?: boolean;
-  canFallbackToHls: boolean;
+  streamOnline?: boolean;
+  /** مضى وقت منذ أن صارت online=1 */
+  onlineForMs: number;
   timedOut: boolean;
 }): PlaybackGatePlan {
-  const live = isChannelStreamLive(input);
+  const online =
+    input.streamOnline === true || isMistStreamOnline(input.online);
   const qualitiesOk =
     input.tsReady === true || hasPlayableTsQualities(input.tsQualities);
 
-  if (live && qualitiesOk) {
+  if (online && qualitiesOk) {
     return {
       phase: 'ready',
       needsWake: false,
@@ -119,7 +121,7 @@ export function planAfterWakeAttempt(input: {
     };
   }
 
-  if (live) {
+  if (online && input.onlineForMs >= CHANNEL_QUALITIES_GRACE_MS) {
     return {
       phase: 'ready',
       needsWake: false,
@@ -129,13 +131,13 @@ export function planAfterWakeAttempt(input: {
     };
   }
 
-  if (input.timedOut && input.canFallbackToHls) {
+  if (online) {
     return {
-      phase: 'ready',
-      needsWake: false,
-      player: 'hls',
+      phase: 'waking',
+      needsWake: true,
+      player: 'ts',
       useMainTsUrl: false,
-      message: null,
+      message: 'القناة نشطة — جاري جلب مسارات الجودة…',
     };
   }
 
@@ -145,7 +147,7 @@ export function planAfterWakeAttempt(input: {
       needsWake: false,
       player: 'ts',
       useMainTsUrl: false,
-      message: 'تعذر تنشيط القناة. حاول مرة أخرى.',
+      message: 'تعذر تنشيط القناة على Mist. حاول مرة أخرى.',
     };
   }
 
@@ -154,24 +156,6 @@ export function planAfterWakeAttempt(input: {
     needsWake: true,
     player: 'ts',
     useMainTsUrl: false,
-    message: 'جاري تنشيط القناة…',
+    message: 'جاري تنشيط القناة عبر Mist…',
   };
-}
-
-/** طلب خفيف لإيقاظ ستريم Mist (الاستجابة قد تُحجب بـ CORS) */
-export function pingMistWakeUrl(
-  url: string,
-  signal?: AbortSignal,
-): void {
-  const target = url.trim();
-  if (!target || typeof fetch === 'undefined') return;
-  void fetch(target, {
-    method: 'GET',
-    mode: 'no-cors',
-    cache: 'no-store',
-    credentials: 'omit',
-    signal,
-  }).catch(() => {
-    /* الإيقاظ أفضل جهد — الفشل هنا متوقع أحياناً */
-  });
 }

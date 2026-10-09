@@ -6,6 +6,8 @@ import {
   type MistPlaybackUrls,
 } from './mist-playback-urls';
 import { MistJwtService } from './mist-jwt.service';
+import { MistServerClient } from './mist-server.client';
+import { resolveServerMistHttpBase } from './mist-http-base';
 
 /**
  * روابط مشاهدة القنوات من MistServer.
@@ -18,11 +20,20 @@ export class MistPlaybackService {
   constructor(
     private readonly config: ConfigService,
     private readonly mistJwt: MistJwtService,
+    private readonly mistClient: MistServerClient,
   ) {}
 
   /** قاعدة صريحة إن وُجدت؛ فارغ = نفس مضيف صفحة المشغّل */
   httpBase(): string {
     return normalizeMistHttpBase(this.config.get<string>('MISTSERVER_HTTP_URL'));
+  }
+
+  /** أساس HTTP داخلي لطلبات السيرفر (إيقاظ) حتى عندما httpBase للعميل فارغ */
+  serverHttpBase(): string {
+    return resolveServerMistHttpBase(
+      this.config.get<string>('MISTSERVER_HTTP_URL'),
+      this.mistClient.apiUrl(),
+    );
   }
 
   urlsFor(

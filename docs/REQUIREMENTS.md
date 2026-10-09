@@ -88,7 +88,7 @@ sudo apt install -y \
 >
 > على الإنتاج: تأكد أن `NetworkManager` نشط وأن المنافذ المراد إدارتها ليست `unmanaged` بالكامل من جهة أخرى (مثل `systemd-networkd`/`netplan` دون تسليمها لـ NM).
 >
-> يُستحسن تثبيت خدمة النظام المستقلة [`match-network`](./MATCH_NETWORK_SERVICE.md) حتى تُفعَّل اتصالات `match-*` عند الإقلاع دون الاعتماد على تشغيل المشروع:
+> يُستحسن تثبيت إطار الشبكة المستقل [`match-network` + `match-sstp`](./MATCH_NETWORK_SERVICE.md) لمنافذ NM ونفق SSTP عند الإقلاع دون الاعتماد على تشغيل المشروع:
 > `sudo bash infra/scripts/install-match-network-service.sh --enable --start`
 
 ### SSTP (الإعدادات ← الشبكة ← SSTP)

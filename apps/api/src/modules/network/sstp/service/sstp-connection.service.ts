@@ -210,6 +210,7 @@ export class SstpConnectionService implements OnModuleInit, OnModuleDestroy {
         'أكمل إعدادات المضيف واسم المستخدم وكلمة المرور أولاً',
       );
     }
+    this.settings.syncBootEnv(row);
 
     if (await this.isProcessRunning()) {
       return this.status();

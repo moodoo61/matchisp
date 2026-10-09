@@ -9,6 +9,7 @@ export {
   listViewingPageChannels,
   setViewingChannelVisibility,
   updateViewingPageSettings,
+  wakePublicChannel,
 } from './api';
 export { ClientLivePublicView } from './components/ClientLivePublicView';
 export { ClientLiveHeader } from './components/ClientLiveHeader';

@@ -42,6 +42,9 @@ export type PublicChannelPlaybackReady = {
   active: boolean;
   viewers: number;
   playback: PublicLiveChannel['playback'];
+  /** online === 1 (أخضر Mist) */
+  streamOnline: boolean;
+  /** أخضر + جودات TS صالحة */
   tsReady: boolean;
 };
 

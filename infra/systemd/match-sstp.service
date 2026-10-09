@@ -1,0 +1,24 @@
+[Unit]
+Description=ISP Match — حارس اتصال SSTP (مستقل عن التطبيق)
+Documentation=file:///opt/match/docs/MATCH_NETWORK_SERVICE.md
+After=match-network.service network-online.target NetworkManager.service
+Wants=match-network.service network-online.target
+Before=tsetisp.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=MATCH_SSTP_RETRY_SEC=30
+ExecStart=/opt/match/infra/scripts/match-sstp-daemon.sh
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+KillMode=mixed
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=match-sstp
+
+[Install]
+WantedBy=multi-user.target

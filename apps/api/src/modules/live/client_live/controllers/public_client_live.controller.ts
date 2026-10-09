@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../../common/guards';
 import { PublicClientLiveService } from '../service/public_client_live.service';
@@ -25,7 +25,17 @@ export class PublicClientLiveController {
     return this.clientLive.listChannels();
   }
 
-  /** جاهزية قناة واحدة بعد الإيقاظ — online / جودات TS / روابط */
+  /**
+   * إيقاظ ستريم Mist عبر طلب رابط التشغيل الحقيقي،
+   * ثم إعادة حالة online/جودات (بدون تبديل مشغّل).
+   */
+  @Public()
+  @Post('channels/:id/wake')
+  wakeChannel(@Param('id') id: string) {
+    return this.clientLive.wakeChannel(id);
+  }
+
+  /** جاهزية قناة — online / جودات TS / روابط (استطلاع بعد الإيقاظ) */
   @Public()
   @Get('channels/:id/playback-ready')
   getChannelPlaybackReady(@Param('id') id: string) {

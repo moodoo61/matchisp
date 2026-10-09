@@ -26,11 +26,9 @@ type Props = {
   onSelectChannel?: (channelId: string) => void;
   activePlayer: ViewingPlayerId;
   onPlaybackError?: () => void;
-  /** هل HLS متاح كاحتياطي بعد فشل/انتهاء إيقاظ TS */
-  canFallbackToHls?: boolean;
 };
 
-/** المسرح — بوابة إيقاظ + المشغّل + شريط البرنامج */
+/** المسرح — بوابة تنشيط Mist ثم المشغّل + شريط البرنامج */
 export function ClientLiveStage({
   channel,
   brandLogoUrl,
@@ -38,20 +36,10 @@ export function ClientLiveStage({
   onSelectChannel,
   activePlayer,
   onPlaybackError,
-  canFallbackToHls = false,
 }: Props) {
   const gate = useChannelPlaybackGate(channel, {
     preferredPlayer: activePlayer,
-    canFallbackToHls: canFallbackToHls && activePlayer === 'ts',
   });
-
-  /** إن قررت البوابة HLS بينما الواجهة ما زالت على TS — حدّث الأب */
-  useEffect(() => {
-    if (!gate.allowPlayer) return;
-    if (gate.player === 'hls' && activePlayer === 'ts' && onPlaybackError) {
-      onPlaybackError();
-    }
-  }, [gate.allowPlayer, gate.player, activePlayer, onPlaybackError]);
 
   const rawUrl =
     gate.player === 'ts'
@@ -89,7 +77,7 @@ export function ClientLiveStage({
         <div className="cl-screen">
           {gate.phase === 'waking' || gate.phase === 'deciding' ? (
             <ChannelWakeOverlay
-              message={gate.message ?? 'جاري تنشيط القناة…'}
+              message={gate.message ?? 'جاري تنشيط القناة عبر Mist…'}
             />
           ) : null}
           {gate.phase === 'failed' ? (
@@ -98,12 +86,7 @@ export function ClientLiveStage({
               message={gate.message ?? 'تعذر تنشيط القناة'}
             />
           ) : null}
-          {gate.allowPlayer &&
-          gate.player !== activePlayer &&
-          gate.player === 'hls' ? (
-            <ChannelWakeOverlay message="جاري التبديل إلى HLS…" />
-          ) : null}
-          {gate.allowPlayer && srcUrl && gate.player === activePlayer ? (
+          {gate.allowPlayer && srcUrl ? (
             <ClientLivePlayer
               key={`${channel.id}:${gate.player}:${gate.useMainTsUrl ? 'main' : 'q'}`}
               mode={gate.player}
@@ -114,7 +97,7 @@ export function ClientLiveStage({
               onPlaybackError={onPlaybackError}
             />
           ) : null}
-          {gate.allowPlayer && !srcUrl && gate.player === activePlayer ? (
+          {gate.allowPlayer && !srcUrl ? (
             <div className="cl-frame-empty">{channel.label}</div>
           ) : null}
         </div>

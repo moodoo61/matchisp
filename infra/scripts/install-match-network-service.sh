@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# تثبيت خدمة systemd مستقلة لضمان شبكة NetworkManager (match-network).
-# لا تعتمد على تشغيل مشروع ISP Admin / tsetisp.
+# تثبيت إطار شبكة Match المستقل عن التطبيق:
+#   - match-network : ضمان NetworkManager + اتصالات match-*
+#   - match-sstp    : حارس SSTP من boot.env (بدون Node/Postgres)
 #
 # الاستخدام:
 #   sudo bash infra/scripts/install-match-network-service.sh
@@ -8,23 +9,19 @@
 #   sudo bash infra/scripts/install-match-network-service.sh --uninstall
 #
 # أوامر لاحقاً:
-#   sudo systemctl status match-network
-#   sudo systemctl start|restart match-network
-#   journalctl -u match-network -f
+#   sudo systemctl status match-network match-sstp
+#   journalctl -u match-network -u match-sstp -f
 set -euo pipefail
-
-SERVICE_NAME="match-network"
-UNIT_DEST="/etc/systemd/system/${SERVICE_NAME}.service"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_HINT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-UNIT_SRC="${REPO_HINT}/infra/systemd/match-network.service"
-ENSURE_SRC="${REPO_HINT}/infra/scripts/match-network-ensure.sh"
 
 ROOT="${MATCH_ROOT:-$REPO_HINT}"
 DO_ENABLE=0
 DO_START=0
 DO_UNINSTALL=0
+
+UNITS=(match-network match-sstp)
 
 usage() {
   sed -n '2,16p' "$0"
@@ -66,11 +63,13 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 uninstall() {
-  systemctl stop "$SERVICE_NAME" 2>/dev/null || true
-  systemctl disable "$SERVICE_NAME" 2>/dev/null || true
-  rm -f "$UNIT_DEST"
+  for name in "${UNITS[@]}"; do
+    systemctl stop "$name" 2>/dev/null || true
+    systemctl disable "$name" 2>/dev/null || true
+    rm -f "/etc/systemd/system/${name}.service"
+  done
   systemctl daemon-reload
-  echo "أُزيلت الخدمة ${SERVICE_NAME}."
+  echo "أُزيلت وحدات: ${UNITS[*]}"
 }
 
 if [[ "$DO_UNINSTALL" -eq 1 ]]; then
@@ -78,58 +77,65 @@ if [[ "$DO_UNINSTALL" -eq 1 ]]; then
   exit 0
 fi
 
-ENSURE_PATH="${ROOT}/infra/scripts/match-network-ensure.sh"
-UNIT_FILE="${ROOT}/infra/systemd/match-network.service"
+install_unit() {
+  local name="$1"
+  local unit_src="${ROOT}/infra/systemd/${name}.service"
+  local script_key="$2"
+  local script_path="${ROOT}/infra/scripts/${script_key}"
+  local dest="/etc/systemd/system/${name}.service"
 
-if [[ ! -f "$UNIT_FILE" ]]; then
-  echo "ملف الوحدة غير موجود: $UNIT_FILE" >&2
-  exit 1
-fi
+  if [[ ! -f "$unit_src" ]]; then
+    echo "ملف الوحدة غير موجود: $unit_src" >&2
+    exit 1
+  fi
+  if [[ ! -f "$script_path" ]]; then
+    echo "السكربت غير موجود: $script_path" >&2
+    exit 1
+  fi
+  chmod +x "$script_path"
 
-if [[ ! -f "$ENSURE_PATH" ]]; then
-  echo "سكربت الضمان غير موجود: $ENSURE_PATH" >&2
-  exit 1
-fi
-
-chmod +x "$ENSURE_PATH"
+  local tmp
+  tmp="$(mktemp)"
+  sed \
+    -e "s|Documentation=file:///opt/match/docs/MATCH_NETWORK_SERVICE.md|Documentation=file://${ROOT}/docs/MATCH_NETWORK_SERVICE.md|g" \
+    -e "s|ExecStart=/opt/match/infra/scripts/${script_key}|ExecStart=${script_path}|g" \
+    "$unit_src" >"$tmp"
+  install -m 0644 "$tmp" "$dest"
+  rm -f "$tmp"
+  echo "ثُبّتت: ${dest}"
+}
 
 if ! command -v nmcli >/dev/null 2>&1; then
-  echo "تحذير: nmcli غير موجود — ثبّت network-manager قبل الاعتماد على هذه الخدمة." >&2
+  echo "تحذير: nmcli غير موجود — ثبّت network-manager." >&2
+fi
+if ! command -v sstpc >/dev/null 2>&1; then
+  echo "تحذير: sstpc غير موجود — ثبّت sstp-client لـ match-sstp." >&2
 fi
 
-# تأكد أن NetworkManager مفعّل عند الإقلاع إن أمكن
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl enable NetworkManager 2>/dev/null || true
-fi
+systemctl enable NetworkManager 2>/dev/null || true
 
-tmp="$(mktemp)"
-sed \
-  -e "s|Documentation=file:///opt/match/docs/MATCH_NETWORK_SERVICE.md|Documentation=file://${ROOT}/docs/MATCH_NETWORK_SERVICE.md|g" \
-  -e "s|ExecStart=/opt/match/infra/scripts/match-network-ensure.sh|ExecStart=${ENSURE_PATH}|g" \
-  "$UNIT_FILE" >"$tmp"
-
-install -m 0644 "$tmp" "$UNIT_DEST"
-rm -f "$tmp"
+install_unit match-network match-network-ensure.sh
+install_unit match-sstp match-sstp-daemon.sh
 
 systemctl daemon-reload
 
-echo "ثُبّتت الوحدة: ${UNIT_DEST}"
-echo "  Root   : ${ROOT}"
-echo "  Script : ${ENSURE_PATH}"
+echo "  Root: ${ROOT}"
 echo
 
 if [[ "$DO_ENABLE" -eq 1 ]]; then
-  systemctl enable "$SERVICE_NAME"
-  echo "تم التفعيل عند الإقلاع (enable)."
+  for name in "${UNITS[@]}"; do
+    systemctl enable "$name"
+  done
+  echo "تم تفعيل الوحدات عند الإقلاع."
 fi
 
 if [[ "$DO_START" -eq 1 ]]; then
-  systemctl restart "$SERVICE_NAME"
-  systemctl --no-pager --full status "$SERVICE_NAME" || true
+  systemctl restart match-network || true
+  systemctl restart match-sstp || true
+  systemctl --no-pager --full status match-network match-sstp || true
   echo
-  echo "السجلات: journalctl -u ${SERVICE_NAME} -f"
+  echo "السجلات: journalctl -u match-network -u match-sstp -f"
 else
-  echo "لم تُشغَّل الخدمة بعد. على الخادم الهدف:"
-  echo "  sudo systemctl enable --now ${SERVICE_NAME}"
-  echo "  أو أعد التثبيت مع: --enable --start"
+  echo "للتشغيل:"
+  echo "  sudo systemctl enable --now match-network match-sstp"
 fi

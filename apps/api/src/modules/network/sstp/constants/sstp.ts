@@ -17,6 +17,8 @@ export const SSTP_OPENSSL_CONF = `${SSTP_RUNTIME_DIR}/openssl-sstp.cnf`;
 export const SSTP_PRELOAD_SO = `${SSTP_RUNTIME_DIR}/libssl_cipher_preload.so`;
 export const SSTP_PRELOAD_SRC =
   '/opt/match/apps/api/src/modules/network/sstp/native/ssl_cipher_preload.c';
+/** ملف إقلاع لخدمة systemd المستقلة match-sstp (بدون Postgres) */
+export const SSTP_BOOT_ENV = `${SSTP_RUNTIME_DIR}/boot.env`;
 export const SSTP_CHAP_SECRETS = '/etc/ppp/chap-secrets';
 export const SSTP_CHAP_BEGIN = '# begin isp-sstp';
 export const SSTP_CHAP_END = '# end isp-sstp';
