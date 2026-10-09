@@ -116,6 +116,7 @@ Guard عام JWT + Guard صلاحيات RBAC
 - صلاحيات التحديث: `settings.updates:read|apply|manage`
 - API الشبكة: `/settings/network/interfaces|routes|dns`
 - صلاحيات الشبكة: `network.interfaces|routes|dns:read|manage`
+- إدارة المنافذ/العنونة/المسار الافتراضي عبر NetworkManager (ملفات `match-<iface>`) لضمان البقاء بعد الإقلاع؛ العرض التشغيلي من `ip`
 
 ## المراحل اللاحقة
 تُضاف كوحدات جديدة وفق `docs/ADDING_A_MODULE.md` دون كسر حدود القواعد.

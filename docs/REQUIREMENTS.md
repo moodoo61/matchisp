@@ -58,6 +58,7 @@ redis-cli ping   # PONG
 | الحزمة | أمر النظام | القسم |
 | --- | --- | --- |
 | `iproute2` | `ip`, `lsblk`, `df`, `mount`, `umount` | الشبكة + الأقراص |
+| `network-manager` | `nmcli` | استمرارية منافذ/عنونة/مسارات الشبكة |
 | `systemd` / `systemd-resolved` | `resolvectl` | DNS |
 | `smartmontools` | `smartctl` | صحة الأقراص (SMART) |
 | `postgresql-client` | `pg_dump`, `pg_restore`, `psql` | نسخ/استعادة قواعد الأقسام |
@@ -70,6 +71,7 @@ redis-cli ping   # PONG
 ```bash
 sudo apt install -y \
   iproute2 \
+  network-manager \
   smartmontools \
   postgresql-client \
   ffmpeg \
@@ -82,7 +84,9 @@ sudo apt install -y \
 
 سكربت التثبيت يبني أيضاً ملفات SSTP تحت `var/sstp/` (OpenSSL conf + مكتبة LD_PRELOAD).
 
-> أوامر مثل `mount` / `ip link set` / `sstpc` قد تحتاج صلاحيات root للعملية التي تشغّل الـ API.
+> قسم الشبكة يكتب إعدادات دائمة عبر NetworkManager (`nmcli`) حتى تبقى المنافذ والعناوين بعد إعادة التشغيل. أوامر مثل `nmcli` / `mount` / `sstpc` قد تحتاج صلاحيات root للعملية التي تشغّل الـ API.
+>
+> على الإنتاج: تأكد أن `NetworkManager` نشط وأن المنافذ المراد إدارتها ليست `unmanaged` بالكامل من جهة أخرى (مثل `systemd-networkd`/`netplan` دون تسليمها لـ NM).
 
 ### SSTP (الإعدادات ← الشبكة ← SSTP)
 

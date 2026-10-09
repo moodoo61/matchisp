@@ -16,7 +16,7 @@
 - Linux Server (الوضع الافتراضي)
 - Node.js 22+ و pnpm 9+
 - PostgreSQL 16+ و Redis 7+ مثبتان على السيرفر
-- حزم نظام مستحسنة: `iproute2`, `smartmontools`, `postgresql-client`, `ffmpeg`, …
+- حزم نظام مستحسنة: `iproute2`, `network-manager`, `smartmontools`, `postgresql-client`, `ffmpeg`, …
 - Docker اختياري فقط إن رغبت بعزل الخدمات
 
 تثبيت حزم النظام دفعة واحدة (Ubuntu/Debian):

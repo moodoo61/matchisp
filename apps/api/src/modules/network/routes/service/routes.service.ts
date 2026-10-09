@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -10,6 +11,8 @@ import {
   IFACE_NAME_RE,
   IPV4_RE,
 } from '../../constants/network-safety';
+import { NmProfilesService } from '../../nm/service/nm-profiles.service';
+import { NmcliService } from '../../nm/service/nmcli.service';
 import type { NetworkRoute } from '../../types/network.types';
 
 const execFileAsync = promisify(execFile);
@@ -27,7 +30,11 @@ type IpRouteJson = {
 export class RoutesService {
   private readonly logger = new Logger(RoutesService.name);
 
-  constructor(private readonly audit: AuditService) {}
+  constructor(
+    private readonly audit: AuditService,
+    private readonly profiles: NmProfilesService,
+    private readonly nmcli: NmcliService,
+  ) {}
 
   async list(): Promise<{ checkedAt: string; routes: NetworkRoute[] }> {
     const raw = await this.readRoutes();
@@ -53,18 +60,21 @@ export class RoutesService {
     if (device && !IFACE_NAME_RE.test(device)) {
       throw new BadRequestException('اسم المنفذ غير صالح');
     }
-    const args = ['route', 'replace', 'default', 'via', gateway.trim()];
-    if (device?.trim()) {
-      args.push('dev', device.trim());
-    }
+
+    let applied: { device: string; connection: string };
     try {
-      await execFileAsync('ip', args, {
-        timeout: 15000,
-        maxBuffer: 1024 * 1024,
-      });
+      applied = await this.profiles.setDefaultGateway(gateway, device);
     } catch (err) {
-      this.logger.warn(`ip route: ${this.msg(err)}`);
-      throw new BadRequestException(`فشل ضبط المسار: ${this.msg(err)}`);
+      this.logger.warn(`nm route: ${this.nmcli.errMsg(err)}`);
+      if (
+        err instanceof BadRequestException ||
+        err instanceof ServiceUnavailableException
+      ) {
+        throw err;
+      }
+      throw new BadRequestException(
+        `فشل ضبط المسار عبر NetworkManager: ${this.nmcli.errMsg(err)}`,
+      );
     }
 
     await this.audit.log({
@@ -72,10 +82,19 @@ export class RoutesService {
       action: 'route_set',
       resource: 'network.route',
       resourceId: 'default',
-      metadata: { gateway, device: device ?? null },
+      metadata: {
+        gateway,
+        device: applied.device,
+        connection: applied.connection,
+        backend: 'network-manager',
+      },
     });
 
-    return { success: true, gateway, device: device ?? null };
+    return {
+      success: true,
+      gateway,
+      device: applied.device,
+    };
   }
 
   private async readRoutes(): Promise<IpRouteJson[]> {
@@ -86,20 +105,8 @@ export class RoutesService {
       });
       return JSON.parse(stdout) as IpRouteJson[];
     } catch (err) {
-      this.logger.warn(`ip route failed: ${this.msg(err)}`);
+      this.logger.warn(`ip route failed: ${this.nmcli.errMsg(err)}`);
       return [];
     }
-  }
-
-  private msg(err: unknown): string {
-    if (!err || typeof err !== 'object') return String(err);
-    const e = err as { stderr?: Buffer | string; message?: string };
-    const stderr =
-      typeof e.stderr === 'string'
-        ? e.stderr
-        : Buffer.isBuffer(e.stderr)
-          ? e.stderr.toString('utf8')
-          : '';
-    return (stderr || e.message || String(err)).trim().slice(0, 400);
   }
 }

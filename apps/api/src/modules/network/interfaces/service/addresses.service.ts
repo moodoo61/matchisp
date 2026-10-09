@@ -2,36 +2,41 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
 import { AuditService } from '../../../audit/audit.service';
-import {
-  IFACE_NAME_RE,
-  IPV4_CIDR_RE,
-  PROTECTED_IFACES,
-} from '../../constants/network-safety';
-
-const execFileAsync = promisify(execFile);
+import { IPV4_CIDR_RE } from '../../constants/network-safety';
+import { NmProfilesService } from '../../nm/service/nm-profiles.service';
+import { NmcliService } from '../../nm/service/nmcli.service';
 
 @Injectable()
 export class AddressesService {
   private readonly logger = new Logger(AddressesService.name);
 
-  constructor(private readonly audit: AuditService) {}
+  constructor(
+    private readonly audit: AuditService,
+    private readonly profiles: NmProfilesService,
+    private readonly nmcli: NmcliService,
+  ) {}
 
   async add(ifName: string, cidr: string, actorId: string) {
-    this.assertIface(ifName);
+    this.profiles.assertControllable(ifName);
     this.assertCidr(cidr);
     try {
-      await execFileAsync(
-        'ip',
-        ['addr', 'add', cidr, 'dev', ifName],
-        { timeout: 15000, maxBuffer: 1024 * 1024 },
-      );
+      await this.profiles.addAddress(ifName, cidr.trim());
     } catch (err) {
-      this.logger.warn(`ip addr add ${cidr} ${ifName}: ${this.msg(err)}`);
-      throw new BadRequestException(`فشل إضافة العنوان: ${this.msg(err)}`);
+      this.logger.warn(
+        `nm addr add ${cidr} ${ifName}: ${this.nmcli.errMsg(err)}`,
+      );
+      if (
+        err instanceof BadRequestException ||
+        err instanceof ServiceUnavailableException
+      ) {
+        throw err;
+      }
+      throw new BadRequestException(
+        `فشل إضافة العنوان عبر NetworkManager: ${this.nmcli.errMsg(err)}`,
+      );
     }
 
     await this.audit.log({
@@ -39,24 +44,30 @@ export class AddressesService {
       action: 'addr_add',
       resource: 'network.address',
       resourceId: ifName,
-      metadata: { cidr },
+      metadata: { cidr, backend: 'network-manager' },
     });
 
     return { success: true, ifName, cidr };
   }
 
   async remove(ifName: string, cidr: string, actorId: string) {
-    this.assertIface(ifName);
+    this.profiles.assertControllable(ifName);
     this.assertCidr(cidr);
     try {
-      await execFileAsync(
-        'ip',
-        ['addr', 'del', cidr, 'dev', ifName],
-        { timeout: 15000, maxBuffer: 1024 * 1024 },
-      );
+      await this.profiles.removeAddress(ifName, cidr.trim());
     } catch (err) {
-      this.logger.warn(`ip addr del ${cidr} ${ifName}: ${this.msg(err)}`);
-      throw new BadRequestException(`فشل حذف العنوان: ${this.msg(err)}`);
+      this.logger.warn(
+        `nm addr del ${cidr} ${ifName}: ${this.nmcli.errMsg(err)}`,
+      );
+      if (
+        err instanceof BadRequestException ||
+        err instanceof ServiceUnavailableException
+      ) {
+        throw err;
+      }
+      throw new BadRequestException(
+        `فشل حذف العنوان عبر NetworkManager: ${this.nmcli.errMsg(err)}`,
+      );
     }
 
     await this.audit.log({
@@ -64,19 +75,10 @@ export class AddressesService {
       action: 'addr_del',
       resource: 'network.address',
       resourceId: ifName,
-      metadata: { cidr },
+      metadata: { cidr, backend: 'network-manager' },
     });
 
     return { success: true, ifName, cidr };
-  }
-
-  private assertIface(ifName: string) {
-    if (!IFACE_NAME_RE.test(ifName)) {
-      throw new BadRequestException('اسم المنفذ غير صالح');
-    }
-    if (PROTECTED_IFACES.has(ifName)) {
-      throw new BadRequestException(`المنفذ المحمي لا يمكن تعديله: ${ifName}`);
-    }
   }
 
   private assertCidr(cidr: string) {
@@ -90,17 +92,5 @@ export class AddressesService {
     if (parts.some((n) => n < 0 || n > 255)) {
       throw new BadRequestException('عنوان IP غير صالح');
     }
-  }
-
-  private msg(err: unknown): string {
-    if (!err || typeof err !== 'object') return String(err);
-    const e = err as { stderr?: Buffer | string; message?: string };
-    const stderr =
-      typeof e.stderr === 'string'
-        ? e.stderr
-        : Buffer.isBuffer(e.stderr)
-          ? e.stderr.toString('utf8')
-          : '';
-    return (stderr || e.message || String(err)).trim().slice(0, 400);
   }
 }

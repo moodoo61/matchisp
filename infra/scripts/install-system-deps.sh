@@ -19,6 +19,7 @@ apt-get install -y \
   git \
   build-essential \
   iproute2 \
+  network-manager \
   smartmontools \
   postgresql-client \
   ffmpeg \
@@ -26,6 +27,8 @@ apt-get install -y \
   sstp-client \
   ppp \
   openssl
+
+systemctl enable --now NetworkManager 2>/dev/null || true
 
 # Node.js 22 إن لم يكن مثبتاً أو الإصدار أقدم
 need_node=0
