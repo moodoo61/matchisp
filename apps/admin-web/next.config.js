@@ -52,11 +52,22 @@ const mistHttp = mistProxyTarget();
  * بدون المفتاح: mode=warn (تحذير فقط، بلا حجب).
  * أعد تفعيل قائمة مضيفات لاحقاً في الإنتاج عند الحاجة.
  */
+const mistPublicUrl = (process.env.MISTSERVER_HTTP_URL || 'auto').trim();
+
 const nextConfig = {
   transpilePackages: ['@isp/shared'],
   output: 'standalone',
   /** إخفاء زر N لمؤشر التطوير في المتصفح */
   devIndicators: false,
+  /**
+   * يمرَّر للمتصفح لبناء روابط التشغيل على منفذ Mist
+   * وليس على منفذ admin-web (4010).
+   */
+  env: {
+    NEXT_PUBLIC_MISTSERVER_HTTP_URL: mistPublicUrl || 'auto',
+    NEXT_PUBLIC_MISTSERVER_HTTP_PORT:
+      process.env.MISTSERVER_HTTP_PORT?.trim() || '8080',
+  },
   async rewrites() {
     return [
       {
