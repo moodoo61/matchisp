@@ -6,6 +6,7 @@ import {
   extractPlaybackToken,
   stripPlaybackToken,
 } from '../lib/playbackUrlIdentity';
+import { tryHtmlVideoAutoplay } from '../lib/htmlVideoAutoplay';
 import {
   applyTsVideoTrack,
   mistTsQualitiesToOptions,
@@ -24,7 +25,7 @@ type PlaybackState = {
   level: number;
   activeLevel: number;
   qualitySelectable: boolean;
-  /** TS يعتمد مسارات Mist الثابتة — بلا وضع تلقائي */
+  /** true عندما level=-1 (الرابط الرئيسي بدون ?video=) */
   qualityAuto: boolean;
   progress: number;
   buffered: number;
@@ -177,13 +178,15 @@ export function useTsPlayback(
       level,
       activeLevel: level,
       qualitySelectable,
-      qualityAuto: false,
+      qualityAuto: level < 0,
       progress: 0,
       buffered: 0,
       seekable: false,
     }));
 
     let cancelled = false;
+    let coldRecovered = false;
+    const startedAt = Date.now();
     const patch = (next: Partial<PlaybackState>) =>
       setState((current) => ({ ...current, ...next }));
 
@@ -208,30 +211,18 @@ export function useTsPlayback(
       syncTimeline();
     };
 
+    /** تشغيل بعد جاهزية البيانات — بصوت، بدون فرض الكتم */
     const tryPlay = () => {
-      if (cancelled) return;
-      video.muted = false;
-      patch({ muted: false, buffering: true });
-      void video.play().then(
-        () => {
-          if (!cancelled)
-            patch({
-              playing: true,
-              ready: true,
-              buffering: false,
-              muted: false,
-            });
-        },
-        () => {
-          if (!cancelled)
-            patch({
-              playing: false,
-              ready: true,
-              buffering: false,
-              muted: false,
-            });
-        },
-      );
+      if (cancelled || !autoplay) return;
+      tryHtmlVideoAutoplay(video, (next) => {
+        if (cancelled) return;
+        patch({
+          playing: next.playing,
+          muted: next.muted,
+          buffering: next.buffering,
+          ready: true,
+        });
+      });
     };
 
     const onWaiting = () => patch({ buffering: true });
@@ -242,6 +233,12 @@ export function useTsPlayback(
     const onPause = () => patch({ playing: false });
     const onVolume = () =>
       patch({ muted: video.muted, volume: video.volume });
+
+    /** عند وصول بيانات كافية بعد تنشيط IPTV الخامل */
+    const onMediaReady = () => {
+      markReady();
+      if (autoplay && video.paused) tryPlay();
+    };
 
     video.muted = false;
     video.volume = 1;
@@ -255,11 +252,54 @@ export function useTsPlayback(
     video.addEventListener('playing', onPlaying);
     video.addEventListener('pause', onPause);
     video.addEventListener('volumechange', onVolume);
-    video.addEventListener('canplay', markReady);
-    video.addEventListener('loadeddata', markReady);
+    video.addEventListener('canplay', onMediaReady);
+    video.addEventListener('loadeddata', onMediaReady);
     video.addEventListener('timeupdate', syncTimeline);
     video.addEventListener('progress', syncTimeline);
     video.addEventListener('durationchange', syncTimeline);
+
+    /** إعادة ربط مرة واحدة بعد تنشيط Mist — يعالج الشاشة السوداء على IPTV الخامل */
+    const recoverColdStart = () => {
+      if (cancelled || coldRecovered) return;
+      const player = playerRef.current;
+      if (!player) return;
+      coldRecovered = true;
+      patch({ buffering: true, ready: true });
+      try {
+        player.unload();
+        player.load();
+      } catch {
+        /* ignore */
+      }
+      window.setTimeout(() => {
+        if (!cancelled) tryPlay();
+      }, 400);
+    };
+
+    const watchdog = window.setInterval(() => {
+      if (cancelled) {
+        window.clearInterval(watchdog);
+        return;
+      }
+      if (!autoplay) return;
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 1800 || elapsed > 14_000) return;
+
+      const hasVideo = video.videoWidth > 0 && video.videoHeight > 0;
+      if (hasVideo && !video.paused) {
+        window.clearInterval(watchdog);
+        return;
+      }
+
+      // تيار وصل (وقت يتقدم أو جاهز) بلا صورة → إعادة تحميل بعد اكتمال تنشيط Mist
+      const looksBlack =
+        !hasVideo &&
+        (video.currentTime > 0.2 || video.readyState >= 2 || !video.paused);
+      if (looksBlack || (video.paused && video.readyState >= 2)) {
+        recoverColdStart();
+        window.clearInterval(watchdog);
+      }
+    }, 900);
 
     void (async () => {
       try {
@@ -298,11 +338,19 @@ export function useTsPlayback(
               patch({ error: 'تعذر تشغيل بث TS', buffering: false });
             }
           });
+          // MEDIA_INFO يصل بعد أن يعلن Mist المسارات — أنسب من play() الفوري على قناة خاملة
+          player.on(mpegts.Events.MEDIA_INFO, () => {
+            if (!cancelled && autoplay) tryPlay();
+          });
           player.load();
-          if (autoplay) tryPlay();
-          else {
+          if (!autoplay) {
             video.pause();
             patch({ playing: false, buffering: false, ready: true });
+          } else {
+            // محاولة متأخرة إن تأخر MEDIA_INFO بعد بدء سحب المصدر
+            window.setTimeout(() => {
+              if (!cancelled && autoplay && video.paused) tryPlay();
+            }, 2500);
           }
           return;
         }
@@ -325,12 +373,13 @@ export function useTsPlayback(
 
     return () => {
       cancelled = true;
+      window.clearInterval(watchdog);
       video.removeEventListener('waiting', onWaiting);
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('pause', onPause);
       video.removeEventListener('volumechange', onVolume);
-      video.removeEventListener('canplay', markReady);
-      video.removeEventListener('loadeddata', markReady);
+      video.removeEventListener('canplay', onMediaReady);
+      video.removeEventListener('loadeddata', onMediaReady);
       video.removeEventListener('timeupdate', syncTimeline);
       video.removeEventListener('progress', syncTimeline);
       video.removeEventListener('durationchange', syncTimeline);

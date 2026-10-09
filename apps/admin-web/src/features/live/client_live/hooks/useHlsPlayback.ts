@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
+import { tryHtmlVideoAutoplay } from '../lib/htmlVideoAutoplay';
 import {
   extractPlaybackToken,
   stripPlaybackToken,
@@ -179,22 +180,17 @@ export function useHlsPlayback(
       syncTimeline();
     };
 
-    /** تشغيل بصوت — بدون فرض الكتم */
     const tryPlay = () => {
-      if (cancelled) return;
-      video.muted = false;
-      patch({ muted: false, buffering: true });
-      void video.play().then(
-        () => {
-          if (!cancelled) patch({ playing: true, ready: true, buffering: false, muted: false });
-        },
-        () => {
-          // المتصفح قد يمنع التشغيل التلقائي مع الصوت — نبقى في وضع الانتظار الظاهر
-          if (!cancelled) {
-            patch({ playing: false, ready: true, buffering: false, muted: false });
-          }
-        },
-      );
+      if (cancelled || !autoplay) return;
+      tryHtmlVideoAutoplay(video, (next) => {
+        if (cancelled) return;
+        patch({
+          playing: next.playing,
+          muted: next.muted,
+          buffering: next.buffering,
+          ready: true,
+        });
+      });
     };
 
     const onWaiting = () => patch({ buffering: true });
