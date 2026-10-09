@@ -1,5 +1,6 @@
 import { api } from '@/lib/api';
 import type {
+  PublicChannelPlaybackReady,
   PublicLiveChannel,
   PublicLiveSection,
   PublicSportMatch,
@@ -36,6 +37,13 @@ export function listPublicLiveChannels() {
 
 export function listPublicLiveSections() {
   return publicFetch<PublicLiveSection[]>('/api/public/live/sections');
+}
+
+/** جاهزية قناة واحدة (online / جودات / روابط) أثناء إيقاظ Mist */
+export function getPublicChannelPlaybackReady(channelId: string) {
+  return publicFetch<PublicChannelPlaybackReady>(
+    `/api/public/live/channels/${encodeURIComponent(channelId)}/playback-ready`,
+  );
 }
 
 export function listPublicTodayMatches() {

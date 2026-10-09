@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../../common/guards';
 import { PublicClientLiveService } from '../service/public_client_live.service';
@@ -23,6 +23,13 @@ export class PublicClientLiveController {
   @Get('channels')
   listChannels() {
     return this.clientLive.listChannels();
+  }
+
+  /** جاهزية قناة واحدة بعد الإيقاظ — online / جودات TS / روابط */
+  @Public()
+  @Get('channels/:id/playback-ready')
+  getChannelPlaybackReady(@Param('id') id: string) {
+    return this.clientLive.getChannelPlaybackReady(id);
   }
 
   @Public()

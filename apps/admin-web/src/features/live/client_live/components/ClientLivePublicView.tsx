@@ -195,6 +195,7 @@ export function ClientLivePublicView() {
                 autoplay={shouldAutoplay}
                 onSelectChannel={selectChannel}
                 activePlayer={activePlayer}
+                canFallbackToHls={players.includes('hls')}
                 onPlaybackError={
                   players.length > 1 ? handlePlaybackError : undefined
                 }

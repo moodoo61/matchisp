@@ -1,6 +1,7 @@
 /** قسم client_live داخل البث المباشر — واجهة العميل العامة */
 export * from './types';
 export {
+  getPublicChannelPlaybackReady,
   getPublicViewingPageSettings,
   getViewingPageSettings,
   listPublicLiveChannels,
@@ -16,5 +17,6 @@ export { ClientLivePlayer } from './components/ClientLivePlayer';
 export { PlaylistPanel } from './components/playlist/PlaylistPanel';
 export { PlaylistRow } from './components/playlist/PlaylistRow';
 export { useHlsPlayback } from './hooks/useHlsPlayback';
+export { useChannelPlaybackGate } from './hooks/useChannelPlaybackGate';
 export { ViewingPageSettingsCard } from './components/admin/ViewingPageSettingsCard';
 export { ViewingChannelsCard } from './components/admin/ViewingChannelsCard';

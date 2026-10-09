@@ -2,9 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo } from 'react';
-import type { PublicLiveChannel } from '../types';
+import {
+  gateTsQualities,
+  useChannelPlaybackGate,
+} from '../hooks/useChannelPlaybackGate';
 import type { ViewingPlayerId } from '../lib/players';
 import { resolveClientPlaybackUrl } from '../lib/resolveClientPlaybackUrl';
+import type { PublicLiveChannel } from '../types';
+import { ChannelWakeOverlay } from './ChannelWakeOverlay';
 import { ProgramBar } from './program/ProgramBar';
 
 /** مشغّل المتصفح فقط — mpegts.js لا يعمل على SSR */
@@ -21,9 +26,11 @@ type Props = {
   onSelectChannel?: (channelId: string) => void;
   activePlayer: ViewingPlayerId;
   onPlaybackError?: () => void;
+  /** هل HLS متاح كاحتياطي بعد فشل/انتهاء إيقاظ TS */
+  canFallbackToHls?: boolean;
 };
 
-/** المسرح — المشغّل + شريط البرنامج */
+/** المسرح — بوابة إيقاظ + المشغّل + شريط البرنامج */
 export function ClientLiveStage({
   channel,
   brandLogoUrl,
@@ -31,48 +38,89 @@ export function ClientLiveStage({
   onSelectChannel,
   activePlayer,
   onPlaybackError,
+  canFallbackToHls = false,
 }: Props) {
+  const gate = useChannelPlaybackGate(channel, {
+    preferredPlayer: activePlayer,
+    canFallbackToHls: canFallbackToHls && activePlayer === 'ts',
+  });
+
+  /** إن قررت البوابة HLS بينما الواجهة ما زالت على TS — حدّث الأب */
+  useEffect(() => {
+    if (!gate.allowPlayer) return;
+    if (gate.player === 'hls' && activePlayer === 'ts' && onPlaybackError) {
+      onPlaybackError();
+    }
+  }, [gate.allowPlayer, gate.player, activePlayer, onPlaybackError]);
+
   const rawUrl =
-    activePlayer === 'ts'
-      ? channel.playback.tsUrl ?? ''
-      : channel.playback.hlsUrl;
+    gate.player === 'ts'
+      ? gate.playback.tsUrl ?? ''
+      : gate.playback.hlsUrl;
   const srcUrl = resolveClientPlaybackUrl(rawUrl);
 
-  /** تثبيت مرجع الجودات عبر بصمة المحتوى — polling الأقسام لا يعيد إنشاء المشغّل */
-  const tsQualitiesKey = (channel.playback.tsQualities ?? [])
+  const tsQualitiesKey = (gate.playback.tsQualities ?? [])
     .map((row) => `${row.width}x${row.height ?? 0}`)
     .join('|');
   const tsQualities = useMemo(
-    () => channel.playback.tsQualities,
+    () => gateTsQualities(gate.playback, gate.useMainTsUrl),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tsQualitiesKey],
+    [tsQualitiesKey, gate.useMainTsUrl],
   );
 
   useEffect(() => {
+    if (!gate.allowPlayer) return;
     if (!srcUrl && onPlaybackError) onPlaybackError();
-  }, [srcUrl, onPlaybackError]);
+  }, [gate.allowPlayer, srcUrl, onPlaybackError]);
+
+  const stageChannel = useMemo<PublicLiveChannel>(
+    () => ({
+      ...channel,
+      online: gate.online,
+      active: gate.active,
+      playback: gate.playback,
+    }),
+    [channel, gate.online, gate.active, gate.playback],
+  );
 
   return (
     <section className="cl-feature">
       <div className="cl-screen-shell">
         <div className="cl-screen">
-          {srcUrl ? (
+          {gate.phase === 'waking' || gate.phase === 'deciding' ? (
+            <ChannelWakeOverlay
+              message={gate.message ?? 'جاري تنشيط القناة…'}
+            />
+          ) : null}
+          {gate.phase === 'failed' ? (
+            <ChannelWakeOverlay
+              failed
+              message={gate.message ?? 'تعذر تنشيط القناة'}
+            />
+          ) : null}
+          {gate.allowPlayer &&
+          gate.player !== activePlayer &&
+          gate.player === 'hls' ? (
+            <ChannelWakeOverlay message="جاري التبديل إلى HLS…" />
+          ) : null}
+          {gate.allowPlayer && srcUrl && gate.player === activePlayer ? (
             <ClientLivePlayer
-              key={`${channel.id}:${activePlayer}`}
-              mode={activePlayer}
+              key={`${channel.id}:${gate.player}:${gate.useMainTsUrl ? 'main' : 'q'}`}
+              mode={gate.player}
               srcUrl={srcUrl}
               brandLogoUrl={brandLogoUrl}
               autoplay={autoplay}
               tsQualities={tsQualities}
               onPlaybackError={onPlaybackError}
             />
-          ) : (
+          ) : null}
+          {gate.allowPlayer && !srcUrl && gate.player === activePlayer ? (
             <div className="cl-frame-empty">{channel.label}</div>
-          )}
+          ) : null}
         </div>
       </div>
 
-      <ProgramBar channel={channel} onSelectChannel={onSelectChannel} />
+      <ProgramBar channel={stageChannel} onSelectChannel={onSelectChannel} />
     </section>
   );
 }

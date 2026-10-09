@@ -33,6 +33,18 @@ export type PublicLiveSection = {
   channels: PublicLiveChannel[];
 };
 
+/** استجابة جاهزية تشغيل قناة عامة */
+export type PublicChannelPlaybackReady = {
+  id: string;
+  name: string;
+  label: string;
+  online: 0 | 1 | 2 | null;
+  active: boolean;
+  viewers: number;
+  playback: PublicLiveChannel['playback'];
+  tsReady: boolean;
+};
+
 export type ViewingPageSettings = {
   enabled: boolean;
   /** من الإعدادات العامة: brandName */
