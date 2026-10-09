@@ -40,6 +40,8 @@ const apiInternal =
 const nextConfig = {
   transpilePackages: ['@isp/shared'],
   output: 'standalone',
+  /** إخفاء زر N لمؤشر التطوير في المتصفح */
+  devIndicators: false,
   async rewrites() {
     return [
       {
