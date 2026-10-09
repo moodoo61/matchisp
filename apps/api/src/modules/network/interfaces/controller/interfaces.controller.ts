@@ -7,8 +7,10 @@ import {
   type RequestUser,
 } from '../../../../common/guards';
 import { AddAddressDto } from '../dto/add-address.dto';
+import { AdoptInterfaceDto } from '../dto/adopt-interface.dto';
 import { SetInterfaceStateDto } from '../dto/set-interface-state.dto';
 import { AddressesService } from '../service/addresses.service';
+import { InterfacesAdoptService } from '../service/interfaces-adopt.service';
 import { InterfacesControlService } from '../service/interfaces-control.service';
 import { InterfacesInventoryService } from '../service/interfaces-inventory.service';
 
@@ -20,6 +22,7 @@ export class InterfacesController {
     private readonly inventory: InterfacesInventoryService,
     private readonly control: InterfacesControlService,
     private readonly addresses: AddressesService,
+    private readonly adoptSvc: InterfacesAdoptService,
   ) {}
 
   @Get()
@@ -35,6 +38,15 @@ export class InterfacesController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.control.setState(dto.ifName, dto.state, user.id);
+  }
+
+  @Post('adopt')
+  @RequirePermissions(PERMISSIONS.NETWORK_INTERFACES_MANAGE)
+  adopt(
+    @Body() dto: AdoptInterfaceDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.adoptSvc.adopt(dto.ifName, user.id);
   }
 
   @Post('addresses')

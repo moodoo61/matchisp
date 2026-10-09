@@ -4,6 +4,7 @@ import { DnsController } from './dns/controller/dns.controller';
 import { DnsService } from './dns/service/dns.service';
 import { InterfacesController } from './interfaces/controller/interfaces.controller';
 import { AddressesService } from './interfaces/service/addresses.service';
+import { InterfacesAdoptService } from './interfaces/service/interfaces-adopt.service';
 import { InterfacesControlService } from './interfaces/service/interfaces-control.service';
 import { InterfacesInventoryService } from './interfaces/service/interfaces-inventory.service';
 import { NmManagedConfService } from './nm/service/nm-managed-conf.service';
@@ -29,6 +30,7 @@ import { SstpSettingsService } from './sstp/service/sstp-settings.service';
     NmProfilesService,
     InterfacesInventoryService,
     InterfacesControlService,
+    InterfacesAdoptService,
     AddressesService,
     RoutesService,
     DnsService,

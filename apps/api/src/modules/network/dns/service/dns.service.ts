@@ -10,6 +10,7 @@ import { promisify } from 'util';
 import { AuditService } from '../../../audit/audit.service';
 import {
   DNS_SEARCH_RE,
+  DNS_STUB_SERVERS,
   IFACE_NAME_RE,
   IPV4_RE,
 } from '../../constants/network-safety';
@@ -19,7 +20,7 @@ import type { NetworkDnsInfo } from '../../types/network.types';
 
 const execFileAsync = promisify(execFile);
 
-/** قراءة/ضبط DNS — الضبط الدائم عبر NetworkManager */
+/** قراءة/ضبط DNS — العرض من NM، الضبط الدائم عبر NetworkManager */
 @Injectable()
 export class DnsService {
   private readonly logger = new Logger(DnsService.name);
@@ -34,14 +35,50 @@ export class DnsService {
     const resolvConf = await this.readResolv();
     const fromFile = this.parseResolv(resolvConf);
     const fromResolved = await this.readResolved();
+    const fromNm = await this.profiles.getConfiguredDns();
+
+    const stubResolver =
+      [...fromFile.servers, ...(fromResolved?.servers ?? [])].find((s) =>
+        DNS_STUB_SERVERS.has(s),
+      ) ?? null;
+
+    const upstreamResolved = withoutStubs(fromResolved?.servers ?? []);
+    const upstreamFile = withoutStubs(fromFile.servers);
+
+    // الأولوية: ما هو مضبوط في NM (ما يحفظه المستخدم) ثم upstream من resolved
+    const servers = fromNm.servers.length
+      ? fromNm.servers
+      : upstreamResolved.length
+        ? upstreamResolved
+        : upstreamFile;
+
+    const search = fromNm.search.length
+      ? fromNm.search
+      : fromResolved?.search.length
+        ? fromResolved.search
+        : fromFile.search;
+
+    let source: NetworkDnsInfo['source'] = 'resolv.conf';
+    let mode = 'resolv.conf';
+    if (fromNm.servers.length || fromNm.connection) {
+      source = 'network-manager';
+      mode = fromResolved
+        ? 'systemd-resolved + NetworkManager'
+        : 'NetworkManager';
+    } else if (fromResolved) {
+      source = 'systemd-resolved';
+      mode = 'systemd-resolved';
+    }
 
     return {
-      mode: fromResolved ? 'systemd-resolved' : 'resolv.conf',
-      servers:
-        fromResolved?.servers.length ? fromResolved.servers : fromFile.servers,
-      search:
-        fromResolved?.search.length ? fromResolved.search : fromFile.search,
+      mode,
+      source,
+      servers,
+      search,
       resolvConf,
+      stubResolver,
+      device: fromNm.device,
+      connection: fromNm.connection,
     };
   }
 
@@ -59,6 +96,11 @@ export class DnsService {
     );
 
     for (const s of cleanServers) {
+      if (DNS_STUB_SERVERS.has(s)) {
+        throw new BadRequestException(
+          `${s} عنوان داخلي لـ systemd-resolved وليس خادم DNS — استخدم مثل 8.8.8.8`,
+        );
+      }
       if (!IPV4_RE.test(s) || !validIpv4Octets(s)) {
         throw new BadRequestException(`خادم DNS غير صالح: ${s}`);
       }
@@ -92,6 +134,8 @@ export class DnsService {
       );
     }
 
+    await this.flushResolvedCache();
+
     await this.audit.log({
       actorId,
       action: 'dns_set',
@@ -108,9 +152,21 @@ export class DnsService {
     return {
       success: true,
       device: applied.device,
+      connection: applied.connection,
       servers: cleanServers,
       search: cleanSearch,
     };
+  }
+
+  private async flushResolvedCache(): Promise<void> {
+    try {
+      await execFileAsync('resolvectl', ['flush-caches'], {
+        timeout: 5000,
+        maxBuffer: 64 * 1024,
+      });
+    } catch {
+      /* اختياري */
+    }
   }
 
   private async readResolv(): Promise<string> {
@@ -141,11 +197,10 @@ export class DnsService {
     search: string[];
   } | null> {
     try {
-      const { stdout } = await execFileAsync(
-        'resolvectl',
-        ['status'],
-        { timeout: 8000, maxBuffer: 2 * 1024 * 1024 },
-      );
+      const { stdout } = await execFileAsync('resolvectl', ['status'], {
+        timeout: 8000,
+        maxBuffer: 2 * 1024 * 1024,
+      });
       const servers: string[] = [];
       const search: string[] = [];
       for (const line of stdout.split('\n')) {
@@ -171,7 +226,10 @@ export class DnsService {
           servers.push(t);
         }
       }
-      return { servers: [...new Set(servers)], search: [...new Set(search)] };
+      return {
+        servers: [...new Set(servers)],
+        search: [...new Set(search)],
+      };
     } catch (err) {
       this.logger.debug(
         `resolvectl: ${err instanceof Error ? err.message : err}`,
@@ -179,6 +237,10 @@ export class DnsService {
       return null;
     }
   }
+}
+
+function withoutStubs(list: string[]): string[] {
+  return list.filter((s) => !DNS_STUB_SERVERS.has(s));
 }
 
 function unique(list: string[]): string[] {

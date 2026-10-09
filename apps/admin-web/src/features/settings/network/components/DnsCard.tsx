@@ -32,6 +32,7 @@ export function DnsCard() {
       setData(next);
       setServersText(next.servers.join('\n'));
       setSearchText(next.search.join('\n'));
+      if (next.device) setDevice(next.device);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر جلب DNS');
@@ -90,10 +91,28 @@ export function DnsCard() {
         {!data && !error ? <p className="muted">جاري القراءة…</p> : null}
         {data ? (
           <div className="net-dns">
-            <p className="muted">المصدر التشغيلي: {data.mode}</p>
+            <p className="muted">
+              المصدر: {data.mode}
+              {data.source === 'network-manager' ? ' · مضبوط عبر NM' : ''}
+            </p>
+            {data.stubResolver ? (
+              <p className="muted">
+                ملاحظة: <span className="mono">{data.stubResolver}</span> عنوان
+                داخلي لـ systemd-resolved وليس خادم DNS للضبط.
+              </p>
+            ) : null}
+            {data.device || data.connection ? (
+              <p className="muted">
+                المنفذ/الاتصال:{' '}
+                <span className="mono" dir="ltr">
+                  {data.device ?? '—'}
+                  {data.connection ? ` · ${data.connection}` : ''}
+                </span>
+              </p>
+            ) : null}
             <div className="net-dns-grid">
               <div>
-                <h4>خوادم الأسماء</h4>
+                <h4>خوادم الأسماء (المضبوطة)</h4>
                 {data.servers.length ? (
                   <ul>
                     {data.servers.map((s) => (
@@ -105,7 +124,7 @@ export function DnsCard() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted">لا يوجد</p>
+                  <p className="muted">لا يوجد — اضبط من النموذج أدناه</p>
                 )}
               </div>
               <div>
@@ -153,16 +172,16 @@ export function DnsCard() {
               />
             </label>
             <label>
-              المنفذ (اختياري)
+              المنفذ (اختياري — يُفضّل منفذ NM مثل eno2np1)
               <input
                 dir="ltr"
                 value={device}
                 onChange={(e) => setDevice(e.target.value)}
-                placeholder="eno1"
+                placeholder="eno2np1"
               />
             </label>
             <p className="muted">
-              يُحفظ على ملف اتصال NetworkManager ويُطبَّق بعد الإقلاع.
+              لا تستخدم 127.0.0.53 — يُحفظ على ملف اتصال NetworkManager.
             </p>
             <button className="btn" type="submit" disabled={busy}>
               حفظ

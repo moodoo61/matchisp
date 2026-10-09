@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PERMISSIONS } from '@isp/shared';
 import {
+  adoptInterfaceNm,
   listInterfaces,
   removeInterfaceAddress,
   setInterfaceState,
@@ -11,7 +12,11 @@ import type {
   InterfacesInventory,
   NetworkInterface,
 } from '@/features/settings/network/types';
-import { ifaceStateLabel } from '@/features/settings/network/types';
+import {
+  ifaceStateLabel,
+  nmModeLabel,
+  nmModeTone,
+} from '@/features/settings/network/types';
 import { usePermissions } from '@/lib/usePermissions';
 import {
   DataTable,
@@ -101,6 +106,29 @@ export function InterfacesCard() {
     }
   }
 
+  async function adoptNm(row: NetworkInterface) {
+    if (!canManage || !row.canControl || !row.canAdoptNm) return;
+    if (
+      !confirm(
+        `تحويل ${row.ifName} إلى إدارة NetworkManager الدائمة (ملف match-${row.ifName})؟\n` +
+          'سيُنسخ العنوان الحالي ويُحفظ تحت /etc ليبقى بعد الإقلاع.',
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await notifyMutation(toast, () => adoptInterfaceNm(row.ifName), {
+        success: `تم تحويل ${row.ifName} للطريقة الدائمة`,
+      });
+      await reload();
+    } catch {
+      /* toast */
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!canRead) return null;
 
   const columns: Column<NetworkInterface>[] = [
@@ -136,6 +164,34 @@ export function InterfacesCard() {
         >
           {ifaceStateLabel(row)}
         </span>
+      ),
+    },
+    {
+      key: 'nm',
+      header: 'الإدارة',
+      render: (row) => (
+        <div className="net-cell-stack">
+          <span
+            className={`status-pill status-${nmModeTone(row.nmMode)}`}
+            title={
+              [
+                row.nmConnection ? `اتصال: ${row.nmConnection}` : null,
+                row.nmMatchProfile ? `ملف: ${row.nmMatchProfile}` : null,
+                row.nmPersistent ? 'دائم (/etc)' : 'غير دائم',
+              ]
+                .filter(Boolean)
+                .join(' · ') || undefined
+            }
+          >
+            {nmModeLabel(row.nmMode)}
+          </span>
+          {row.nmMode === 'match' && row.nmPersistent ? (
+            <span className="muted net-nm-hint">match + /etc</span>
+          ) : null}
+          {row.nmMode === 'other' ? (
+            <span className="muted net-nm-hint">يتطلب تحويلاً</span>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -199,6 +255,17 @@ export function InterfacesCard() {
             >
               إضافة عنوان
             </button>
+            {row.canAdoptNm ? (
+              <button
+                type="button"
+                className="btn btn-sm"
+                disabled={busy}
+                onClick={() => void adoptNm(row)}
+                title="إنشاء ملف match-* دائم تحت NetworkManager"
+              >
+                تحويل لـ NM دائم
+              </button>
+            ) : null}
           </div>
         );
       },
@@ -219,6 +286,12 @@ export function InterfacesCard() {
           </IconButton>
         }
       >
+        <p className="muted net-nm-legend">
+          <span className="status-pill status-ok">NM دائم</span>
+          = ملف <span className="mono">match-*</span> تحت NetworkManager ·{' '}
+          <span className="status-pill status-degraded">NM / netplan</span>
+          = يحتاج زر التحويل للاستمرارية بعد الإقلاع
+        </p>
         {error ? <p className="error">{error}</p> : null}
         {!data && !error ? <p className="muted">جاري القراءة…</p> : null}
         {data ? (

@@ -2,12 +2,15 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { IFACE_NAME_RE, PROTECTED_IFACES } from '../../constants/network-safety';
+import {
+  matchConnectionName,
+  NM_MATCH_PREFIX,
+  type NmIfaceStatus,
+} from '../constants/nm-profile';
 import { NmManagedConfService } from './nm-managed-conf.service';
 import { NmcliService } from './nmcli.service';
 
 const execFileAsync = promisify(execFile);
-
-const CON_PREFIX = 'match-';
 
 type DeviceRow = {
   device: string;
@@ -21,6 +24,7 @@ type ConnectionRow = {
   uuid: string;
   type: string;
   device: string;
+  filename: string;
 };
 
 /**
@@ -45,13 +49,17 @@ export class NmProfilesService {
     }
   }
 
-  /** يعيد معرّف الاتصال (الاسم) الجاهز للمنفذ */
+  /**
+   * يعيد دائماً ملف الاتصال الدائم match-<iface> فقط
+   * (لا يعيد استخدام اتصالات netplan/الأخرى).
+   */
   async ensureProfile(ifName: string): Promise<string> {
     this.assertControllable(ifName);
     await this.nmcli.assertAvailable();
     await this.ensureManaged(ifName);
 
-    const existing = await this.findConnectionForDevice(ifName);
+    const conName = matchConnectionName(ifName);
+    const existing = await this.findMatchConnection(ifName);
     if (existing) {
       await this.nmcli.run([
         'connection',
@@ -59,11 +67,12 @@ export class NmProfilesService {
         existing,
         'connection.interface-name',
         ifName,
+        'connection.id',
+        conName,
       ]);
       return existing;
     }
 
-    const conName = `${CON_PREFIX}${ifName}`;
     const liveCidrs = await this.readLiveIpv4Cidrs(ifName);
     const addArgs = [
       'connection',
@@ -93,6 +102,114 @@ export class NmProfilesService {
     await this.nmcli.run(addArgs);
     this.logger.log(`أُنشئ ملف اتصال دائم: ${conName} ← ${ifName}`);
     return conName;
+  }
+
+  /** حالة إدارة NM لكل المنافذ (للواجهة) */
+  async statusByIface(): Promise<Map<string, NmIfaceStatus>> {
+    const map = new Map<string, NmIfaceStatus>();
+    try {
+      await this.nmcli.assertAvailable();
+    } catch {
+      return map;
+    }
+
+    const [devices, cons] = await Promise.all([
+      this.listDevices(),
+      this.listConnections(),
+    ]);
+
+    for (const d of devices) {
+      map.set(d.device, this.buildStatus(d, cons));
+    }
+    return map;
+  }
+
+  /**
+   * ترحيل المنفذ إلى ملف match-* الدائم تحت /etc
+   * مع نسخ العناوين/البوابة/DNS من الاتصال الحالي أو الحالة الحية.
+   */
+  async adoptMatchProfile(ifName: string): Promise<{
+    connection: string;
+    addresses: string[];
+    persistent: boolean;
+  }> {
+    this.assertControllable(ifName);
+    await this.nmcli.assertAvailable();
+    await this.ensureManaged(ifName);
+
+    const foreign = await this.findForeignConnection(ifName);
+    const liveCidrs = await this.readLiveIpv4Cidrs(ifName);
+    let addresses = liveCidrs;
+    let gateway: string | null = null;
+    let dns: string[] = [];
+    let dnsSearch: string[] = [];
+
+    if (foreign) {
+      const fromCon = await this.getIpv4Addresses(foreign);
+      addresses = uniqueCidrs([...fromCon, ...liveCidrs]);
+      gateway = await this.getIpv4Gateway(foreign);
+      dns = await this.getIpv4Dns(foreign);
+      dnsSearch = await this.getIpv4DnsSearch(foreign);
+    }
+
+    const con = await this.ensureProfile(ifName);
+    const args = [
+      'connection',
+      'modify',
+      con,
+      'connection.interface-name',
+      ifName,
+      'connection.autoconnect',
+      'yes',
+      'ipv6.method',
+      'ignore',
+    ];
+    if (addresses.length > 0) {
+      args.push(
+        'ipv4.method',
+        'manual',
+        'ipv4.addresses',
+        addresses.join(','),
+      );
+      if (gateway) args.push('ipv4.gateway', gateway);
+    } else {
+      args.push('ipv4.method', 'disabled', 'ipv4.addresses', '');
+    }
+    if (dns.length) {
+      args.push('ipv4.ignore-auto-dns', 'yes', 'ipv4.dns', dns.join(','));
+    }
+    if (dnsSearch.length) {
+      args.push('ipv4.dns-search', dnsSearch.join(','));
+    }
+    await this.nmcli.run(args);
+
+    // أوقف الاعتماد على الاتصال القديم (netplan/غيره) إن أمكن
+    if (foreign && foreign !== con) {
+      await this.nmcli
+        .run([
+          'connection',
+          'modify',
+          foreign,
+          'connection.autoconnect',
+          'no',
+        ])
+        .catch((err) => {
+          this.logger.debug(
+            `تعذر تعطيل autoconnect لـ ${foreign}: ${this.nmcli.errMsg(err)}`,
+          );
+        });
+    }
+
+    await this.activate(con, ifName);
+
+    const persistent = await this.isPersistentConnection(con);
+    if (!persistent) {
+      this.logger.warn(
+        `الاتصال ${con} ليس تحت /etc/NetworkManager/system-connections — قد لا يثبت بعد الإقلاع`,
+      );
+    }
+
+    return { connection: con, addresses, persistent };
   }
 
   async setState(ifName: string, state: 'up' | 'down'): Promise<void> {
@@ -167,10 +284,10 @@ export class NmProfilesService {
     search: string[],
     device: string | undefined,
   ): Promise<{ device: string; connection: string }> {
-    const ifName = device?.trim() || (await this.inferDefaultDevice());
+    const ifName = device?.trim() || (await this.inferNmManagedDevice());
     if (!ifName) {
       throw new BadRequestException(
-        'حدّد منفذ الجهاز لـ DNS — تعذر اكتشافه تلقائياً',
+        'حدّد منفذ الجهاز لـ DNS — تعذر اكتشاف منفذ تحت NetworkManager',
       );
     }
     this.assertControllable(ifName);
@@ -201,6 +318,44 @@ export class NmProfilesService {
     await this.nmcli.run(args);
     await this.reapply(con, ifName);
     return { device: ifName, connection: con };
+  }
+
+  /** قراءة DNS المضبوط على ملف NM (وليس stub 127.0.0.53) */
+  async getConfiguredDns(device?: string): Promise<{
+    device: string | null;
+    connection: string | null;
+    servers: string[];
+    search: string[];
+  }> {
+    try {
+      await this.nmcli.assertAvailable();
+    } catch {
+      return { device: null, connection: null, servers: [], search: [] };
+    }
+
+    const ifName = device?.trim() || (await this.inferNmManagedDevice());
+    if (!ifName) {
+      return { device: null, connection: null, servers: [], search: [] };
+    }
+
+    const match = await this.findMatchConnection(ifName);
+    const foreign = await this.findForeignConnection(ifName);
+    const con = match ?? foreign;
+    if (!con) {
+      return {
+        device: ifName,
+        connection: null,
+        servers: [],
+        search: [],
+      };
+    }
+
+    return {
+      device: ifName,
+      connection: con,
+      servers: await this.getIpv4Dns(con),
+      search: await this.getIpv4DnsSearch(con),
+    };
   }
 
   async setDefaultGateway(
@@ -370,19 +525,65 @@ export class NmProfilesService {
     }
   }
 
-  private async findConnectionForDevice(
-    ifName: string,
-  ): Promise<string | null> {
-    const preferred = `${CON_PREFIX}${ifName}`;
+  private buildStatus(
+    device: DeviceRow,
+    cons: ConnectionRow[],
+  ): NmIfaceStatus {
+    const matchName = matchConnectionName(device.device);
+    const matchCon = cons.find((c) => c.name === matchName) ?? null;
+    const persistent = matchCon
+      ? isEtcNmConnection(matchCon.filename)
+      : false;
+    const active = device.connection || null;
+    const managed = device.state !== 'unmanaged';
+
+    let mode: NmIfaceStatus['mode'];
+    if (!managed) {
+      mode = 'unmanaged';
+    } else if (active?.startsWith(NM_MATCH_PREFIX)) {
+      mode = 'match';
+    } else if (matchCon && persistent) {
+      // ملف دائم موجود لكن جهاز عليه اتصال آخر (netplan) أو غير مفعّل بعد
+      mode = active && !active.startsWith(NM_MATCH_PREFIX) ? 'other' : 'match';
+    } else if (active) {
+      mode = 'other';
+    } else {
+      mode = 'none';
+    }
+
+    const canAdopt =
+      managed &&
+      !PROTECTED_IFACES.has(device.device) &&
+      !(mode === 'match' && persistent && active?.startsWith(NM_MATCH_PREFIX));
+
+    return {
+      available: true,
+      managed,
+      mode,
+      connection: active,
+      matchProfile: matchCon?.name ?? null,
+      persistent,
+      canAdopt,
+    };
+  }
+
+  private async findMatchConnection(ifName: string): Promise<string | null> {
+    const preferred = matchConnectionName(ifName);
     const cons = await this.listConnections();
     const byName = cons.find((c) => c.name === preferred);
-    if (byName) return byName.name;
+    return byName?.name ?? null;
+  }
 
-    const onDevice = cons.find((c) => c.device === ifName);
+  private async findForeignConnection(ifName: string): Promise<string | null> {
+    const preferred = matchConnectionName(ifName);
+    const cons = await this.listConnections();
+    const onDevice = cons.find(
+      (c) => c.device === ifName && c.name !== preferred,
+    );
     if (onDevice) return onDevice.name;
 
-    // ابحث بـ interface-name داخل الملفات
     for (const c of cons) {
+      if (c.name === preferred) continue;
       if (!c.type.includes('ethernet') && c.type !== '802-3-ethernet') {
         continue;
       }
@@ -402,6 +603,12 @@ export class NmProfilesService {
       }
     }
     return null;
+  }
+
+  private async isPersistentConnection(conName: string): Promise<boolean> {
+    const cons = await this.listConnections();
+    const row = cons.find((c) => c.name === conName);
+    return row ? isEtcNmConnection(row.filename) : false;
   }
 
   private async listDevices(): Promise<DeviceRow[]> {
@@ -424,7 +631,7 @@ export class NmProfilesService {
     const stdout = await this.nmcli.run([
       '-t',
       '-f',
-      'NAME,UUID,TYPE,DEVICE',
+      'NAME,UUID,TYPE,DEVICE,FILENAME',
       'connection',
       'show',
     ]);
@@ -433,7 +640,36 @@ export class NmProfilesService {
       uuid: p[1] ?? '',
       type: p[2] ?? '',
       device: p[3] && p[3] !== '--' ? p[3] : '',
+      filename: p[4] ?? '',
     }));
+  }
+
+  private async getIpv4Dns(con: string): Promise<string[]> {
+    const raw = (
+      await this.nmcli.run(['-g', 'ipv4.dns', 'connection', 'show', con])
+    ).trim();
+    if (!raw || raw === '--') return [];
+    return raw
+      .split(/[,\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  private async getIpv4DnsSearch(con: string): Promise<string[]> {
+    const raw = (
+      await this.nmcli.run([
+        '-g',
+        'ipv4.dns-search',
+        'connection',
+        'show',
+        con,
+      ])
+    ).trim();
+    if (!raw || raw === '--') return [];
+    return raw
+      .split(/[,\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   private async getIpv4Addresses(con: string): Promise<string[]> {
@@ -487,6 +723,8 @@ export class NmProfilesService {
   }
 
   private async inferDefaultDevice(): Promise<string | null> {
+    const managed = await this.inferNmManagedDevice();
+    if (managed) return managed;
     try {
       const { stdout } = await execFileAsync(
         'ip',
@@ -497,15 +735,32 @@ export class NmProfilesService {
       const dev = routes[0]?.dev;
       return dev && IFACE_NAME_RE.test(dev) ? dev : null;
     } catch {
-      const devices = await this.listDevices();
-      const eth = devices.find(
-        (d) =>
-          (d.type === 'ethernet' || d.type === '802-3-ethernet') &&
-          d.state !== 'unmanaged' &&
-          !PROTECTED_IFACES.has(d.device),
-      );
-      return eth?.device ?? null;
+      return null;
     }
+  }
+
+  /** يفضّل منفذاً تحت NM (match أو connected) ويتجنب unmanaged */
+  private async inferNmManagedDevice(): Promise<string | null> {
+    const devices = await this.listDevices();
+    const cons = await this.listConnections();
+    const ethernet = devices.filter(
+      (d) =>
+        (d.type === 'ethernet' || d.type === '802-3-ethernet') &&
+        d.state !== 'unmanaged' &&
+        !PROTECTED_IFACES.has(d.device),
+    );
+
+    const withMatch = ethernet.find((d) =>
+      cons.some((c) => c.name === matchConnectionName(d.device)),
+    );
+    if (withMatch) return withMatch.device;
+
+    const connected = ethernet.find(
+      (d) => d.state === 'connected' || d.state.startsWith('connected'),
+    );
+    if (connected) return connected.device;
+
+    return ethernet[0]?.device ?? null;
   }
 }
 
@@ -523,4 +778,12 @@ function uniqueCidrs(list: string[]): string[] {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isEtcNmConnection(filename: string): boolean {
+  if (!filename || filename === '--') return false;
+  return (
+    filename.includes('/etc/NetworkManager/system-connections/') ||
+    filename.startsWith('/etc/NetworkManager/system-connections/')
+  );
 }

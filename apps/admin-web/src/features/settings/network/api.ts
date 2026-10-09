@@ -34,6 +34,20 @@ export function removeInterfaceAddress(ifName: string, cidr: string) {
   );
 }
 
+/** تحويل المنفذ إلى ملف اتصال match-* الدائم تحت NetworkManager */
+export function adoptInterfaceNm(ifName: string) {
+  return api<{
+    success: boolean;
+    ifName: string;
+    connection: string;
+    addresses: string[];
+    persistent: boolean;
+  }>('/settings/network/interfaces/adopt', {
+    method: 'POST',
+    body: JSON.stringify({ ifName }),
+  });
+}
+
 export function listRoutes() {
   return api<RoutesInventory>('/settings/network/routes');
 }

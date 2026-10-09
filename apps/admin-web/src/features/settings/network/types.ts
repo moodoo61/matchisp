@@ -6,6 +6,13 @@ export type NetworkAddress = {
   cidr: string;
 };
 
+export type NmBackendMode =
+  | 'match'
+  | 'other'
+  | 'unmanaged'
+  | 'unavailable'
+  | 'none';
+
 export type NetworkInterface = {
   ifName: string;
   ifIndex: number;
@@ -19,6 +26,12 @@ export type NetworkInterface = {
   noteLabel: string;
   noteText: string;
   canControl: boolean;
+  nmMode: NmBackendMode;
+  nmManaged: boolean;
+  nmConnection: string | null;
+  nmMatchProfile: string | null;
+  nmPersistent: boolean;
+  canAdoptNm: boolean;
 };
 
 export type InterfacesInventory = {
@@ -42,9 +55,13 @@ export type RoutesInventory = {
 
 export type NetworkDnsInfo = {
   mode: string;
+  source: 'network-manager' | 'systemd-resolved' | 'resolv.conf';
   servers: string[];
   search: string[];
   resolvConf: string;
+  stubResolver: string | null;
+  device: string | null;
+  connection: string | null;
 };
 
 export type SstpStatus = {
@@ -88,4 +105,27 @@ export function ifaceStateLabel(row: {
   if (!row.adminUp) return 'متوقف';
   if (row.operState === 'UP') return 'يعمل';
   return 'مُشغَّل (بلا وسيط)';
+}
+
+export function nmModeLabel(mode: NmBackendMode): string {
+  switch (mode) {
+    case 'match':
+      return 'NM دائم';
+    case 'other':
+      return 'NM / netplan';
+    case 'unmanaged':
+      return 'غير مُدار';
+    case 'unavailable':
+      return 'NM غير متاح';
+    default:
+      return 'بدون ملف';
+  }
+}
+
+export function nmModeTone(
+  mode: NmBackendMode,
+): 'ok' | 'degraded' | 'missing' {
+  if (mode === 'match') return 'ok';
+  if (mode === 'other') return 'degraded';
+  return 'missing';
 }

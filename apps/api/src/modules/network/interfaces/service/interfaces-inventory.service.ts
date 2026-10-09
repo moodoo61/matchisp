@@ -3,9 +3,11 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { PrismaNetworkService } from '../../../../database/database.module';
 import { PROTECTED_IFACES } from '../../constants/network-safety';
+import { NmProfilesService } from '../../nm/service/nm-profiles.service';
 import type {
   NetworkAddress,
   NetworkInterface,
+  NmBackendMode,
 } from '../../types/network.types';
 
 const execFileAsync = promisify(execFile);
@@ -29,15 +31,24 @@ type IpAddrJson = {
 export class InterfacesInventoryService {
   private readonly logger = new Logger(InterfacesInventoryService.name);
 
-  constructor(private readonly prisma: PrismaNetworkService) {}
+  constructor(
+    private readonly prisma: PrismaNetworkService,
+    private readonly profiles: NmProfilesService,
+  ) {}
 
   async list(): Promise<{
     checkedAt: string;
     interfaces: NetworkInterface[];
   }> {
-    const [raw, notes] = await Promise.all([
+    const [raw, notes, nmStatus] = await Promise.all([
       this.readIpAddr(),
       this.prisma.interfaceNote.findMany(),
+      this.profiles.statusByIface().catch((err) => {
+        this.logger.debug(
+          `nm status: ${err instanceof Error ? err.message : err}`,
+        );
+        return new Map();
+      }),
     ]);
     const notesByName = new Map(
       notes.map((n) => [n.ifName, { label: n.label, notes: n.notes }]),
@@ -62,6 +73,10 @@ export class InterfacesInventoryService {
         });
 
       const flags = item.flags ?? [];
+      const nm = nmStatus.get(ifName);
+      const canControl = !PROTECTED_IFACES.has(ifName);
+      const nmMode: NmBackendMode = nm?.mode ?? 'unavailable';
+
       return {
         ifName,
         ifIndex: item.ifindex ?? 0,
@@ -73,7 +88,13 @@ export class InterfacesInventoryService {
         addresses,
         noteLabel: note?.label ?? '',
         noteText: note?.notes ?? '',
-        canControl: !PROTECTED_IFACES.has(ifName),
+        canControl,
+        nmMode,
+        nmManaged: nm?.managed ?? false,
+        nmConnection: nm?.connection ?? null,
+        nmMatchProfile: nm?.matchProfile ?? null,
+        nmPersistent: nm?.persistent ?? false,
+        canAdoptNm: canControl && (nm?.canAdopt ?? nmMode !== 'match'),
       } satisfies NetworkInterface;
     });
 
