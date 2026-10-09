@@ -134,17 +134,6 @@ export function ClientLivePublicView() {
     [],
   );
 
-  /** عند فشل المشغّل الحالي انتقل تلقائياً للتالي في القائمة */
-  const handlePlaybackError = useCallback(() => {
-    setActivePlayer((current) => {
-      const index = players.indexOf(current);
-      if (index < 0) return current;
-      const next = players[index + 1];
-      return next ?? current;
-    });
-    setUserStarted(true);
-  }, [players]);
-
   useChannelKeyboard(
     channelIds,
     selectedId,
@@ -195,9 +184,6 @@ export function ClientLivePublicView() {
                 autoplay={shouldAutoplay}
                 onSelectChannel={selectChannel}
                 activePlayer={activePlayer}
-                onPlaybackError={
-                  players.length > 1 ? handlePlaybackError : undefined
-                }
               />
             ) : (
               <section className="cl-feature">

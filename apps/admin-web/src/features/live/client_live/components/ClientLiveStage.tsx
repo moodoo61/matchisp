@@ -4,12 +4,11 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo } from 'react';
 import {
   gateTsQualities,
-  useChannelPlaybackGate,
+  useChannelPlaybackEnrichment,
 } from '../hooks/useChannelPlaybackGate';
 import type { ViewingPlayerId } from '../lib/players';
 import { resolveClientPlaybackUrl } from '../lib/resolveClientPlaybackUrl';
 import type { PublicLiveChannel } from '../types';
-import { ChannelWakeOverlay } from './ChannelWakeOverlay';
 import { ProgramBar } from './program/ProgramBar';
 
 /** مشغّل المتصفح فقط — mpegts.js لا يعمل على SSR */
@@ -28,7 +27,10 @@ type Props = {
   onPlaybackError?: () => void;
 };
 
-/** المسرح — بوابة تنشيط Mist ثم المشغّل + شريط البرنامج */
+/**
+ * المسرح — تشغيل فوري برابط Mist الرئيسي (التنشيط من طلب المشغّل)،
+ * مع إثراء الجودات في الخلفية بلا رسالة تنشيط.
+ */
 export function ClientLiveStage({
   channel,
   brandLogoUrl,
@@ -37,69 +39,56 @@ export function ClientLiveStage({
   activePlayer,
   onPlaybackError,
 }: Props) {
-  const gate = useChannelPlaybackGate(channel, {
+  const enriched = useChannelPlaybackEnrichment(channel, {
     preferredPlayer: activePlayer,
   });
 
   const rawUrl =
-    gate.player === 'ts'
-      ? gate.playback.tsUrl ?? ''
-      : gate.playback.hlsUrl;
+    activePlayer === 'ts'
+      ? enriched.playback.tsUrl ?? ''
+      : enriched.playback.hlsUrl;
   const srcUrl = resolveClientPlaybackUrl(rawUrl);
 
-  const tsQualitiesKey = (gate.playback.tsQualities ?? [])
+  const tsQualitiesKey = (enriched.playback.tsQualities ?? [])
     .map((row) => `${row.width}x${row.height ?? 0}`)
     .join('|');
   const tsQualities = useMemo(
-    () => gateTsQualities(gate.playback, gate.useMainTsUrl),
+    () => gateTsQualities(enriched.playback),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tsQualitiesKey, gate.useMainTsUrl],
+    [tsQualitiesKey],
   );
 
   useEffect(() => {
-    if (!gate.allowPlayer) return;
     if (!srcUrl && onPlaybackError) onPlaybackError();
-  }, [gate.allowPlayer, srcUrl, onPlaybackError]);
+  }, [srcUrl, onPlaybackError]);
 
   const stageChannel = useMemo<PublicLiveChannel>(
     () => ({
       ...channel,
-      online: gate.online,
-      active: gate.active,
-      playback: gate.playback,
+      online: enriched.online,
+      active: enriched.active,
+      playback: enriched.playback,
     }),
-    [channel, gate.online, gate.active, gate.playback],
+    [channel, enriched.online, enriched.active, enriched.playback],
   );
 
   return (
     <section className="cl-feature">
       <div className="cl-screen-shell">
         <div className="cl-screen">
-          {gate.phase === 'waking' || gate.phase === 'deciding' ? (
-            <ChannelWakeOverlay
-              message={gate.message ?? 'جاري تنشيط القناة عبر Mist…'}
-            />
-          ) : null}
-          {gate.phase === 'failed' ? (
-            <ChannelWakeOverlay
-              failed
-              message={gate.message ?? 'تعذر تنشيط القناة'}
-            />
-          ) : null}
-          {gate.allowPlayer && srcUrl ? (
+          {srcUrl ? (
             <ClientLivePlayer
-              key={`${channel.id}:${gate.player}:${gate.useMainTsUrl ? 'main' : 'q'}`}
-              mode={gate.player}
+              key={`${channel.id}:${activePlayer}`}
+              mode={activePlayer}
               srcUrl={srcUrl}
               brandLogoUrl={brandLogoUrl}
               autoplay={autoplay}
               tsQualities={tsQualities}
               onPlaybackError={onPlaybackError}
             />
-          ) : null}
-          {gate.allowPlayer && !srcUrl ? (
+          ) : (
             <div className="cl-frame-empty">{channel.label}</div>
-          ) : null}
+          )}
         </div>
       </div>
 

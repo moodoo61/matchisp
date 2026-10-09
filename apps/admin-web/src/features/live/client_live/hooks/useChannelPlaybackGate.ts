@@ -9,204 +9,111 @@ import {
   CHANNEL_WAKE_POLL_MS,
   CHANNEL_WAKE_TIMEOUT_MS,
   hasPlayableTsQualities,
-  planAfterWakeSample,
-  planInitialPlayback,
-  type PlaybackGatePhase,
+  isMistStreamOnline,
 } from '../lib/playbackGate';
 import type { ViewingPlayerId } from '../lib/players';
 import type { PublicLiveChannel, TsQualityFromMist } from '../types';
 
 export type ChannelPlaybackGateState = {
-  phase: PlaybackGatePhase;
   player: ViewingPlayerId;
   playback: PublicLiveChannel['playback'];
   online: 0 | 1 | 2 | null;
   active: boolean;
-  useMainTsUrl: boolean;
-  message: string | null;
-  allowPlayer: boolean;
 };
 
 type Options = {
   preferredPlayer: ViewingPlayerId;
 };
 
-function buildInitial(channel: PublicLiveChannel, options: Options) {
-  const plan = planInitialPlayback({
-    preferredPlayer: options.preferredPlayer,
-    online: channel.online,
-    tsQualities: channel.playback.tsQualities,
-  });
-  return {
-    phase: plan.phase as PlaybackGatePhase,
-    player: plan.player,
-    playback: channel.playback,
-    online: channel.online,
-    active: channel.active,
-    useMainTsUrl: plan.useMainTsUrl,
-    message: plan.message,
-  };
-}
-
 /**
- * بوابة تشغيل وفق نموذج MistServer:
- * 1) طلب رابط التشغيل من الـ API لإيقاظ الستريم (output يطلب المدخل)
- * 2) انتظار online=1 (أخضر)
- * 3) جلب جودات TS ثم تشغيل المشغّل
- * بلا تحويل تلقائي إلى HLS.
+ * يشغّل فوراً بالرابط الرئيسي (طلب المشغّل = تنشيط Mist)،
+ * وفي الخلفية: wake + استطلاع الجودات دون حجب الواجهة أو رسائل.
  */
-export function useChannelPlaybackGate(
+export function useChannelPlaybackEnrichment(
   channel: PublicLiveChannel,
   options: Options,
 ): ChannelPlaybackGateState {
   const sessionKey = `${channel.id}:${options.preferredPlayer}`;
   const [session, setSession] = useState(sessionKey);
-  const [state, setState] = useState(() => buildInitial(channel, options));
+  const [playback, setPlayback] = useState(channel.playback);
+  const [online, setOnline] = useState(channel.online);
+  const [active, setActive] = useState(channel.active);
 
   useEffect(() => {
     setSession(sessionKey);
-    setState(buildInitial(channel, options));
+    setPlayback(channel.playback);
+    setOnline(channel.online);
+    setActive(channel.active);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sessionKey فقط
   }, [sessionKey]);
 
+  /** دمج تحديثات قائمة الأقسام دون مسح جودات وصلت من الاستطلاع */
   useEffect(() => {
     if (session !== sessionKey) return;
-    if (state.phase !== 'ready') return;
-    setState((current) => ({
-      ...current,
-      online: channel.online,
-      active: channel.active,
-      playback: {
-        ...channel.playback,
-        tsQualities: hasPlayableTsQualities(channel.playback.tsQualities)
-          ? channel.playback.tsQualities
-          : current.playback.tsQualities,
-      },
+    setOnline(channel.online);
+    setActive(channel.active);
+    setPlayback((current) => ({
+      ...channel.playback,
+      tsQualities: hasPlayableTsQualities(channel.playback.tsQualities)
+        ? channel.playback.tsQualities
+        : current.tsQualities,
     }));
-  }, [
-    session,
-    sessionKey,
-    state.phase,
-    channel.playback,
-    channel.online,
-    channel.active,
-  ]);
+  }, [session, sessionKey, channel.playback, channel.online, channel.active]);
 
   useEffect(() => {
     if (session !== sessionKey) return;
-    if (state.phase !== 'waking') return;
+    if (options.preferredPlayer !== 'ts') return;
 
     let cancelled = false;
     const startedAt = Date.now();
-    let onlineSince: number | null = null;
     const channelId = channel.id;
-    const wakeTsUrl = channel.playback.tsUrl;
-    const wakeHlsUrl = channel.playback.hlsUrl;
-    const wakeWhep = channel.playback.whepUrl;
-    const wakeToken = channel.playback.token;
-    const initialQualities = channel.playback.tsQualities;
+    let gotQualities = hasPlayableTsQualities(channel.playback.tsQualities);
+    let sawOnline = isMistStreamOnline(channel.online);
 
-    const finish = (
-      plan: ReturnType<typeof planAfterWakeSample>,
-      nextPlayback: PublicLiveChannel['playback'],
-      nextOnline: 0 | 1 | 2 | null,
-      nextActive: boolean,
+    const ingest = (
+      ready: Awaited<ReturnType<typeof getPublicChannelPlaybackReady>>,
     ) => {
       if (cancelled) return;
-      setState({
-        phase: plan.phase,
-        player: plan.player,
-        playback: nextPlayback,
-        online: nextOnline,
-        active: nextActive,
-        useMainTsUrl: plan.useMainTsUrl,
-        message: plan.message,
-      });
+      if (ready.streamOnline || ready.online === 1) sawOnline = true;
+      if (hasPlayableTsQualities(ready.playback.tsQualities)) {
+        gotQualities = true;
+      }
+      setOnline(ready.online);
+      setActive(ready.active);
+      setPlayback((current) => ({
+        ...ready.playback,
+        tsQualities: hasPlayableTsQualities(ready.playback.tsQualities)
+          ? ready.playback.tsQualities
+          : current.tsQualities,
+      }));
     };
 
-    const applySample = (
-      ready: Awaited<ReturnType<typeof getPublicChannelPlaybackReady>>,
-      timedOut: boolean,
-    ) => {
-      if (ready.streamOnline || ready.online === 1) {
-        if (onlineSince == null) onlineSince = Date.now();
-      } else {
-        onlineSince = null;
-      }
-
-      const plan = planAfterWakeSample({
-        online: ready.online,
-        streamOnline: ready.streamOnline,
-        tsQualities: ready.playback.tsQualities,
-        tsReady: ready.tsReady,
-        onlineForMs: onlineSince == null ? 0 : Date.now() - onlineSince,
-        timedOut,
-      });
-
-      if (plan.phase === 'waking' && !timedOut) {
-        setState((current) => ({
-          ...current,
-          playback: ready.playback,
-          online: ready.online,
-          active: ready.active,
-          message: plan.message,
-        }));
-        return false;
-      }
-
-      finish(plan, ready.playback, ready.online, ready.active);
-      return true;
-    };
+    const shouldStop = () =>
+      cancelled ||
+      Date.now() - startedAt >= CHANNEL_WAKE_TIMEOUT_MS ||
+      (sawOnline && gotQualities);
 
     const poll = async () => {
-      if (cancelled) return;
-      const timedOut = Date.now() - startedAt >= CHANNEL_WAKE_TIMEOUT_MS;
-
+      if (shouldStop()) return;
       try {
         const ready = await getPublicChannelPlaybackReady(channelId);
-        if (cancelled) return;
-        const done = applySample(ready, timedOut);
-        if (!done) {
-          window.setTimeout(() => void poll(), CHANNEL_WAKE_POLL_MS);
-        }
+        ingest(ready);
       } catch {
-        if (cancelled) return;
-        if (!timedOut) {
-          window.setTimeout(() => void poll(), CHANNEL_WAKE_POLL_MS);
-          return;
-        }
-        finish(
-          planAfterWakeSample({
-            online: null,
-            streamOnline: false,
-            tsQualities: [],
-            onlineForMs: 0,
-            timedOut: true,
-          }),
-          {
-            hlsUrl: wakeHlsUrl,
-            tsUrl: wakeTsUrl,
-            whepUrl: wakeWhep,
-            tsQualities: initialQualities,
-            token: wakeToken,
-          },
-          null,
-          false,
-        );
+        /* تجاهل — المشغّل يعمل بالرابط الرئيسي */
+      }
+      if (!shouldStop()) {
+        window.setTimeout(() => void poll(), CHANNEL_WAKE_POLL_MS);
       }
     };
 
     void (async () => {
       try {
-        // طلب رابط التشغيل من Mist عبر الـ API — يبقي output مفتوحاً حتى يلتقط المشغّل
         const woke = await wakePublicChannel(channelId);
-        if (cancelled) return;
-        const done = applySample(woke, false);
-        if (!done) {
-          window.setTimeout(() => void poll(), CHANNEL_WAKE_POLL_MS);
-        }
+        ingest(woke);
       } catch {
-        if (cancelled) return;
+        /* الإيقاظ السيرفري مساعد فقط */
+      }
+      if (!shouldStop()) {
         window.setTimeout(() => void poll(), CHANNEL_WAKE_POLL_MS);
       }
     })();
@@ -214,18 +121,23 @@ export function useChannelPlaybackGate(
     return () => {
       cancelled = true;
     };
-  }, [session, sessionKey, state.phase, channel.id]);
+  }, [session, sessionKey, options.preferredPlayer, channel.id]);
 
   return {
-    ...state,
-    allowPlayer: state.phase === 'ready',
+    player: options.preferredPlayer,
+    playback,
+    online,
+    active,
   };
 }
 
+/** @deprecated استخدم useChannelPlaybackEnrichment */
+export const useChannelPlaybackGate = useChannelPlaybackEnrichment;
+
+/** دائماً نمرّر الجودات للقائمة — التشغيل الافتراضي بدون ?video= عبر level=-1 */
 export function gateTsQualities(
   playback: PublicLiveChannel['playback'],
-  useMainTsUrl: boolean,
+  _useMainTsUrl?: boolean,
 ): TsQualityFromMist[] | undefined {
-  if (useMainTsUrl) return [];
   return playback.tsQualities;
 }

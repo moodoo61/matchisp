@@ -9,7 +9,6 @@ import {
 import {
   applyTsVideoTrack,
   mistTsQualitiesToOptions,
-  tsMediumQualityIndex,
   tsQualityTrack,
   type TsQualityFromMist,
 } from '../lib/tsQuality';
@@ -110,9 +109,11 @@ export function useTsPlayback(
     [qualityOptions],
   );
   const qualitySelectable = qualityLevels.length > 0;
-  const initialLevel = tsMediumQualityIndex(qualityLevels.length);
-
-  const [level, setLevel] = useState(initialLevel);
+  /**
+   * المستوى الافتراضي = -1 → الرابط الرئيسي بدون ?video=
+   * (طلب التشغيل نفسه ينشّط Mist؛ اختيار الجودة لاحقاً من القائمة).
+   */
+  const [level, setLevel] = useState(-1);
 
   const [state, setState] = useState<PlaybackState>({
     error: null,
@@ -122,18 +123,19 @@ export function useTsPlayback(
     muted: false,
     volume: 1,
     levels: qualityLevels,
-    level: initialLevel,
-    activeLevel: initialLevel,
+    level: -1,
+    activeLevel: -1,
     qualitySelectable,
-    qualityAuto: false,
+    qualityAuto: true,
     progress: 0,
     buffered: 0,
     seekable: false,
   });
 
+  /** عند تغيير القناة فقط — لا نقفز لجودة متوسطة عند وصول قائمة الجودات */
   useEffect(() => {
-    setLevel(tsMediumQualityIndex(qualityLevels.length));
-  }, [streamKey, qualitiesKey, qualityLevels.length]);
+    setLevel(-1);
+  }, [streamKey]);
 
   /** حدّث قائمة الجودة في الواجهة دون إعادة إنشاء المشغّل */
   useEffect(() => {
@@ -141,7 +143,7 @@ export function useTsPlayback(
       ...current,
       levels: qualityLevels,
       qualitySelectable,
-      qualityAuto: false,
+      qualityAuto: true,
     }));
   }, [qualityLevels, qualitySelectable]);
 
@@ -347,9 +349,9 @@ export function useTsPlayback(
       video.removeAttribute('src');
       video.load();
     };
-    // لا تعتمد على مراجع qualities من polling — فقط هوية التيار والمستوى
+    // لا تُعد إنشاء المشغّل عند وصول قائمة الجودات — فقط عند تغيّر التيار/المستوى
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [streamKey, level, videoRef, autoplay, qualitiesKey]);
+  }, [streamKey, level, videoRef, autoplay]);
 
   const startPlayback = () => {
     const video = videoRef.current;
@@ -413,12 +415,13 @@ export function useTsPlayback(
   };
 
   const selectQuality = (next: number) => {
-    if (next < 0) return;
-    setLevel(next);
+    const levelNext = next < 0 ? -1 : next;
+    setLevel(levelNext);
     setState((current) => ({
       ...current,
-      level: next,
-      activeLevel: next,
+      level: levelNext,
+      activeLevel: levelNext,
+      qualityAuto: levelNext < 0,
     }));
   };
 
