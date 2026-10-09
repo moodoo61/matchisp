@@ -10,6 +10,7 @@ import { tryHtmlVideoAutoplay } from '../lib/htmlVideoAutoplay';
 import {
   applyTsVideoTrack,
   mistTsQualitiesToOptions,
+  tsMediumQualityIndex,
   tsQualityTrack,
   type TsQualityFromMist,
 } from '../lib/tsQuality';
@@ -25,7 +26,7 @@ type PlaybackState = {
   level: number;
   activeLevel: number;
   qualitySelectable: boolean;
-  /** true عندما level=-1 (الرابط الرئيسي بدون ?video=) */
+  /** TS: مسارات Mist الثابتة — بلا وضع تلقائي */
   qualityAuto: boolean;
   progress: number;
   buffered: number;
@@ -110,11 +111,9 @@ export function useTsPlayback(
     [qualityOptions],
   );
   const qualitySelectable = qualityLevels.length > 0;
-  /**
-   * المستوى الافتراضي = -1 → الرابط الرئيسي بدون ?video=
-   * (طلب التشغيل نفسه ينشّط Mist؛ اختيار الجودة لاحقاً من القائمة).
-   */
-  const [level, setLevel] = useState(-1);
+  /** الافتراضي = الجودة الوسطى من مسارات Mist (?video=عرضxارتفاع) */
+  const initialLevel = tsMediumQualityIndex(qualityLevels.length);
+  const [level, setLevel] = useState(initialLevel);
 
   const [state, setState] = useState<PlaybackState>({
     error: null,
@@ -124,19 +123,19 @@ export function useTsPlayback(
     muted: false,
     volume: 1,
     levels: qualityLevels,
-    level: -1,
-    activeLevel: -1,
+    level: initialLevel,
+    activeLevel: initialLevel,
     qualitySelectable,
-    qualityAuto: true,
+    qualityAuto: false,
     progress: 0,
     buffered: 0,
     seekable: false,
   });
 
-  /** عند تغيير القناة فقط — لا نقفز لجودة متوسطة عند وصول قائمة الجودات */
+  /** عند تغيّر القناة أو وصول/تغيّر مسارات الجودة → الجودة الوسطى */
   useEffect(() => {
-    setLevel(-1);
-  }, [streamKey]);
+    setLevel(tsMediumQualityIndex(qualityLevels.length));
+  }, [streamKey, qualitiesKey, qualityLevels.length]);
 
   /** حدّث قائمة الجودة في الواجهة دون إعادة إنشاء المشغّل */
   useEffect(() => {
@@ -144,7 +143,7 @@ export function useTsPlayback(
       ...current,
       levels: qualityLevels,
       qualitySelectable,
-      qualityAuto: true,
+      qualityAuto: false,
     }));
   }, [qualityLevels, qualitySelectable]);
 
@@ -178,7 +177,7 @@ export function useTsPlayback(
       level,
       activeLevel: level,
       qualitySelectable,
-      qualityAuto: level < 0,
+      qualityAuto: false,
       progress: 0,
       buffered: 0,
       seekable: false,
@@ -464,13 +463,13 @@ export function useTsPlayback(
   };
 
   const selectQuality = (next: number) => {
-    const levelNext = next < 0 ? -1 : next;
-    setLevel(levelNext);
+    if (next < 0) return;
+    setLevel(next);
     setState((current) => ({
       ...current,
-      level: levelNext,
-      activeLevel: levelNext,
-      qualityAuto: levelNext < 0,
+      level: next,
+      activeLevel: next,
+      qualityAuto: false,
     }));
   };
 
