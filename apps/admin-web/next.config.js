@@ -31,6 +31,21 @@ const apiInternal =
   process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:3001';
 
 /**
+ * هدف بروكسي مشاهدة Mist عندما الروابط نسبية على نفس أصل صفحة العميل.
+ * MISTSERVER_HTTP_URL=auto → Mist المحلي :8080 (صفحة الأدمن غالباً :4010).
+ * بدون هذا البروكسي يطلب المتصفح /ch1.ts من Next فيُرجع 404.
+ */
+function mistProxyTarget() {
+  const raw = (process.env.MISTSERVER_HTTP_URL || '').trim();
+  if (raw && raw.toLowerCase() !== 'auto') {
+    return raw.replace(/\/+$/, '');
+  }
+  return 'http://127.0.0.1:8080';
+}
+
+const mistHttp = mistProxyTarget();
+
+/**
  * مؤقت: لا نعرّف allowedDevOrigins أبداً في التطوير.
  * أي تعريف للمفتاح يفعّل mode=block في Next 15 ويحجب /_next من IP بعيد
  * (172.x / 45.x) حتى مع أنماط واسعة — فيفشل JS وتسجيل الدخول يتحول لـ GET.
@@ -47,6 +62,23 @@ const nextConfig = {
       {
         source: '/api/:path*',
         destination: `${apiInternal}/api/:path*`,
+      },
+      /** مسارات Mist — نفس أصل صفحة المشاهدة */
+      {
+        source: '/hls/:path*',
+        destination: `${mistHttp}/hls/:path*`,
+      },
+      {
+        source: '/webrtc/:path*',
+        destination: `${mistHttp}/webrtc/:path*`,
+      },
+      {
+        source: '/dash/:path*',
+        destination: `${mistHttp}/dash/:path*`,
+      },
+      {
+        source: '/:stream.ts',
+        destination: `${mistHttp}/:stream.ts`,
       },
     ];
   },
