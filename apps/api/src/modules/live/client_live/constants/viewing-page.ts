@@ -36,6 +36,10 @@ export type ViewingPageSettings = {
    * @see https://docs.mistserver.org/mistserver/integration/jwt/
    */
   jwtPlaybackEnabled: boolean;
+  /** إظهار/تفعيل مشغّل TS (أولوية أولى عند التفعيل) */
+  playerTsEnabled: boolean;
+  /** إظهار/تفعيل مشغّل HLS */
+  playerHlsEnabled: boolean;
 };
 
 export const DEFAULT_VIEWING_PAGE_SETTINGS: ViewingPageSettings = {
@@ -54,4 +58,6 @@ export const DEFAULT_VIEWING_PAGE_SETTINGS: ViewingPageSettings = {
   showMatchSchedule: true,
   autoplayOnEnter: false,
   jwtPlaybackEnabled: false,
+  playerTsEnabled: true,
+  playerHlsEnabled: true,
 };

@@ -27,7 +27,7 @@ export type ViewingPageChannelRow = {
   online: 0 | 1 | 2 | null;
   active: boolean;
   viewers: number;
-  playback: { hlsUrl: string; whepUrl: string };
+  playback: { hlsUrl: string; tsUrl: string; whepUrl: string };
 };
 
 /** إدارة قنوات صفحة المشاهدة (الظهور + روابط التشغيل) */

@@ -16,7 +16,13 @@ export type PublicLiveChannelDto = {
   online: 0 | 1 | 2 | null;
   active: boolean;
   viewers: number;
-  playback: { hlsUrl: string; whepUrl: string };
+  playback: {
+    hlsUrl: string;
+    tsUrl: string;
+    whepUrl: string;
+    /** جودات TS من مسارات Mist — يُبنى الرابط بـ ?video=عرضxارتفاع */
+    tsQualities: Array<{ width: number; height: number | null; label: string }>;
+  };
 };
 
 export type PublicLiveSectionDto = {
@@ -47,20 +53,22 @@ export class PublicClientLiveService {
     const settings = await this.viewingPage.getPublicSettings();
     if (!settings.enabled) return [];
 
-    const [hidden, sections, mistStatuses, activeStats] = await Promise.all([
-      this.viewingChannels.getHiddenIds(),
-      this.prisma.channelSection.findMany({
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-        include: {
-          channels: {
-            where: { isActive: true },
-            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    const [hidden, sections, mistStatuses, activeStats, tsQualities] =
+      await Promise.all([
+        this.viewingChannels.getHiddenIds(),
+        this.prisma.channelSection.findMany({
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            channels: {
+              where: { isActive: true },
+              orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+            },
           },
-        },
-      }),
-      this.mist.listStreamStatuses(),
-      this.mist.listActiveStreamStats(),
-    ]);
+        }),
+        this.mist.listStreamStatuses(),
+        this.mist.listActiveStreamStats(),
+        this.mist.listStreamTsQualities(),
+      ]);
 
     return sections
       .map((section) => {
@@ -73,6 +81,9 @@ export class PublicClientLiveService {
               mistStatuses,
               stats?.viewers ?? 0,
             );
+            const urls = this.playback.urlsFor(channel.name, {
+              signed: settings.jwtPlaybackEnabled,
+            });
             return {
               id: channel.id,
               name: channel.name,
@@ -89,9 +100,10 @@ export class PublicClientLiveService {
               online: mist.online,
               active: mist.active,
               viewers: mist.viewers,
-              playback: this.playback.urlsFor(channel.name, {
-                signed: settings.jwtPlaybackEnabled,
-              }),
+              playback: {
+                ...urls,
+                tsQualities: tsQualities.get(channel.name) ?? [],
+              },
             };
           });
         return {

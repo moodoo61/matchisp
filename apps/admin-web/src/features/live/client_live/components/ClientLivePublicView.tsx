@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getPublicViewingPageSettings, listPublicLiveSections } from '../api';
 import { useChannelKeyboard } from '../hooks/useChannelKeyboard';
 import { compareBySortOrderThenLabel } from '../lib/naturalSort';
+import {
+  resolveEnabledPlayers,
+  type ViewingPlayerId,
+} from '../lib/players';
 import type { PublicLiveSection, ViewingPageSettings } from '../types';
 import { ClientLiveHeader } from './ClientLiveHeader';
 import { ClientLiveStage } from './ClientLiveStage';
@@ -25,6 +29,8 @@ const FALLBACK_SETTINGS: ViewingPageSettings = {
   showMatchSchedule: true,
   autoplayOnEnter: false,
   jwtPlaybackEnabled: false,
+  playerTsEnabled: true,
+  playerHlsEnabled: true,
 };
 
 /** الهيكل المستقل الجديد — ترويسة دنيا + مسرح + قائمة جانبية */
@@ -34,10 +40,22 @@ export function ClientLivePublicView() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activePlayer, setActivePlayer] = useState<ViewingPlayerId>('ts');
   /** يزيد مع كل اختيار صريح لإعادة تهيئة المشغّل حتى لنفس القناة */
   const [playSession, setPlaySession] = useState(0);
   /** بعد ضغط المستخدم: تشغيل دائماً بغض النظر عن autoplayOnEnter */
   const [userStarted, setUserStarted] = useState(false);
+
+  const players = useMemo(
+    () =>
+      resolveEnabledPlayers({
+        playerTsEnabled: settings.playerTsEnabled,
+        playerHlsEnabled: settings.playerHlsEnabled,
+      }),
+    [settings.playerTsEnabled, settings.playerHlsEnabled],
+  );
+
+  const defaultPlayer = players[0] ?? 'hls';
 
   const reload = useCallback(async () => {
     try {
@@ -57,9 +75,10 @@ export function ClientLivePublicView() {
         .flatMap((section) =>
           [...section.channels].sort(compareBySortOrderThenLabel),
         );
+      // أبقِ الاختيار الحالي إن بقي موجوداً — لا تختر قناة تلقائياً عند الفتح
       setSelectedId((current) => {
         if (current && flat.some((item) => item.id === current)) return current;
-        return flat[0]?.id ?? null;
+        return null;
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر التحميل');
@@ -73,6 +92,12 @@ export function ClientLivePublicView() {
     const timer = window.setInterval(() => void reload(), 20000);
     return () => window.clearInterval(timer);
   }, [reload]);
+
+  useEffect(() => {
+    if (!players.includes(activePlayer)) {
+      setActivePlayer(defaultPlayer);
+    }
+  }, [players, activePlayer, defaultPlayer]);
 
   const channels = useMemo(
     () =>
@@ -89,13 +114,43 @@ export function ClientLivePublicView() {
     [channels, selectedId],
   );
 
-  const selectChannel = useCallback((id: string) => {
-    setSelectedId(id);
-    setUserStarted(true);
-    setPlaySession((n) => n + 1);
-  }, []);
+  const selectChannel = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      setActivePlayer(defaultPlayer);
+      setUserStarted(true);
+      setPlaySession((n) => n + 1);
+    },
+    [defaultPlayer],
+  );
 
-  useChannelKeyboard(channelIds, selectedId, selectChannel, settings.enabled && channels.length > 1);
+  const selectPlayer = useCallback(
+    (channelId: string, player: ViewingPlayerId) => {
+      setSelectedId(channelId);
+      setActivePlayer(player);
+      setUserStarted(true);
+      setPlaySession((n) => n + 1);
+    },
+    [],
+  );
+
+  /** عند فشل المشغّل الحالي انتقل تلقائياً للتالي في القائمة */
+  const handlePlaybackError = useCallback(() => {
+    setActivePlayer((current) => {
+      const index = players.indexOf(current);
+      if (index < 0) return current;
+      const next = players[index + 1];
+      return next ?? current;
+    });
+    setUserStarted(true);
+  }, [players]);
+
+  useChannelKeyboard(
+    channelIds,
+    selectedId,
+    selectChannel,
+    settings.enabled && channels.length > 1 && selectedId != null,
+  );
 
   const shouldAutoplay = userStarted || settings.autoplayOnEnter;
 
@@ -126,20 +181,41 @@ export function ClientLivePublicView() {
           <p className="cl-message">لا توجد قنوات متاحة حالياً</p>
         ) : null}
 
-        {settings.enabled && selected ? (
+        {settings.enabled && channels.length ? (
           <div className="cl-layout">
-            <ClientLiveStage
-              key={`${selected.id}:${playSession}`}
-              channel={selected}
-              brandLogoUrl={
-                settings.showBrandLogo
-                  ? settings.brandLogoAbsoluteUrl || settings.brandLogoUrl
-                  : null
-              }
-              autoplay={shouldAutoplay}
-              onSelectChannel={selectChannel}
+            {selected ? (
+              <ClientLiveStage
+                key={`${selected.id}:${playSession}:${activePlayer}`}
+                channel={selected}
+                brandLogoUrl={
+                  settings.showBrandLogo
+                    ? settings.brandLogoAbsoluteUrl || settings.brandLogoUrl
+                    : null
+                }
+                autoplay={shouldAutoplay}
+                onSelectChannel={selectChannel}
+                activePlayer={activePlayer}
+                onPlaybackError={
+                  players.length > 1 ? handlePlaybackError : undefined
+                }
+              />
+            ) : (
+              <section className="cl-feature">
+                <div className="cl-screen-shell">
+                  <div className="cl-screen">
+                    <div className="cl-frame-empty">اختر قناة للمشاهدة</div>
+                  </div>
+                </div>
+              </section>
+            )}
+            <PlaylistPanel
+              sections={sections}
+              selectedId={selectedId}
+              players={players}
+              activePlayer={activePlayer}
+              onSelect={selectChannel}
+              onSelectPlayer={selectPlayer}
             />
-            <PlaylistPanel sections={sections} selectedId={selectedId} onSelect={selectChannel} />
           </div>
         ) : null}
       </main>

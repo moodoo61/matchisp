@@ -37,6 +37,8 @@ const EMPTY: ViewingPageSettings = {
   showMatchSchedule: true,
   autoplayOnEnter: false,
   jwtPlaybackEnabled: false,
+  playerTsEnabled: true,
+  playerHlsEnabled: true,
 };
 
 type VisibilityKey =
@@ -46,7 +48,9 @@ type VisibilityKey =
   | 'showLiveBadge'
   | 'showMatchSchedule'
   | 'autoplayOnEnter'
-  | 'jwtPlaybackEnabled';
+  | 'jwtPlaybackEnabled'
+  | 'playerTsEnabled'
+  | 'playerHlsEnabled';
 
 /** بطاقة إعدادات صفحة بث العميل */
 export function ViewingPageSettingsCard() {
@@ -425,6 +429,60 @@ export function ViewingPageSettingsCard() {
               ) : (
                 <span className="muted">
                   {form.jwtPlaybackEnabled ? 'مفعّل' : 'معطّل'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="viewing-settings-row">
+            <span className="viewing-settings-label">مشغّل TS</span>
+            <span className="viewing-settings-meta">
+              {form.playerTsEnabled
+                ? 'الخيار الأول في صفحة العميل'
+                : 'مخفي عن العميل'}
+            </span>
+            <div className="viewing-settings-actions">
+              {canUpdate ? (
+                <CardEnableToggle
+                  enabled={form.playerTsEnabled}
+                  busy={busyKey === 'playerTsEnabled'}
+                  onToggle={() =>
+                    void toggleVisibility('playerTsEnabled', [
+                      'تم تفعيل مشغّل TS',
+                      'تم تعطيل مشغّل TS',
+                    ])
+                  }
+                />
+              ) : (
+                <span className="muted">
+                  {form.playerTsEnabled ? 'مفعّل' : 'معطّل'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="viewing-settings-row">
+            <span className="viewing-settings-label">مشغّل HLS</span>
+            <span className="viewing-settings-meta">
+              {form.playerHlsEnabled
+                ? 'الخيار الثاني في صفحة العميل'
+                : 'مخفي عن العميل'}
+            </span>
+            <div className="viewing-settings-actions">
+              {canUpdate ? (
+                <CardEnableToggle
+                  enabled={form.playerHlsEnabled}
+                  busy={busyKey === 'playerHlsEnabled'}
+                  onToggle={() =>
+                    void toggleVisibility('playerHlsEnabled', [
+                      'تم تفعيل مشغّل HLS',
+                      'تم تعطيل مشغّل HLS',
+                    ])
+                  }
+                />
+              ) : (
+                <span className="muted">
+                  {form.playerHlsEnabled ? 'مفعّل' : 'معطّل'}
                 </span>
               )}
             </div>

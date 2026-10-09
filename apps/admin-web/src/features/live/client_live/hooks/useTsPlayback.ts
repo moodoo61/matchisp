@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type Mpegts from 'mpegts.js';
 import {
   extractPlaybackToken,
   stripPlaybackToken,
 } from '../lib/playbackUrlIdentity';
-
-export type HlsQualityLevel = {
-  index: number;
-  label: string;
-};
+import {
+  applyTsVideoTrack,
+  mistTsQualitiesToOptions,
+  tsMediumQualityIndex,
+  tsQualityTrack,
+  type TsQualityFromMist,
+} from '../lib/tsQuality';
 
 type PlaybackState = {
   error: string | null;
@@ -19,17 +21,21 @@ type PlaybackState = {
   playing: boolean;
   muted: boolean;
   volume: number;
-  levels: HlsQualityLevel[];
-  /** -1 = تلقائي، وإلا فهرس المستوى المثبت */
+  levels: Array<{ index: number; label: string }>;
   level: number;
-  /** المستوى الذي يُعرض فعلياً الآن (حتى أثناء التلقائي) */
   activeLevel: number;
   qualitySelectable: boolean;
-  /** هل يدعم هذا المشغّل وضع تلقائي */
+  /** TS يعتمد مسارات Mist الثابتة — بلا وضع تلقائي */
   qualityAuto: boolean;
   progress: number;
   buffered: number;
   seekable: boolean;
+};
+
+type Options = {
+  autoplay?: boolean;
+  /** جودات من Mist للقناة */
+  qualities?: TsQualityFromMist[] | null;
 };
 
 function readTimeline(video: HTMLVideoElement) {
@@ -48,8 +54,13 @@ function readTimeline(video: HTMLVideoElement) {
   }
 
   const span = Math.max(end - start, 0.001);
-  const current = Math.min(Math.max(video.currentTime, start), end || video.currentTime);
-  const progress = seekable ? Math.min(1, Math.max(0, (current - start) / span)) : 0;
+  const current = Math.min(
+    Math.max(video.currentTime, start),
+    end || video.currentTime,
+  );
+  const progress = seekable
+    ? Math.min(1, Math.max(0, (current - start) / span))
+    : 0;
 
   let buffered = 0;
   if (video.buffered.length > 0 && seekable) {
@@ -62,46 +73,47 @@ function readTimeline(video: HTMLVideoElement) {
   return { progress, buffered, seekable, start, end };
 }
 
-function mapLevels(
-  levels: Array<{ height?: number; bitrate?: number }>,
-): HlsQualityLevel[] {
-  const mapped = levels.map((item, index) => ({
-    index,
-    height: item.height ?? 0,
-    bitrate: item.bitrate ?? 0,
-    label: item.height
-      ? `${item.height}p`
-      : `${Math.round((item.bitrate ?? 0) / 1000)}k`,
-  }));
-
-  return [...mapped]
-    .sort((a, b) => b.height - a.height || b.bitrate - a.bitrate)
-    .map(({ index, label }) => ({ index, label }))
-    .filter(
-      (item, index, all) =>
-        all.findIndex((candidate) => candidate.label === item.label) === index,
-    );
-}
-
-type Options = {
-  /** إن false: لا يُحمَّل ولا يُشغَّل البث حتى يطلب المستخدم */
-  autoplay?: boolean;
-};
-
-/** منطق تشغيل HLS فقط — بدون أي عناصر عرض */
-export function useHlsPlayback(
-  hlsUrl: string,
+/** منطق تشغيل MPEG-TS عبر mpegts.js (تحميل ديناميكي — متصفح فقط) */
+export function useTsPlayback(
+  tsUrl: string,
   videoRef: React.RefObject<HTMLVideoElement | null>,
   options: Options = {},
 ) {
   const autoplay = options.autoplay === true;
-  const streamKey = stripPlaybackToken(hlsUrl);
-  const hlsRef = useRef<Hls | null>(null);
-  const tokenRef = useRef<string | null>(extractPlaybackToken(hlsUrl));
-  const latestUrlRef = useRef(hlsUrl);
-  const pendingNativeSrcRef = useRef<string | null>(null);
+  const streamKey = stripPlaybackToken(tsUrl);
+  const playerRef = useRef<Mpegts.Player | null>(null);
+  const tokenRef = useRef<string | null>(extractPlaybackToken(tsUrl));
+  const latestUrlRef = useRef(tsUrl);
   const timelineRef = useRef({ start: 0, end: 0, seekable: false });
-  latestUrlRef.current = hlsUrl;
+  latestUrlRef.current = tsUrl;
+
+  /** بصمة المحتوى فقط — تجاهل مراجع المصفوفة الجديدة من polling الأقسام */
+  const qualitiesKey = (options.qualities ?? [])
+    .map((row) => {
+      const width = Math.round(Number(row.width));
+      const height = row.height == null ? 0 : Math.round(Number(row.height));
+      return `${width}x${height}`;
+    })
+    .join('|');
+
+  const qualityOptions = useMemo(
+    () => mistTsQualitiesToOptions(options.qualities),
+    // qualitiesKey يكفي: نفس المسارات ⇒ لا نعيد حساب الخيارات
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [qualitiesKey],
+  );
+  const qualityOptionsRef = useRef(qualityOptions);
+  qualityOptionsRef.current = qualityOptions;
+
+  const qualityLevels = useMemo(
+    () => qualityOptions.map(({ index, label }) => ({ index, label })),
+    [qualityOptions],
+  );
+  const qualitySelectable = qualityLevels.length > 0;
+  const initialLevel = tsMediumQualityIndex(qualityLevels.length);
+
+  const [level, setLevel] = useState(initialLevel);
+
   const [state, setState] = useState<PlaybackState>({
     error: null,
     ready: !autoplay,
@@ -109,31 +121,48 @@ export function useHlsPlayback(
     playing: false,
     muted: false,
     volume: 1,
-    levels: [],
-    level: -1,
-    activeLevel: -1,
-    qualitySelectable: false,
-    qualityAuto: true,
+    levels: qualityLevels,
+    level: initialLevel,
+    activeLevel: initialLevel,
+    qualitySelectable,
+    qualityAuto: false,
     progress: 0,
     buffered: 0,
     seekable: false,
   });
 
   useEffect(() => {
-    tokenRef.current = extractPlaybackToken(hlsUrl);
+    setLevel(tsMediumQualityIndex(qualityLevels.length));
+  }, [streamKey, qualitiesKey, qualityLevels.length]);
+
+  /** حدّث قائمة الجودة في الواجهة دون إعادة إنشاء المشغّل */
+  useEffect(() => {
+    setState((current) => ({
+      ...current,
+      levels: qualityLevels,
+      qualitySelectable,
+      qualityAuto: false,
+    }));
+  }, [qualityLevels, qualitySelectable]);
+
+  /** حدّث رمز Mist فقط — بدون إعادة تشغيل التيار */
+  useEffect(() => {
+    tokenRef.current = extractPlaybackToken(tsUrl);
     const mistToken = tokenRef.current;
     if (mistToken && typeof document !== 'undefined') {
       document.cookie = `tkn=${encodeURIComponent(mistToken)}; Path=/; SameSite=Lax`;
     }
-  }, [hlsUrl]);
+  }, [tsUrl]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !streamKey) return;
+    if (!video || !streamKey || typeof window === 'undefined') return;
 
-    const sourceUrl = latestUrlRef.current;
+    const sourceUrl = applyTsVideoTrack(
+      latestUrlRef.current,
+      tsQualityTrack(qualityOptionsRef.current, level),
+    );
     tokenRef.current = extractPlaybackToken(sourceUrl);
-    pendingNativeSrcRef.current = null;
 
     setState((current) => ({
       error: null,
@@ -142,19 +171,17 @@ export function useHlsPlayback(
       playing: false,
       muted: false,
       volume: current.volume,
-      levels: [],
-      level: -1,
-      activeLevel: -1,
-      qualitySelectable: false,
-      qualityAuto: true,
+      levels: qualityLevels,
+      level,
+      activeLevel: level,
+      qualitySelectable,
+      qualityAuto: false,
       progress: 0,
       buffered: 0,
       seekable: false,
     }));
 
-    let hls: Hls | null = null;
     let cancelled = false;
-
     const patch = (next: Partial<PlaybackState>) =>
       setState((current) => ({ ...current, ...next }));
 
@@ -179,20 +206,28 @@ export function useHlsPlayback(
       syncTimeline();
     };
 
-    /** تشغيل بصوت — بدون فرض الكتم */
     const tryPlay = () => {
       if (cancelled) return;
       video.muted = false;
       patch({ muted: false, buffering: true });
       void video.play().then(
         () => {
-          if (!cancelled) patch({ playing: true, ready: true, buffering: false, muted: false });
+          if (!cancelled)
+            patch({
+              playing: true,
+              ready: true,
+              buffering: false,
+              muted: false,
+            });
         },
         () => {
-          // المتصفح قد يمنع التشغيل التلقائي مع الصوت — نبقى في وضع الانتظار الظاهر
-          if (!cancelled) {
-            patch({ playing: false, ready: true, buffering: false, muted: false });
-          }
+          if (!cancelled)
+            patch({
+              playing: false,
+              ready: true,
+              buffering: false,
+              muted: false,
+            });
         },
       );
     };
@@ -204,16 +239,13 @@ export function useHlsPlayback(
     };
     const onPause = () => patch({ playing: false });
     const onVolume = () =>
-      patch({
-        muted: video.muted,
-        volume: video.volume,
-      });
+      patch({ muted: video.muted, volume: video.volume });
 
     video.muted = false;
     video.volume = 1;
 
     const mistToken = tokenRef.current;
-    if (mistToken && typeof document !== 'undefined') {
+    if (mistToken) {
       document.cookie = `tkn=${encodeURIComponent(mistToken)}; Path=/; SameSite=Lax`;
     }
 
@@ -227,99 +259,67 @@ export function useHlsPlayback(
     video.addEventListener('progress', syncTimeline);
     video.addEventListener('durationchange', syncTimeline);
 
-    if (Hls.isSupported()) {
-      hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        startLevel: -1,
-        // بدون تشغيل تلقائي: لا نسحب مقاطع حتى يضغط المستخدم
-        autoStartLoad: autoplay,
-        backBufferLength: 30,
-        xhrSetup: (xhr, requestUrl) => {
-          const token = tokenRef.current;
-          if (!token) return;
-          try {
-            const next = new URL(requestUrl, window.location.href);
-            if (!next.searchParams.has('tkn')) {
-              next.searchParams.set('tkn', token);
-              xhr.open('GET', next.toString(), true);
-            }
-          } catch {
-            /* ignore bad urls */
+    void (async () => {
+      try {
+        const mpegtsMod = await import('mpegts.js');
+        const mpegts = mpegtsMod.default;
+        if (cancelled) return;
+
+        const featureOk =
+          mpegts.isSupported() && mpegts.getFeatureList().mseLivePlayback;
+
+        if (featureOk) {
+          const player = mpegts.createPlayer(
+            {
+              // HTTP MPEG-TS — ليس WebSocket/mse
+              type: 'mpegts',
+              isLive: true,
+              hasAudio: true,
+              hasVideo: true,
+              url: sourceUrl,
+            },
+            {
+              enableWorker: true,
+              lazyLoad: false,
+              liveBufferLatencyChasing: true,
+              liveSync: true,
+            },
+          );
+          if (cancelled) {
+            player.destroy();
+            return;
           }
-        },
-      });
-      hlsRef.current = hls;
-      hls.loadSource(sourceUrl);
-      hls.attachMedia(video);
+          playerRef.current = player;
+          player.attachMediaElement(video);
+          player.on(mpegts.Events.ERROR, () => {
+            if (!cancelled) {
+              patch({ error: 'تعذر تشغيل بث TS', buffering: false });
+            }
+          });
+          player.load();
+          if (autoplay) tryPlay();
+          else {
+            video.pause();
+            patch({ playing: false, buffering: false, ready: true });
+          }
+          return;
+        }
 
-      const applyLevels = () => {
-        if (!hls || cancelled) return;
-        const current =
-          hls.currentLevel >= 0
-            ? hls.currentLevel
-            : hls.loadLevel >= 0
-              ? hls.loadLevel
-              : -1;
-        patch({
-          levels: mapLevels(hls.levels),
-          qualitySelectable: hls.levels.length > 0,
-          qualityAuto: true,
-          level: hls.autoLevelEnabled ? -1 : hls.currentLevel,
-          activeLevel: current,
-        });
-      };
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        applyLevels();
-        if (autoplay) {
-          tryPlay();
-        } else {
+        video.src = sourceUrl;
+        if (autoplay) tryPlay();
+        else {
           video.pause();
           patch({ playing: false, buffering: false, ready: true });
         }
-      });
-      hls.on(Hls.Events.FRAG_BUFFERED, () => {
-        markReady();
-        if (autoplay && video.paused) tryPlay();
-      });
-      hls.on(Hls.Events.LEVELS_UPDATED, applyLevels);
-      hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
-        if (!hls || cancelled) return;
-        patch({
-          level: hls.autoLevelEnabled ? -1 : data.level,
-          activeLevel: data.level,
-        });
-      });
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          patch({ error: 'تعذر تشغيل البث المباشر', buffering: false });
+      } catch {
+        if (!cancelled) {
+          patch({
+            error: 'المتصفح لا يدعم تشغيل TS',
+            buffering: false,
+          });
         }
-      });
-
-      if (!autoplay) {
-        // جاهز للعرض الخامل فوراً دون انتظار المانيفست
-        patch({ playing: false, buffering: false, ready: true });
       }
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      patch({
-        qualitySelectable: false,
-        levels: [],
-        level: -1,
-        activeLevel: -1,
-        qualityAuto: false,
-      });
-      if (autoplay) {
-        video.src = sourceUrl;
-        tryPlay();
-      } else {
-        pendingNativeSrcRef.current = sourceUrl;
-        video.pause();
-        patch({ playing: false, buffering: false, ready: true });
-      }
-    } else {
-      patch({ error: 'المتصفح لا يدعم تشغيل HLS', buffering: false });
-    }
+    })();
 
     return () => {
       cancelled = true;
@@ -332,19 +332,29 @@ export function useHlsPlayback(
       video.removeEventListener('timeupdate', syncTimeline);
       video.removeEventListener('progress', syncTimeline);
       video.removeEventListener('durationchange', syncTimeline);
-      hls?.destroy();
-      hlsRef.current = null;
-      pendingNativeSrcRef.current = null;
+      const player = playerRef.current;
+      playerRef.current = null;
+      if (player) {
+        try {
+          player.pause();
+          player.unload();
+          player.detachMediaElement();
+          player.destroy();
+        } catch {
+          /* ignore */
+        }
+      }
       video.removeAttribute('src');
       video.load();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- الهوية عبر streamKey
-  }, [streamKey, videoRef, autoplay]);
+    // لا تعتمد على مراجع qualities من polling — فقط هوية التيار والمستوى
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamKey, level, videoRef, autoplay, qualitiesKey]);
 
   const startPlayback = () => {
     const video = videoRef.current;
     if (!video) return;
-    const hls = hlsRef.current;
+    const player = playerRef.current;
     setState((current) => ({
       ...current,
       muted: false,
@@ -352,14 +362,10 @@ export function useHlsPlayback(
       error: null,
     }));
     video.muted = false;
-    if (hls) {
-      hls.startLoad();
-    } else {
-      const pending = pendingNativeSrcRef.current;
-      if (pending && !video.src) {
-        video.src = pending;
-        pendingNativeSrcRef.current = null;
-      }
+    try {
+      player?.play();
+    } catch {
+      /* ignore */
     }
     void video.play().then(
       () => {
@@ -384,7 +390,7 @@ export function useHlsPlayback(
 
   const haltPlayback = () => {
     const video = videoRef.current;
-    const hls = hlsRef.current;
+    const player = playerRef.current;
     if (video) {
       video.pause();
       try {
@@ -393,7 +399,11 @@ export function useHlsPlayback(
         /* live may reject seek */
       }
     }
-    hls?.stopLoad();
+    try {
+      player?.pause();
+    } catch {
+      /* ignore */
+    }
     setState((current) => ({
       ...current,
       playing: false,
@@ -403,30 +413,12 @@ export function useHlsPlayback(
   };
 
   const selectQuality = (next: number) => {
-    const hls = hlsRef.current;
-    if (!hls) {
-      setState((current) => ({
-        ...current,
-        level: next,
-        activeLevel: next >= 0 ? next : current.activeLevel,
-      }));
-      return;
-    }
-    hls.currentLevel = next;
-    if (next >= 0) {
-      hls.loadLevel = next;
-      hls.nextLevel = next;
-    }
-    const active =
-      next >= 0
-        ? next
-        : hls.currentLevel >= 0
-          ? hls.currentLevel
-          : hls.loadLevel;
+    if (next < 0) return;
+    setLevel(next);
     setState((current) => ({
       ...current,
       level: next,
-      activeLevel: active,
+      activeLevel: next,
     }));
   };
 
@@ -442,12 +434,8 @@ export function useHlsPlayback(
     if (!video) return;
     const volume = Math.min(1, Math.max(0, next));
     video.volume = volume;
-    if (volume > 0 && video.muted) {
-      video.muted = false;
-    }
-    if (volume === 0) {
-      video.muted = true;
-    }
+    if (volume > 0 && video.muted) video.muted = false;
+    if (volume === 0) video.muted = true;
     setState((current) => ({
       ...current,
       volume,

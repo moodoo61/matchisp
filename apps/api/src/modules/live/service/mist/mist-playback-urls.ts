@@ -1,8 +1,10 @@
 /** بناء مسارات مشاهدة MistServer — المضيف يحدده متصفح صفحة المشغّل */
 
 export type MistPlaybackUrls = {
-  /** مسار أو رابط HLS (نسبي = نفس مضيف الصفحة) */
+  /** مسار أو رابط HLS */
   hlsUrl: string;
+  /** مسار أو رابط MPEG-TS التقدمي */
+  tsUrl: string;
   /** مسار أو رابط WHEP */
   whepUrl: string;
   /** توكن JWT للمشاهدة إن وُجد */
@@ -24,11 +26,12 @@ export function normalizeMistHttpBase(raw: string | null | undefined): string {
 export function buildMistPlaybackPaths(streamName: string): MistPlaybackUrls {
   const name = streamName.trim();
   if (!name) {
-    return { hlsUrl: '', whepUrl: '', token: null };
+    return { hlsUrl: '', tsUrl: '', whepUrl: '', token: null };
   }
   const encoded = encodeURIComponent(name);
   return {
     hlsUrl: `/hls/${encoded}/index.m3u8`,
+    tsUrl: `/${encoded}.ts`,
     whepUrl: `/webrtc/${encoded}`,
     token: null,
   };
@@ -44,20 +47,34 @@ export function buildMistPlaybackUrls(
   token?: string | null,
 ): MistPlaybackUrls {
   const paths = buildMistPlaybackPaths(streamName);
-  if (!paths.hlsUrl) return paths;
+  if (!paths.hlsUrl && !paths.tsUrl) return paths;
 
   const base = normalizeMistHttpBase(httpBase);
-  const hlsUrl = base ? `${base}${paths.hlsUrl}` : paths.hlsUrl;
-  const whepUrl = base ? `${base}${paths.whepUrl}` : paths.whepUrl;
+  const hlsUrl = paths.hlsUrl
+    ? base
+      ? `${base}${paths.hlsUrl}`
+      : paths.hlsUrl
+    : '';
+  const tsUrl = paths.tsUrl
+    ? base
+      ? `${base}${paths.tsUrl}`
+      : paths.tsUrl
+    : '';
+  const whepUrl = paths.whepUrl
+    ? base
+      ? `${base}${paths.whepUrl}`
+      : paths.whepUrl
+    : '';
   const signed = token?.trim() || '';
 
   if (!signed) {
-    return { hlsUrl, whepUrl, token: null };
+    return { hlsUrl, tsUrl, whepUrl, token: null };
   }
 
   return {
-    hlsUrl: appendQueryParam(hlsUrl, 'tkn', signed),
-    whepUrl: appendQueryParam(whepUrl, 'tkn', signed),
+    hlsUrl: hlsUrl ? appendQueryParam(hlsUrl, 'tkn', signed) : '',
+    tsUrl: tsUrl ? appendQueryParam(tsUrl, 'tkn', signed) : '',
+    whepUrl: whepUrl ? appendQueryParam(whepUrl, 'tkn', signed) : '',
     token: signed,
   };
 }

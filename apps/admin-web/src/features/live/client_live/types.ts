@@ -1,3 +1,9 @@
+export type TsQualityFromMist = {
+  width: number;
+  height: number | null;
+  label: string;
+};
+
 export type PublicLiveChannel = {
   id: string;
   name: string;
@@ -11,8 +17,11 @@ export type PublicLiveChannel = {
   viewers: number;
   playback: {
     hlsUrl: string;
+    tsUrl: string;
     whepUrl: string;
     token?: string | null;
+    /** مسارات فيديو Mist للقناة */
+    tsQualities?: TsQualityFromMist[];
   };
 };
 
@@ -44,6 +53,10 @@ export type ViewingPageSettings = {
   autoplayOnEnter: boolean;
   /** حماية روابط المشاهدة بـ JWT/JWK عبر MistServer */
   jwtPlaybackEnabled: boolean;
+  /** مشغّل TS (أولوية أولى) */
+  playerTsEnabled: boolean;
+  /** مشغّل HLS */
+  playerHlsEnabled: boolean;
 };
 
 export type ViewingPageSettingsInput = Partial<ViewingPageSettings>;
@@ -61,7 +74,12 @@ export type ViewingPageAdminChannel = {
   online: 0 | 1 | 2 | null;
   active: boolean;
   viewers: number;
-  playback: { hlsUrl: string; whepUrl: string; token?: string | null };
+  playback: {
+    hlsUrl: string;
+    tsUrl: string;
+    whepUrl: string;
+    token?: string | null;
+  };
 };
 
 export type ViewingPageAdminSection = {

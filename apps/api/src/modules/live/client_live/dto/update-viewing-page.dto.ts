@@ -84,4 +84,14 @@ export class UpdateViewingPageDto {
   @IsOptional()
   @IsBoolean()
   jwtPlaybackEnabled?: boolean;
+
+  @ApiPropertyOptional({ description: 'تفعيل مشغّل TS في صفحة العميل' })
+  @IsOptional()
+  @IsBoolean()
+  playerTsEnabled?: boolean;
+
+  @ApiPropertyOptional({ description: 'تفعيل مشغّل HLS في صفحة العميل' })
+  @IsOptional()
+  @IsBoolean()
+  playerHlsEnabled?: boolean;
 }

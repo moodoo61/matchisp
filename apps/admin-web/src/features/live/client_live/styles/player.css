@@ -204,6 +204,12 @@
   flex-direction: row;
   align-items: center;
   gap: 0.45rem;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.cl-player-controls-side {
+  flex-shrink: 0;
 }
 
 .cl-volume {
@@ -278,6 +284,7 @@
 
 .cl-quality {
   position: relative;
+  flex: 0 0 auto;
 }
 
 .cl-player-button.cl-quality-btn,
@@ -324,12 +331,28 @@
   font-weight: 700;
   text-align: start;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
 }
 
 .cl-quality-menu button:hover,
 .cl-quality-menu button.is-active {
   background: rgba(226, 205, 148, 0.18);
   color: #f4e7c0;
+}
+
+.cl-quality-menu button.is-playing {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4e7c0;
+}
+
+.cl-quality-now {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: rgba(244, 231, 192, 0.75);
+  white-space: nowrap;
 }
 
 .cl-quality-hint {

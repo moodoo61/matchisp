@@ -2,17 +2,28 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { compareBySortOrderThenLabel } from '../../lib/naturalSort';
+import type { ViewingPlayerId } from '../../lib/players';
 import type { PublicLiveSection } from '../../types';
 import { PlaylistRow } from './PlaylistRow';
 
 type Props = {
   sections: PublicLiveSection[];
   selectedId: string | null;
+  players: ViewingPlayerId[];
+  activePlayer: ViewingPlayerId;
   onSelect: (id: string) => void;
+  onSelectPlayer: (id: string, player: ViewingPlayerId) => void;
 };
 
-/** قائمة التشغيل — تبويبات حسب أقسام القنوات */
-export function PlaylistPanel({ sections, selectedId, onSelect }: Props) {
+/** قائمة التشغيل — العنوان والأقسام في صف واحد */
+export function PlaylistPanel({
+  sections,
+  selectedId,
+  players,
+  activePlayer,
+  onSelect,
+  onSelectPlayer,
+}: Props) {
   const selectedRef = useRef<HTMLButtonElement | null>(null);
   const orderedSections = useMemo(
     () => [...sections].sort(compareBySortOrderThenLabel),
@@ -62,7 +73,11 @@ export function PlaylistPanel({ sections, selectedId, onSelect }: Props) {
     <aside className="cl-playlist" aria-label="قائمة القنوات">
       <div className="cl-playlist-head">
         <h2>القنوات</h2>
-        <div className="cl-playlist-tabs" role="tablist" aria-label="أقسام القنوات">
+        <div
+          className="cl-playlist-tabs"
+          role="tablist"
+          aria-label="أقسام القنوات"
+        >
           {orderedSections.map((section) => {
             const active = section.id === activeSectionId;
             return (
@@ -71,7 +86,9 @@ export function PlaylistPanel({ sections, selectedId, onSelect }: Props) {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                className={active ? 'cl-playlist-tab is-active' : 'cl-playlist-tab'}
+                className={
+                  active ? 'cl-playlist-tab is-active' : 'cl-playlist-tab'
+                }
                 onClick={() => setActiveSectionId(section.id)}
               >
                 {section.label}
@@ -95,7 +112,10 @@ export function PlaylistPanel({ sections, selectedId, onSelect }: Props) {
                     buttonRef={
                       channel.id === selectedId ? selectedRef : undefined
                     }
+                    players={players}
+                    activePlayer={activePlayer}
                     onSelect={onSelect}
+                    onSelectPlayer={onSelectPlayer}
                   />
                 ))}
             </ul>

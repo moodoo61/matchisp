@@ -15,58 +15,83 @@
 
 .cl-playlist-head {
   flex: 0 0 auto;
-  padding: 0.85rem 1.1rem 0.7rem;
+  padding: 0.7rem 0.85rem;
   border-bottom: 1px solid rgba(200, 164, 93, 0.18);
-  display: grid;
-  gap: 0.7rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
 }
 
 .cl-playlist-head h2 {
   margin: 0;
+  flex: 0 0 auto;
   font-family: var(--cl-font-display);
   font-size: 1rem;
   color: var(--cl-ivory);
+  white-space: nowrap;
 }
 
+/* أقسام بجانب العنوان — نفس أسلوب أزرار قنوات جدول المباريات */
 .cl-playlist-tabs {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 2rem;
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.35rem;
-  overflow-x: auto;
-  padding-bottom: 0.15rem;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(200, 164, 93, 0.35) transparent;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(8, 12, 24, 0.45);
 }
 
 .cl-playlist-tab {
-  flex: 0 0 auto;
+  appearance: none;
+  flex: 1 1 0;
+  min-width: 0;
   margin: 0;
-  min-width: 2.4rem;
-  padding: 0.42rem 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 0 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--cl-muted);
   font: inherit;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   transition:
     background var(--cl-dur-fast) ease,
-    border-color var(--cl-dur-fast) ease,
-    color var(--cl-dur-fast) ease;
+    color var(--cl-dur-fast) ease,
+    filter var(--cl-dur-fast) ease;
 }
 
-.cl-playlist-tab:hover {
+.cl-playlist-tab + .cl-playlist-tab {
+  border-inline-start: 1px solid rgba(200, 164, 93, 0.18);
+}
+
+.cl-playlist-tab:hover:not(.is-active) {
   color: var(--cl-ivory);
-  border-color: rgba(200, 164, 93, 0.35);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .cl-playlist-tab.is-active {
-  color: #241b08;
-  border-color: transparent;
   background: var(--cl-gold-gradient);
+  color: #2a1e05;
+  font-weight: 800;
+  box-shadow:
+    inset 0 2px 3px rgba(43, 30, 7, 0.45),
+    inset 0 -1px 0 rgba(255, 248, 225, 0.35);
+}
+
+.cl-playlist-tab.is-active:hover {
+  filter: brightness(1.04);
 }
 
 .cl-playlist-body {
@@ -97,18 +122,19 @@
 }
 
 .cl-row {
+  --cl-row-name-size: 0.86rem;
+  --cl-row-name-lh: 1.2;
   width: 100%;
   margin: 0;
-  padding: 0.45rem 0.55rem;
+  padding: 0.35rem 0.45rem;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
   border: 1px solid transparent;
   border-radius: 13px;
   background: transparent;
   color: inherit;
-  text-align: start;
-  cursor: pointer;
   transition: background var(--cl-dur-fast) ease, border-color var(--cl-dur-fast) ease;
 }
 
@@ -116,14 +142,113 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-.cl-row:focus-visible {
-  outline: none;
-  border-color: var(--cl-gold-100);
+.cl-row:focus-within {
+  border-color: rgba(200, 164, 93, 0.35);
 }
 
 .cl-row.is-selected {
   border-color: rgba(200, 164, 93, 0.45);
   background: rgba(200, 164, 93, 0.1);
+}
+
+/* زر اختيار القناة — يغطي الشعار والاسم وكل المساحة المتاحة */
+.cl-row-select {
+  appearance: none;
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cl-row.has-players .cl-row-select {
+  flex: 0 1 auto;
+  max-width: 55%;
+}
+
+.cl-row-select:focus-visible {
+  outline: 2px solid var(--cl-gold-100);
+  outline-offset: 2px;
+}
+
+.cl-row-select-grow {
+  flex: 1 1 0;
+  min-width: 0;
+  align-self: stretch;
+}
+
+/* أزرار المشغّل: تملأ المتبقي بارتفاع اسم القناة تماماً */
+.cl-row-players {
+  flex: 1 1 0;
+  min-width: 0;
+  height: calc(var(--cl-row-name-size) * var(--cl-row-name-lh));
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 5px;
+}
+
+/* غير النشط: خلفية خافتة مثل قنوات الجدول غير المرتبطة */
+.cl-row-player-btn {
+  appearance: none;
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: rgba(8, 12, 24, 0.55);
+  color: var(--cl-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background var(--cl-dur-fast) ease,
+    color var(--cl-dur-fast) ease,
+    box-shadow var(--cl-dur-fast) ease,
+    filter var(--cl-dur-fast) ease;
+}
+
+.cl-row-player-btn + .cl-row-player-btn {
+  border-inline-start: 1px solid rgba(200, 164, 93, 0.18);
+}
+
+/* النشط: ذهبي مضغوط شبيه بأزرار قنوات الكروت */
+.cl-row-player-btn.is-active {
+  background: var(--cl-gold-gradient);
+  color: #2a1e05;
+  font-weight: 800;
+  box-shadow:
+    inset 0 2px 3px rgba(43, 30, 7, 0.45),
+    inset 0 -1px 0 rgba(255, 248, 225, 0.35);
+  filter: none;
+}
+
+.cl-row-player-btn:hover:not(.is-active) {
+  color: var(--cl-ivory);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cl-row-player-btn.is-active:hover {
+  filter: brightness(1.04);
 }
 
 .cl-row-mark {
@@ -140,6 +265,7 @@
   font-family: var(--cl-font-display);
   font-size: 1.1rem;
   font-weight: 700;
+  pointer-events: none;
 }
 
 .cl-row-mark img {
@@ -151,16 +277,18 @@
 
 .cl-row-copy {
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
   display: grid;
-  gap: 0.1rem;
+  gap: 0;
+  pointer-events: none;
 }
 
 .cl-row-copy strong {
   overflow: hidden;
   color: var(--cl-ivory);
-  font-size: 0.86rem;
+  font-size: var(--cl-row-name-size);
   font-weight: 700;
+  line-height: var(--cl-row-name-lh);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -171,6 +299,7 @@
 
 .cl-row-dot {
   flex: 0 0 auto;
+  align-self: center;
   width: 8px;
   height: 8px;
   border-radius: 50%;

@@ -12,6 +12,7 @@
   "dependencies": {
     "@isp/shared": "workspace:*",
     "hls.js": "^1.7.3",
+    "mpegts.js": "^1.8.2",
     "next": "^15.1.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

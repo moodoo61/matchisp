@@ -86,7 +86,14 @@ export class ViewingPageService {
       ),
       autoplayOnEnter: boolOr(dto.autoplayOnEnter, current.autoplayOnEnter),
       jwtPlaybackEnabled: nextJwt,
+      playerTsEnabled: boolOr(dto.playerTsEnabled, current.playerTsEnabled),
+      playerHlsEnabled: boolOr(dto.playerHlsEnabled, current.playerHlsEnabled),
     };
+
+    // إن عُطّل الاثنان أبقِ HLS مفعّلاً حتى لا تُغلق المشاهدة
+    if (!next.playerTsEnabled && !next.playerHlsEnabled) {
+      next.playerHlsEnabled = true;
+    }
 
     await this.prisma.sectionMeta.upsert({
       where: { key: VIEWING_PAGE_META_KEY },
@@ -105,6 +112,8 @@ export class ViewingPageService {
       metadata: {
         enabled: next.enabled,
         jwtPlaybackEnabled: next.jwtPlaybackEnabled,
+        playerTsEnabled: next.playerTsEnabled,
+        playerHlsEnabled: next.playerHlsEnabled,
       },
     });
 
@@ -130,6 +139,8 @@ export class ViewingPageService {
       showMatchSchedule: DEFAULT_VIEWING_PAGE_SETTINGS.showMatchSchedule,
       autoplayOnEnter: DEFAULT_VIEWING_PAGE_SETTINGS.autoplayOnEnter,
       jwtPlaybackEnabled: DEFAULT_VIEWING_PAGE_SETTINGS.jwtPlaybackEnabled,
+      playerTsEnabled: DEFAULT_VIEWING_PAGE_SETTINGS.playerTsEnabled,
+      playerHlsEnabled: DEFAULT_VIEWING_PAGE_SETTINGS.playerHlsEnabled,
     };
 
     const row = await this.prisma.sectionMeta.findUnique({
@@ -171,6 +182,14 @@ export class ViewingPageService {
         jwtPlaybackEnabled: boolOr(
           parsed.jwtPlaybackEnabled,
           defaults.jwtPlaybackEnabled,
+        ),
+        playerTsEnabled: boolOr(
+          parsed.playerTsEnabled,
+          defaults.playerTsEnabled,
+        ),
+        playerHlsEnabled: boolOr(
+          parsed.playerHlsEnabled,
+          defaults.playerHlsEnabled,
         ),
       };
     } catch {

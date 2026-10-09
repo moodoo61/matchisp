@@ -68,6 +68,17 @@ export type MistApiResponse = {
       source?: string;
       online?: number;
       error?: string;
+      meta?: {
+        tracks?: Record<
+          string,
+          {
+            type?: string;
+            width?: number;
+            height?: number;
+            trackid?: number;
+          }
+        >;
+      };
     }
   >;
 };

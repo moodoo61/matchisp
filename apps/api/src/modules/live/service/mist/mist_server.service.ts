@@ -12,12 +12,23 @@ import {
   INPUT_CLIENT_REQUEST,
   parseInputStats,
 } from './mist-input-stats';
+import {
+  mistVideoTrackLabel,
+  parseStreamVideoTracks,
+  type MistVideoTrackSize,
+} from './mist-stream-tracks';
 import type {
   MistActiveStreamStats,
   MistInputStats,
   MistStreamPayload,
   MistStreamStatus,
 } from './mist-types';
+
+export type MistTsQualityOption = {
+  width: number;
+  height: number | null;
+  label: string;
+};
 
 /** مزامنة وإدارة قنوات MistServer */
 @Injectable()
@@ -86,6 +97,43 @@ export class MistServerService {
     } catch (err) {
       this.logger.warn(
         `تعذر جلب إحصاءات MistServer: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return empty;
+    }
+  }
+
+  /**
+   * جودات فيديو القناة من Mist (عروض المسارات) لاستخدام ?video=عرضxارتفاع
+   * @see https://docs.mistserver.org/mistserver/integration/http/json/
+   */
+  async listStreamTsQualities(): Promise<Map<string, MistTsQualityOption[]>> {
+    const empty = new Map<string, MistTsQualityOption[]>();
+    if (!this.client.enabled()) return empty;
+
+    try {
+      const data = await this.client.request({
+        streams: true,
+        active_streams: { longform: true },
+        minimal: 1,
+      });
+      const parsed = parseStreamVideoTracks(data.streams, data.active_streams);
+      const out = new Map<string, MistTsQualityOption[]>();
+      for (const [name, tracks] of parsed) {
+        out.set(
+          name,
+          tracks.map((track: MistVideoTrackSize) => ({
+            width: track.width,
+            height: track.height,
+            label: mistVideoTrackLabel(track),
+          })),
+        );
+      }
+      return out;
+    } catch (err) {
+      this.logger.warn(
+        `تعذر جلب مسارات فيديو MistServer: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );

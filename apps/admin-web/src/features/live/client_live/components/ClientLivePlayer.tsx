@@ -1,7 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
 import { useHlsPlayback } from '../hooks/useHlsPlayback';
+import { useTsPlayback } from '../hooks/useTsPlayback';
+import type { ViewingPlayerId } from '../lib/players';
 import { stripPlaybackToken } from '../lib/playbackUrlIdentity';
 import {
   FullscreenIcon,
@@ -15,23 +24,109 @@ import {
 } from './ClientLiveIcons';
 
 type Props = {
-  hlsUrl: string;
-  /** شعار العلامة يظهر في المنتصف عند الإيقاف */
+  mode: ViewingPlayerId;
+  srcUrl: string;
   brandLogoUrl?: string | null;
-  /** تشغيل تلقائي عند التحميل — من إعدادات صفحة المشاهدة */
   autoplay?: boolean;
+  /** جودات TS من Mist */
+  tsQualities?: Array<{ width: number; height: number | null; label: string }>;
+  /** يُستدعى مرة عند فشل التشغيل — لتبديل المشغّل الاحتياطي */
+  onPlaybackError?: () => void;
 };
 
-/** مشغّل نظيف — أدوات تشغيل فقط بدون أي نص مكرر */
-export function ClientLivePlayer({
-  hlsUrl,
+type PlaybackApi = {
+  error: string | null;
+  ready: boolean;
+  buffering: boolean;
+  playing: boolean;
+  muted: boolean;
+  volume: number;
+  levels: Array<{ index: number; label: string }>;
+  level: number;
+  activeLevel: number;
+  qualitySelectable: boolean;
+  qualityAuto: boolean;
+  progress: number;
+  buffered: number;
+  seekable: boolean;
+  startPlayback: () => void;
+  haltPlayback: () => void;
+  selectQuality: (next: number) => void;
+  setMuted: (next: boolean) => void;
+  setVolume: (next: number) => void;
+  seekToProgress: (ratio: number) => void;
+};
+
+/** مشغّل نظيف — HLS أو TS حسب الوضع */
+export function ClientLivePlayer(props: Props) {
+  if (props.mode === 'ts') {
+    return <TsPlayerBody {...props} />;
+  }
+  return <HlsPlayerBody {...props} />;
+}
+
+function HlsPlayerBody({
+  srcUrl,
   brandLogoUrl,
   autoplay = false,
+  onPlaybackError,
 }: Props) {
-  const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playback = useHlsPlayback(srcUrl, videoRef, { autoplay });
+  return (
+    <PlayerChrome
+      srcUrl={srcUrl}
+      brandLogoUrl={brandLogoUrl}
+      autoplay={autoplay}
+      videoRef={videoRef}
+      playback={playback}
+      onPlaybackError={onPlaybackError}
+    />
+  );
+}
+
+function TsPlayerBody({
+  srcUrl,
+  brandLogoUrl,
+  autoplay = false,
+  tsQualities,
+  onPlaybackError,
+}: Props) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playback = useTsPlayback(srcUrl, videoRef, {
+    autoplay,
+    qualities: tsQualities,
+  });
+  return (
+    <PlayerChrome
+      srcUrl={srcUrl}
+      brandLogoUrl={brandLogoUrl}
+      autoplay={autoplay}
+      videoRef={videoRef}
+      playback={playback}
+      onPlaybackError={onPlaybackError}
+    />
+  );
+}
+
+function PlayerChrome({
+  srcUrl,
+  brandLogoUrl,
+  autoplay = false,
+  videoRef,
+  playback,
+  onPlaybackError,
+}: {
+  srcUrl: string;
+  brandLogoUrl?: string | null;
+  autoplay?: boolean;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  playback: PlaybackApi;
+  onPlaybackError?: () => void;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const qualityMenuRef = useRef<HTMLDivElement | null>(null);
-  const streamKey = stripPlaybackToken(hlsUrl);
+  const streamKey = stripPlaybackToken(srcUrl);
   const [stopped, setStopped] = useState(!autoplay);
   const [qualityOpen, setQualityOpen] = useState(false);
   const [pipActive, setPipActive] = useState(false);
@@ -46,7 +141,9 @@ export function ClientLivePlayer({
     volume,
     levels,
     level,
+    activeLevel,
     qualitySelectable,
+    qualityAuto,
     progress,
     buffered,
     seekable,
@@ -56,17 +153,28 @@ export function ClientLivePlayer({
     setMuted,
     setVolume,
     seekToProgress,
-  } = useHlsPlayback(hlsUrl, videoRef, { autoplay });
+  } = playback;
 
   useEffect(() => {
     setStopped(!autoplay);
     setQualityOpen(false);
   }, [streamKey, autoplay]);
 
-  // إن بدأ التشغيل فعلياً ألغِ حالة الإيقاف حتى يظهر الفيديو
   useEffect(() => {
     if (playing) setStopped(false);
   }, [playing]);
+
+  const errorNotifiedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!error || !onPlaybackError) return;
+    if (errorNotifiedRef.current === error) return;
+    errorNotifiedRef.current = error;
+    onPlaybackError();
+  }, [error, onPlaybackError]);
+
+  useEffect(() => {
+    errorNotifiedRef.current = null;
+  }, [streamKey]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -85,7 +193,7 @@ export function ClientLivePlayer({
       video?.removeEventListener('enterpictureinpicture', onEnter);
       video?.removeEventListener('leavepictureinpicture', onLeave);
     };
-  }, [ready]);
+  }, [ready, videoRef]);
 
   useEffect(() => {
     if (!qualityOpen) return;
@@ -166,10 +274,16 @@ export function ClientLivePlayer({
     }
   };
 
+  const selectedLevelLabel =
+    levels.find((item) => item.index === level)?.label ?? null;
+  const activeLevelLabel =
+    levels.find((item) => item.index === activeLevel)?.label ?? null;
   const currentQualityLabel =
     level < 0
-      ? 'تلقائي'
-      : levels.find((item) => item.index === level)?.label ?? 'جودة';
+      ? activeLevelLabel
+        ? `تلقائي · ${activeLevelLabel}`
+        : 'تلقائي'
+      : selectedLevelLabel ?? activeLevelLabel ?? 'جودة';
 
   const showPlaying = playing && !stopped;
   const brandLogo = brandLogoUrl?.trim() || null;
@@ -187,8 +301,11 @@ export function ClientLivePlayer({
         .join(' ')}
       onDoubleClick={enterFullscreen}
       onClick={(event) => {
-        // ضغطة على السطح (ليس الأزرار) تشغّل إن كان متوقفاً — إيماءة مستخدم
-        if ((event.target as HTMLElement).closest('button, input, .cl-quality-menu')) {
+        if (
+          (event.target as HTMLElement).closest(
+            'button, input, .cl-quality-menu',
+          )
+        ) {
           return;
         }
         if (stopped || (!playing && videoRef.current?.paused)) {
@@ -296,7 +413,7 @@ export function ClientLivePlayer({
           <div className="cl-quality" ref={qualityMenuRef}>
             <button
               type="button"
-              className={`cl-player-button${qualityOpen ? ' is-active' : ''}`}
+              className={`cl-player-button cl-quality-btn${qualityOpen ? ' is-active' : ''}`}
               onClick={() => setQualityOpen((open) => !open)}
               aria-label={`جودة البث: ${currentQualityLabel}`}
               aria-expanded={qualityOpen}
@@ -306,38 +423,64 @@ export function ClientLivePlayer({
               <span className="cl-quality-badge">{currentQualityLabel}</span>
             </button>
             {qualityOpen ? (
-              <div className="cl-quality-menu" role="menu" aria-label="جودة البث" dir="rtl">
-                <button
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={level < 0}
-                  className={level < 0 ? 'is-active' : undefined}
-                  onClick={() => {
-                    selectQuality(-1);
-                    setQualityOpen(false);
-                  }}
-                >
-                  تلقائي
-                </button>
+              <div
+                className="cl-quality-menu"
+                role="menu"
+                aria-label="جودة البث"
+                dir="rtl"
+              >
+                {qualityAuto ? (
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={level < 0}
+                    className={level < 0 ? 'is-active' : undefined}
+                    onClick={() => {
+                      selectQuality(-1);
+                      setQualityOpen(false);
+                    }}
+                  >
+                    تلقائي
+                    {level < 0 && activeLevelLabel ? (
+                      <span className="cl-quality-now">
+                        الآن {activeLevelLabel}
+                      </span>
+                    ) : null}
+                  </button>
+                ) : null}
                 {qualitySelectable ? (
-                  levels.map((item) => (
-                    <button
-                      key={item.index}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={level === item.index}
-                      className={level === item.index ? 'is-active' : undefined}
-                      onClick={() => {
-                        selectQuality(item.index);
-                        setQualityOpen(false);
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  ))
+                  levels.map((item) => {
+                    const selected = level === item.index;
+                    const playingNow =
+                      level < 0 && activeLevel === item.index;
+                    return (
+                      <button
+                        key={item.index}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={selected}
+                        className={
+                          selected
+                            ? 'is-active'
+                            : playingNow
+                              ? 'is-playing'
+                              : undefined
+                        }
+                        onClick={() => {
+                          selectQuality(item.index);
+                          setQualityOpen(false);
+                        }}
+                      >
+                        {item.label}
+                        {playingNow ? (
+                          <span className="cl-quality-now">يُعرض</span>
+                        ) : null}
+                      </button>
+                    );
+                  })
                 ) : (
                   <p className="cl-quality-hint">
-                    الجودة اليدوية غير متاحة على هذا المتصفح
+                    لا تتوفر مستويات جودة من السيرفر حالياً
                   </p>
                 )}
               </div>
@@ -349,7 +492,9 @@ export function ClientLivePlayer({
               type="button"
               className={`cl-player-button${pipActive ? ' is-active' : ''}`}
               onClick={() => void togglePip()}
-              aria-label={pipActive ? 'إغلاق صورة داخل صورة' : 'صورة داخل صورة'}
+              aria-label={
+                pipActive ? 'إغلاق صورة داخل صورة' : 'صورة داخل صورة'
+              }
             >
               <PipIcon />
             </button>
