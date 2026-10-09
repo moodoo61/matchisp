@@ -151,6 +151,7 @@ export const PERMISSIONS = {
   NETWORK_ROUTES_READ: 'network.routes:read',
   NETWORK_ROUTES_MANAGE: 'network.routes:manage',
   NETWORK_DNS_READ: 'network.dns:read',
+  NETWORK_DNS_MANAGE: 'network.dns:manage',
   NETWORK_SSTP_READ: 'network.sstp:read',
   NETWORK_SSTP_MANAGE: 'network.sstp:manage',
 } as const;
@@ -266,6 +267,7 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'network.routes:read': 'عرض جداول التوجيه',
   'network.routes:manage': 'تعديل التوجيه',
   'network.dns:read': 'عرض إعدادات DNS',
+  'network.dns:manage': 'تعديل إعدادات DNS',
   'network.sstp:read': 'عرض اتصال SSTP',
   'network.sstp:manage': 'إدارة اتصال SSTP (حفظ/ربط/فصل)',
 };
@@ -549,8 +551,12 @@ export function hasPermission(
     if (action === 'read') {
       return (
         userPermissions.includes(PERMISSIONS.NETWORK_READ) ||
-        userPermissions.includes(PERMISSIONS.NETWORK_MANAGE)
+        userPermissions.includes(PERMISSIONS.NETWORK_MANAGE) ||
+        userPermissions.includes(PERMISSIONS.NETWORK_DNS_MANAGE)
       );
+    }
+    if (action === 'manage') {
+      return userPermissions.includes(PERMISSIONS.NETWORK_MANAGE);
     }
   }
 

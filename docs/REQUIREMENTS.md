@@ -87,6 +87,9 @@ sudo apt install -y \
 > قسم الشبكة يكتب إعدادات دائمة عبر NetworkManager (`nmcli`) حتى تبقى المنافذ والعناوين بعد إعادة التشغيل. أوامر مثل `nmcli` / `mount` / `sstpc` قد تحتاج صلاحيات root للعملية التي تشغّل الـ API.
 >
 > على الإنتاج: تأكد أن `NetworkManager` نشط وأن المنافذ المراد إدارتها ليست `unmanaged` بالكامل من جهة أخرى (مثل `systemd-networkd`/`netplan` دون تسليمها لـ NM).
+>
+> يُستحسن تثبيت خدمة النظام المستقلة [`match-network`](./MATCH_NETWORK_SERVICE.md) حتى تُفعَّل اتصالات `match-*` عند الإقلاع دون الاعتماد على تشغيل المشروع:
+> `sudo bash infra/scripts/install-match-network-service.sh --enable --start`
 
 ### SSTP (الإعدادات ← الشبكة ← SSTP)
 

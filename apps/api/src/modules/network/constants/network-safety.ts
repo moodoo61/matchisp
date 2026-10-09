@@ -7,3 +7,6 @@ export const IPV4_CIDR_RE =
   /^(?:\d{1,3}\.){3}\d{1,3}\/(?:[0-9]|[12][0-9]|3[0-2])$/;
 
 export const IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+
+/** نطاق بحث DNS بسيط (مثلlan.local أو example.com) */
+export const DNS_SEARCH_RE = /^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$/;

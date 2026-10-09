@@ -105,7 +105,12 @@ export class NmProfilesService {
         'connection.autoconnect',
         'yes',
       ]);
-      await this.nmcli.run(['connection', 'up', con], 30000);
+      await this.activate(con, ifName);
+      if (!(await this.isAdminUp(ifName))) {
+        throw new BadRequestException(
+          `تعذر تشغيل المنفذ ${ifName} — تحقق أن NetworkManager يدير الجهاز وأن الكابل متصل إن لزم`,
+        );
+      }
       return;
     }
 
@@ -117,13 +122,23 @@ export class NmProfilesService {
       'no',
     ]);
     try {
-      await this.nmcli.run(['connection', 'down', con], 30000);
+      await this.nmcli.run(['device', 'disconnect', ifName], 20000);
     } catch (err) {
-      // إن لم يكن مفعّلاً — نطفئ الرابط مباشرة دون كسر الاستمرارية
-      this.logger.debug(`connection down ${con}: ${this.nmcli.errMsg(err)}`);
-      await this.nmcli.run(['device', 'disconnect', ifName], 15000).catch(
+      this.logger.debug(`device disconnect ${ifName}: ${this.nmcli.errMsg(err)}`);
+      await this.nmcli.run(['connection', 'down', con], 20000).catch(
         () => undefined,
       );
+    }
+    // تأكيد الإطفاء الإداري إن بقي الرابط مرفوعاً
+    if (await this.isAdminUp(ifName)) {
+      await execFileAsync('ip', ['link', 'set', 'dev', ifName, 'down'], {
+        timeout: 10000,
+        maxBuffer: 64 * 1024,
+      }).catch((err) => {
+        this.logger.warn(
+          `ip link down ${ifName}: ${this.nmcli.errMsg(err)}`,
+        );
+      });
     }
   }
 
@@ -145,6 +160,47 @@ export class NmProfilesService {
       throw new BadRequestException(`العنوان غير موجود على ${ifName}: ${cidr}`);
     }
     await this.applyIpv4(con, ifName, next);
+  }
+
+  async setDns(
+    servers: string[],
+    search: string[],
+    device: string | undefined,
+  ): Promise<{ device: string; connection: string }> {
+    const ifName = device?.trim() || (await this.inferDefaultDevice());
+    if (!ifName) {
+      throw new BadRequestException(
+        'حدّد منفذ الجهاز لـ DNS — تعذر اكتشافه تلقائياً',
+      );
+    }
+    this.assertControllable(ifName);
+    const con = await this.ensureProfile(ifName);
+    const addresses = uniqueCidrs([
+      ...(await this.getIpv4Addresses(con)),
+      ...(await this.readLiveIpv4Cidrs(ifName)),
+    ]);
+
+    const args = [
+      'connection',
+      'modify',
+      con,
+      'ipv4.ignore-auto-dns',
+      'yes',
+      'ipv4.dns',
+      servers.join(','),
+      'ipv4.dns-search',
+      search.join(','),
+      'connection.autoconnect',
+      'yes',
+    ];
+    if (addresses.length > 0) {
+      const gateway = await this.getIpv4Gateway(con);
+      args.push('ipv4.method', 'manual', 'ipv4.addresses', addresses.join(','));
+      if (gateway) args.push('ipv4.gateway', gateway);
+    }
+    await this.nmcli.run(args);
+    await this.reapply(con, ifName);
+    return { device: ifName, connection: con };
   }
 
   async setDefaultGateway(
@@ -229,10 +285,66 @@ export class NmProfilesService {
   }
 
   private async reapply(con: string, ifName: string): Promise<void> {
+    const devices = await this.listDevices();
+    const row = devices.find((d) => d.device === ifName);
+    const connected =
+      !!row &&
+      (row.state === 'connected' ||
+        row.state.startsWith('connected') ||
+        (row.connection.length > 0 && row.state !== 'unmanaged'));
+
+    if (connected) {
+      try {
+        await this.nmcli.run(['device', 'reapply', ifName], 20000);
+        return;
+      } catch (err) {
+        this.logger.debug(
+          `device reapply ${ifName}: ${this.nmcli.errMsg(err)}`,
+        );
+      }
+    }
+    await this.activate(con, ifName);
+  }
+
+  /** تفعيل الاتصال فعلياً (device connect ثم connection up) */
+  private async activate(con: string, ifName: string): Promise<void> {
+    await this.ensureManaged(ifName);
+    const errors: string[] = [];
+
     try {
-      await this.nmcli.run(['device', 'reapply', ifName], 20000);
-    } catch {
+      await this.nmcli.run(['device', 'connect', ifName], 30000);
+      if (await this.isAdminUp(ifName)) return;
+    } catch (err) {
+      errors.push(`device connect: ${this.nmcli.errMsg(err)}`);
+    }
+
+    try {
       await this.nmcli.run(['connection', 'up', con], 30000);
+      if (await this.isAdminUp(ifName)) return;
+    } catch (err) {
+      errors.push(`connection up: ${this.nmcli.errMsg(err)}`);
+    }
+
+    // انتظار قصير لحالة الجهاز بعد أوامر NM
+    await sleep(800);
+    if (await this.isAdminUp(ifName)) return;
+
+    if (errors.length) {
+      throw new BadRequestException(errors.join(' | '));
+    }
+  }
+
+  private async isAdminUp(ifName: string): Promise<boolean> {
+    try {
+      const { stdout } = await execFileAsync(
+        'ip',
+        ['-j', 'link', 'show', 'dev', ifName],
+        { timeout: 8000, maxBuffer: 1024 * 1024 },
+      );
+      const parsed = JSON.parse(stdout) as Array<{ flags?: string[] }>;
+      return (parsed[0]?.flags ?? []).includes('UP');
+    } catch {
+      return false;
     }
   }
 
@@ -243,14 +355,18 @@ export class NmProfilesService {
       throw new BadRequestException(`المنفذ غير موجود: ${ifName}`);
     }
     await this.managedConf.ensureManagedPersistent(ifName);
-    if (row.state === 'unmanaged') {
-      try {
-        await this.nmcli.run(['device', 'set', ifName, 'managed', 'yes']);
-      } catch (err) {
+    // دائماً نؤكد managed — القائمة قد تكون قديمة قبل reload
+    try {
+      await this.nmcli.run(['device', 'set', ifName, 'managed', 'yes']);
+    } catch (err) {
+      if (row.state === 'unmanaged') {
         throw new BadRequestException(
           `تعذر جعل ${ifName} تحت إدارة NetworkManager: ${this.nmcli.errMsg(err)}`,
         );
       }
+      this.logger.debug(
+        `device set managed ${ifName}: ${this.nmcli.errMsg(err)}`,
+      );
     }
   }
 
@@ -403,4 +519,8 @@ function uniqueCidrs(list: string[]): string[] {
     out.push(c);
   }
   return out;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

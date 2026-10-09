@@ -11,7 +11,7 @@ import type {
   InterfacesInventory,
   NetworkInterface,
 } from '@/features/settings/network/types';
-import { operStateLabel } from '@/features/settings/network/types';
+import { ifaceStateLabel } from '@/features/settings/network/types';
 import { usePermissions } from '@/lib/usePermissions';
 import {
   DataTable,
@@ -53,7 +53,7 @@ export function InterfacesCard() {
 
   async function toggleState(row: NetworkInterface) {
     if (!canManage || !row.canControl) return;
-    const next = row.operState === 'UP' ? 'down' : 'up';
+    const next = row.adminUp ? 'down' : 'up';
     if (
       !confirm(
         next === 'down'
@@ -126,10 +126,15 @@ export function InterfacesCard() {
       render: (row) => (
         <span
           className={`status-pill status-${
-            row.operState === 'UP' ? 'ok' : 'missing'
+            row.adminUp && row.operState === 'UP'
+              ? 'ok'
+              : row.adminUp
+                ? 'degraded'
+                : 'missing'
           }`}
+          title={`oper=${row.operState} admin=${row.adminUp ? 'up' : 'down'}`}
         >
-          {operStateLabel(row.operState)}
+          {ifaceStateLabel(row)}
         </span>
       ),
     },
@@ -184,7 +189,7 @@ export function InterfacesCard() {
               disabled={busy}
               onClick={() => void toggleState(row)}
             >
-              {row.operState === 'UP' ? 'إيقاف' : 'تشغيل'}
+              {row.adminUp ? 'إيقاف' : 'تشغيل'}
             </button>
             <button
               type="button"

@@ -12,6 +12,8 @@ export type NetworkInterface = {
   ifIndex: number;
   mtu: number;
   operState: string;
+  /** حالة إدارية من flags (UP) — مستقلة عن وجود حامل/كابل */
+  adminUp: boolean;
   mac: string | null;
   flags: string[];
   addresses: NetworkAddress[];

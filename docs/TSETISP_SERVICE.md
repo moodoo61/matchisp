@@ -45,3 +45,11 @@ sudo bash infra/scripts/install-tsetisp-service.sh --uninstall
 ```
 
 > هذه الخدمة تستدعي وضع التطوير (`pnpm … dev`) وليست بديلاً عن بناء الإنتاج (`pnpm build` + عملية `node`/`next start`).
+
+## شبكة مستقلة
+
+لضمان المنافذ/العناوين بعد الإقلاع حتى لو فشلت `tsetisp`، ثبّت أيضاً [`match-network`](./MATCH_NETWORK_SERVICE.md):
+
+```bash
+sudo bash infra/scripts/install-match-network-service.sh --root /opt/match --enable --start
+```

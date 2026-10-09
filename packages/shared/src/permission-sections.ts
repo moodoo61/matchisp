@@ -240,7 +240,7 @@ export const PERMISSION_TREE: readonly PermissionTreeNode[] = [
           {
             key: 'network.dns',
             label: 'DNS',
-            codes: ['network.dns:read'],
+            codes: ['network.dns:read', 'network.dns:manage'],
           },
           {
             key: 'network.sstp',

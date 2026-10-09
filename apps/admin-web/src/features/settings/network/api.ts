@@ -49,6 +49,22 @@ export function getDns() {
   return api<NetworkDnsInfo>('/settings/network/dns');
 }
 
+export function setDns(body: {
+  servers: string[];
+  search?: string[];
+  device?: string;
+}) {
+  return api<{
+    success: boolean;
+    device: string;
+    servers: string[];
+    search: string[];
+  }>('/settings/network/dns', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export function getSstpStatus() {
   return api<SstpStatus>('/settings/network/sstp');
 }

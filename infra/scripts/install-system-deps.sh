@@ -30,6 +30,12 @@ apt-get install -y \
 
 systemctl enable --now NetworkManager 2>/dev/null || true
 
+# خدمة ضمان شبكة اللوحة (اختيارية — لا تفشل التثبيت إن تعذّرت)
+if [[ -f "${ROOT}/infra/scripts/install-match-network-service.sh" ]]; then
+  bash "${ROOT}/infra/scripts/install-match-network-service.sh" \
+    --root "${ROOT}" --enable --start || true
+fi
+
 # Node.js 22 إن لم يكن مثبتاً أو الإصدار أقدم
 need_node=0
 if ! command -v node >/dev/null 2>&1; then

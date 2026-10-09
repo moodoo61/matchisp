@@ -11,6 +11,8 @@ export type NetworkInterface = {
   ifIndex: number;
   mtu: number;
   operState: string;
+  /** حالة إدارية — true حتى لو لا يوجد كابل (operState قد يبقى DOWN) */
+  adminUp: boolean;
   mac: string | null;
   flags: string[];
   addresses: NetworkAddress[];
@@ -76,4 +78,14 @@ export function operStateLabel(state: string): string {
     LOWERLAYERDOWN: 'طبقة سفلى متوقفة',
   };
   return map[state] ?? state;
+}
+
+/** تسمية الحالة للمنافذ: إداري أولاً ثم التشغيلي */
+export function ifaceStateLabel(row: {
+  adminUp: boolean;
+  operState: string;
+}): string {
+  if (!row.adminUp) return 'متوقف';
+  if (row.operState === 'UP') return 'يعمل';
+  return 'مُشغَّل (بلا وسيط)';
 }

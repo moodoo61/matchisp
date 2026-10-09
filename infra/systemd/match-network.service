@@ -1,0 +1,23 @@
+[Unit]
+Description=ISP Match — ضمان شبكة NetworkManager (مستقل عن التطبيق)
+Documentation=file:///opt/match/docs/MATCH_NETWORK_SERVICE.md
+# بعد NetworkManager وقبل خدمة التطبيق — لا يعتمد على tsetisp/Node
+After=NetworkManager.service network-pre.target
+Wants=NetworkManager.service
+Before=tsetisp.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# يجب root لـ nmcli device set / connection up على إعدادات النظام
+User=root
+Group=root
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/match/infra/scripts/match-network-ensure.sh
+TimeoutStartSec=90
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=match-network
+
+[Install]
+WantedBy=multi-user.target

@@ -61,13 +61,15 @@ export class InterfacesInventoryService {
           };
         });
 
+      const flags = item.flags ?? [];
       return {
         ifName,
         ifIndex: item.ifindex ?? 0,
         mtu: item.mtu ?? 0,
         operState: item.operstate ?? 'UNKNOWN',
+        adminUp: flags.includes('UP'),
         mac: item.address ?? null,
-        flags: item.flags ?? [],
+        flags,
         addresses,
         noteLabel: note?.label ?? '',
         noteText: note?.notes ?? '',
