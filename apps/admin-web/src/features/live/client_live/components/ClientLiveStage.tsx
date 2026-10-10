@@ -28,8 +28,8 @@ type Props = {
 };
 
 /**
- * المسرح — تشغيل فوري برابط Mist الرئيسي (التنشيط من طلب المشغّل)،
- * مع إثراء الجودات في الخلفية بلا رسالة تنشيط.
+ * المسرح — تشغيل قناة واحدة معزول:
+ * الروابط/الجودات/الإيقاظ مربوطة بـ channel.id فقط.
  */
 export function ClientLiveStage({
   channel,
@@ -43,42 +43,70 @@ export function ClientLiveStage({
     preferredPlayer: activePlayer,
   });
 
-  const rawUrl =
-    activePlayer === 'ts'
+  const boundOk =
+    enriched.channelId === channel.id &&
+    enriched.streamName === channel.name;
+
+  const rawUrl = !boundOk
+    ? ''
+    : activePlayer === 'ts'
       ? enriched.playback.tsUrl ?? ''
       : enriched.playback.hlsUrl;
   const srcUrl = resolveClientPlaybackUrl(rawUrl);
 
-  const tsQualitiesKey = (enriched.playback.tsQualities ?? [])
-    .map((row) => `${row.width}x${row.height ?? 0}`)
-    .join('|');
   const tsQualities = useMemo(
-    () => gateTsQualities(enriched.playback),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tsQualitiesKey],
+    () =>
+      gateTsQualities(
+        enriched.playback,
+        enriched.channelId,
+        channel.id,
+      ),
+    [
+      enriched.playback,
+      enriched.channelId,
+      channel.id,
+      // بصمة الجودات لإعادة الحساب عند تغيّرها لهذه القناة فقط
+      (enriched.playback.tsQualities ?? [])
+        .map((row) => `${row.width}x${row.height ?? 0}`)
+        .join('|'),
+    ],
   );
 
+  const qualitiesKey = (tsQualities ?? [])
+    .map((row) => `${row.width}x${row.height ?? 0}`)
+    .join('|');
+
   useEffect(() => {
+    if (!boundOk) return;
     if (!srcUrl && onPlaybackError) onPlaybackError();
-  }, [srcUrl, onPlaybackError]);
+  }, [boundOk, srcUrl, onPlaybackError]);
 
   const stageChannel = useMemo<PublicLiveChannel>(
-    () => ({
-      ...channel,
-      online: enriched.online,
-      active: enriched.active,
-      playback: enriched.playback,
-    }),
-    [channel, enriched.online, enriched.active, enriched.playback],
+    () =>
+      boundOk
+        ? {
+            ...channel,
+            online: enriched.online,
+            active: enriched.active,
+            playback: enriched.playback,
+          }
+        : channel,
+    [
+      boundOk,
+      channel,
+      enriched.online,
+      enriched.active,
+      enriched.playback,
+    ],
   );
 
   return (
     <section className="cl-feature">
       <div className="cl-screen-shell">
         <div className="cl-screen">
-          {srcUrl ? (
+          {boundOk && srcUrl ? (
             <ClientLivePlayer
-              key={`${channel.id}:${activePlayer}`}
+              key={`${channel.id}:${activePlayer}:${qualitiesKey || 'main'}`}
               mode={activePlayer}
               srcUrl={srcUrl}
               brandLogoUrl={brandLogoUrl}

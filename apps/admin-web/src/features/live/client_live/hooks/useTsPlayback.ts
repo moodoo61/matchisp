@@ -8,6 +8,10 @@ import {
 } from '../lib/playbackUrlIdentity';
 import { tryHtmlVideoAutoplay } from '../lib/htmlVideoAutoplay';
 import {
+  MPEGTS_LIVE_CONFIG,
+  MPEGTS_LIVE_MEDIA,
+} from '../lib/mpegtsPlayerConfig';
+import {
   applyTsVideoTrack,
   mistTsQualitiesToOptions,
   tsMediumQualityIndex,
@@ -312,19 +316,10 @@ export function useTsPlayback(
         if (featureOk) {
           const player = mpegts.createPlayer(
             {
-              // HTTP MPEG-TS — ليس WebSocket/mse
-              type: 'mpegts',
-              isLive: true,
-              hasAudio: true,
-              hasVideo: true,
+              ...MPEGTS_LIVE_MEDIA,
               url: sourceUrl,
             },
-            {
-              enableWorker: true,
-              lazyLoad: false,
-              liveBufferLatencyChasing: true,
-              liveSync: true,
-            },
+            MPEGTS_LIVE_CONFIG,
           );
           if (cancelled) {
             player.destroy();

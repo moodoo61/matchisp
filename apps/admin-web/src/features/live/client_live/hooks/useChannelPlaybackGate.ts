@@ -6,6 +6,10 @@ import {
   wakePublicChannel,
 } from '../api';
 import {
+  isPlaybackReadyForChannel,
+  mergeChannelPlayback,
+} from '../lib/channelPlaybackMerge';
+import {
   CHANNEL_WAKE_POLL_MS,
   CHANNEL_WAKE_TIMEOUT_MS,
   hasPlayableTsQualities,
@@ -15,6 +19,9 @@ import type { ViewingPlayerId } from '../lib/players';
 import type { PublicLiveChannel, TsQualityFromMist } from '../types';
 
 export type ChannelPlaybackGateState = {
+  /** معرف القناة المربوطة بهذه الحالة — لرفض التسريب */
+  channelId: string;
+  streamName: string;
   player: ViewingPlayerId;
   playback: PublicLiveChannel['playback'];
   online: 0 | 1 | 2 | null;
@@ -26,47 +33,68 @@ type Options = {
 };
 
 /**
- * يشغّل فوراً بالرابط الرئيسي (طلب المشغّل = تنشيط Mist)،
- * وفي الخلفية: wake + استطلاع الجودات دون حجب الواجهة أو رسائل.
+ * إثراء تشغيل لقناة واحدة فقط:
+ * wake + استطلاع الجاهزية مربوطان بـ channel.id / name،
+ * بدون الاحتفاظ بجودات قناة أخرى.
  */
 export function useChannelPlaybackEnrichment(
   channel: PublicLiveChannel,
   options: Options,
 ): ChannelPlaybackGateState {
-  const sessionKey = `${channel.id}:${options.preferredPlayer}`;
+  const channelId = channel.id;
+  const streamName = channel.name;
+  const sessionKey = `${channelId}:${options.preferredPlayer}`;
+
   const [session, setSession] = useState(sessionKey);
+  const [boundId, setBoundId] = useState(channelId);
+  const [boundName, setBoundName] = useState(streamName);
   const [playback, setPlayback] = useState(channel.playback);
   const [online, setOnline] = useState(channel.online);
   const [active, setActive] = useState(channel.active);
 
+  /** إعادة ضبط كاملة عند تغيير القناة أو المشغّل */
   useEffect(() => {
     setSession(sessionKey);
-    setPlayback(channel.playback);
+    setBoundId(channelId);
+    setBoundName(streamName);
+    setPlayback({
+      ...channel.playback,
+      tsQualities: channel.playback.tsQualities ?? [],
+    });
     setOnline(channel.online);
     setActive(channel.active);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sessionKey فقط
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- عمداً: sessionKey فقط
   }, [sessionKey]);
 
-  /** دمج تحديثات قائمة الأقسام دون مسح جودات وصلت من الاستطلاع */
+  /** تحديثات القائمة العامة — لنفس القناة فقط، بلا تسريب جودات */
   useEffect(() => {
     if (session !== sessionKey) return;
+    if (channel.id !== boundId || channel.name !== boundName) return;
+
     setOnline(channel.online);
     setActive(channel.active);
-    setPlayback((current) => ({
-      ...channel.playback,
-      tsQualities: hasPlayableTsQualities(channel.playback.tsQualities)
-        ? channel.playback.tsQualities
-        : current.tsQualities,
-    }));
-  }, [session, sessionKey, channel.playback, channel.online, channel.active]);
+    setPlayback((current) => mergeChannelPlayback(current, channel.playback));
+  }, [
+    session,
+    sessionKey,
+    boundId,
+    boundName,
+    channel.id,
+    channel.name,
+    channel.online,
+    channel.active,
+    channel.playback,
+  ]);
 
   useEffect(() => {
     if (session !== sessionKey) return;
     if (options.preferredPlayer !== 'ts') return;
+    if (channel.id !== boundId) return;
 
     let cancelled = false;
     const startedAt = Date.now();
-    const channelId = channel.id;
+    const id = boundId;
+    const name = boundName;
     let gotQualities = hasPlayableTsQualities(channel.playback.tsQualities);
     let sawOnline = isMistStreamOnline(channel.online);
 
@@ -74,18 +102,16 @@ export function useChannelPlaybackEnrichment(
       ready: Awaited<ReturnType<typeof getPublicChannelPlaybackReady>>,
     ) => {
       if (cancelled) return;
+      if (!isPlaybackReadyForChannel(ready, id, name)) return;
+
       if (ready.streamOnline || ready.online === 1) sawOnline = true;
       if (hasPlayableTsQualities(ready.playback.tsQualities)) {
         gotQualities = true;
       }
+
       setOnline(ready.online);
       setActive(ready.active);
-      setPlayback((current) => ({
-        ...ready.playback,
-        tsQualities: hasPlayableTsQualities(ready.playback.tsQualities)
-          ? ready.playback.tsQualities
-          : current.tsQualities,
-      }));
+      setPlayback((current) => mergeChannelPlayback(current, ready.playback));
     };
 
     const shouldStop = () =>
@@ -96,10 +122,11 @@ export function useChannelPlaybackEnrichment(
     const poll = async () => {
       if (shouldStop()) return;
       try {
-        const ready = await getPublicChannelPlaybackReady(channelId);
+        const ready = await getPublicChannelPlaybackReady(id);
+        if (cancelled) return;
         ingest(ready);
       } catch {
-        /* تجاهل — المشغّل يعمل بالرابط الرئيسي */
+        /* المشغّل قد يعمل بالرابط الرئيسي لهذه القناة */
       }
       if (!shouldStop()) {
         window.setTimeout(() => void poll(), CHANNEL_WAKE_POLL_MS);
@@ -108,10 +135,11 @@ export function useChannelPlaybackEnrichment(
 
     void (async () => {
       try {
-        const woke = await wakePublicChannel(channelId);
+        const woke = await wakePublicChannel(id);
+        if (cancelled) return;
         ingest(woke);
       } catch {
-        /* الإيقاظ السيرفري مساعد فقط */
+        /* مساعد فقط */
       }
       if (!shouldStop()) {
         window.setTimeout(() => void poll(), CHANNEL_WAKE_POLL_MS);
@@ -121,9 +149,18 @@ export function useChannelPlaybackEnrichment(
     return () => {
       cancelled = true;
     };
-  }, [session, sessionKey, options.preferredPlayer, channel.id]);
+  }, [
+    session,
+    sessionKey,
+    boundId,
+    boundName,
+    options.preferredPlayer,
+    channel.id,
+  ]);
 
   return {
+    channelId: boundId,
+    streamName: boundName,
     player: options.preferredPlayer,
     playback,
     online,
@@ -134,10 +171,13 @@ export function useChannelPlaybackEnrichment(
 /** @deprecated استخدم useChannelPlaybackEnrichment */
 export const useChannelPlaybackGate = useChannelPlaybackEnrichment;
 
-/** دائماً نمرّر الجودات للقائمة — التشغيل الافتراضي بدون ?video= عبر level=-1 */
+/** جودات القناة المربوطة فقط — فارغة إن لم تُثبت لهذه القناة */
 export function gateTsQualities(
   playback: PublicLiveChannel['playback'],
-  _useMainTsUrl?: boolean,
+  boundChannelId: string,
+  selectedChannelId: string,
 ): TsQualityFromMist[] | undefined {
+  if (boundChannelId !== selectedChannelId) return [];
+  if (!hasPlayableTsQualities(playback.tsQualities)) return [];
   return playback.tsQualities;
 }

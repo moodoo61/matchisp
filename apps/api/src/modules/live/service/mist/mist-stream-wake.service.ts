@@ -35,17 +35,14 @@ export class MistStreamWakeService {
   ) {}
 
   /**
-   * يبدأ طلب GET على رابط TS (مع tkn إن لزم) ويبقي الجسم مفتوحاً.
-   * استدعاء متكرر لنفس القناة لا يفتح اتصالاً ثانياً.
+   * يبدأ طلب GET على رابط TS الخاص بهذا الستريم فقط ويبقي الجسم مفتوحاً.
+   * كل استدعاء صريح يعيد فتح اتصال لهذه القناة (لا يُعاد استخدام جلسة قناة أخرى).
    */
   ensureWake(streamName: string, options?: { signed?: boolean }): void {
     const name = streamName.trim();
     if (!name || !this.mistClient.enabled()) return;
 
     const existing = this.sessions.get(name);
-    if (existing && Date.now() - existing.startedAt < this.holdMs) {
-      return;
-    }
     if (existing) {
       existing.controller.abort();
       this.sessions.delete(name);
