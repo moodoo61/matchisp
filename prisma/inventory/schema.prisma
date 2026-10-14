@@ -16,3 +16,161 @@ model SectionMeta {
 
   @@map("_section_meta")
 }
+
+/// مخزن واحد للنظام (يُنشأ تلقائياً)
+model Warehouse {
+  id        String         @id @default(uuid()) @db.Uuid
+  name      String         @default("المخزن الرئيسي")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  balances  StockBalance[]
+  documents StockDocument[]
+
+  @@map("warehouses")
+}
+
+/// صنف مخزني
+model Item {
+  id          String         @id @default(uuid()) @db.Uuid
+  code        String         @unique
+  name        String
+  /// consumable | serialized
+  kind        String
+  unit        String         @default("قطعة")
+  minQty      Int            @default(0)
+  notes       String         @default("")
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  balances    StockBalance[]
+  devices     DeviceUnit[]
+  lines       StockDocumentLine[]
+  movements   StockMovement[]
+
+  @@index([kind])
+  @@index([name])
+  @@map("items")
+}
+
+/// رصيد كمية حسب الصنف (للمتسلسل = عدد الأجهزة in_stock)
+model StockBalance {
+  id          String    @id @default(uuid()) @db.Uuid
+  warehouseId String    @db.Uuid
+  itemId      String    @db.Uuid
+  quantity    Int       @default(0)
+  updatedAt   DateTime  @updatedAt
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item        Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, itemId])
+  @@index([itemId])
+  @@map("stock_balances")
+}
+
+/// جهاز متسلسل — وحدة واحدة
+model DeviceUnit {
+  id               String   @id @default(uuid()) @db.Uuid
+  itemId           String   @db.Uuid
+  serial           String
+  /// in_stock | issued | installed | faulty | scrapped
+  status           String   @default("in_stock")
+  /// حامل الجهاز حالياً (فني) — UUID من db_core
+  holderUserId     String?  @db.Uuid
+  /// أمر عمل صيانة مرتبط بالصرف — UUID من db_maintenance
+  workOrderId      String?  @db.Uuid
+  /// أصل صيانة عند التركيب — UUID من db_maintenance.assets
+  installedAssetId String?  @db.Uuid
+  notes            String   @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  item             Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  lines            StockDocumentLine[]
+  movements        StockMovement[]
+
+  @@unique([serial])
+  @@index([itemId])
+  @@index([status])
+  @@index([holderUserId])
+  @@index([workOrderId])
+  @@index([installedAssetId])
+  @@map("device_units")
+}
+
+/// مستند توريد / صرف / إرجاع / تعديل
+model StockDocument {
+  id              String              @id @default(uuid()) @db.Uuid
+  number          Int                 @unique @default(autoincrement())
+  warehouseId     String              @db.Uuid
+  /// receipt | issue | return | adjustment
+  type            String
+  /// draft | posted | cancelled
+  status          String              @default("draft")
+  note            String              @default("")
+  /// لمن صُرف — UUID مستخدم
+  issuedToUserId  String?             @db.Uuid
+  /// ربط أمر عمل صيانة
+  workOrderId     String?             @db.Uuid
+  /// ربط طلب قطع
+  partsRequestId  String?             @db.Uuid
+  createdByUserId String              @db.Uuid
+  postedByUserId  String?             @db.Uuid
+  postedAt        DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  warehouse       Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  lines           StockDocumentLine[]
+  movements       StockMovement[]
+
+  @@index([type])
+  @@index([status])
+  @@index([warehouseId])
+  @@index([workOrderId])
+  @@index([issuedToUserId])
+  @@index([createdAt])
+  @@map("stock_documents")
+}
+
+model StockDocumentLine {
+  id           String        @id @default(uuid()) @db.Uuid
+  documentId   String        @db.Uuid
+  itemId       String        @db.Uuid
+  quantity     Int           @default(1)
+  /// للجهاز المتسلسل عند الصرف/الإرجاع
+  deviceUnitId String?       @db.Uuid
+  /// عند التوريد: رقم تسلسلي جديد قبل إنشاء الجهاز
+  serial       String?
+  note         String        @default("")
+  document     StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  item         Item          @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  deviceUnit   DeviceUnit?   @relation(fields: [deviceUnitId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@index([itemId])
+  @@index([deviceUnitId])
+  @@map("stock_document_lines")
+}
+
+/// دفتر حركات — append-only
+model StockMovement {
+  id           String         @id @default(uuid()) @db.Uuid
+  itemId       String         @db.Uuid
+  deviceUnitId String?        @db.Uuid
+  documentId   String?        @db.Uuid
+  /// receipt | issue | return | adjustment
+  type         String
+  delta        Int
+  balanceAfter Int
+  actorId      String         @db.Uuid
+  note         String         @default("")
+  createdAt    DateTime       @default(now())
+  item         Item           @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  deviceUnit   DeviceUnit?    @relation(fields: [deviceUnitId], references: [id], onDelete: SetNull)
+  document     StockDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([itemId, createdAt])
+  @@index([deviceUnitId])
+  @@index([documentId])
+  @@index([type])
+  @@index([actorId])
+  @@map("stock_movements")
+}

@@ -39,6 +39,7 @@ export type ViewingReportsDayRow = {
   day: string;
   sessions: number;
   durationSec: number;
+  uploadedBytes: string;
   downloadedBytes: string;
   channels: number;
 };

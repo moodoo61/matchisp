@@ -62,10 +62,25 @@ export function getPublicChannelPlaybackReady(channelId: string) {
   );
 }
 
-export function listPublicTodayMatches() {
-  return publicFetch<PublicSportMatch[]>(
-    '/api/public/live/sports-events/matches/today',
-  );
+export type PublicTodayMatchesResponse = {
+  timezone: string;
+  matches: PublicSportMatch[];
+};
+
+/** مباريات اليوم (+أمس/غداً) مع المنطقة الزمنية من إعدادات الأحداث الرياضية */
+export async function listPublicTodayMatches(): Promise<PublicTodayMatchesResponse> {
+  const data = await publicFetch<
+    PublicTodayMatchesResponse | PublicSportMatch[]
+  >('/api/public/live/sports-events/matches/today');
+
+  // توافق خلفي إن أعاد الخادم قائمة فقط
+  if (Array.isArray(data)) {
+    return { timezone: 'Asia/Baghdad', matches: data };
+  }
+  return {
+    timezone: data.timezone || 'Asia/Baghdad',
+    matches: Array.isArray(data.matches) ? data.matches : [],
+  };
 }
 
 /** إعدادات صفحة المشاهدة — لوحة التحكم */

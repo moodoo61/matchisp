@@ -39,6 +39,7 @@ export type ViewingReportsDayRow = {
   day: string;
   sessions: number;
   durationSec: number;
+  uploadedBytes: string;
   downloadedBytes: string;
   channels: number;
 };
@@ -199,6 +200,7 @@ export class ViewingReportsService {
       select: {
         streamName: true,
         durationSec: true,
+        uploadedBytes: true,
         downloadedBytes: true,
         endedAt: true,
       },
@@ -209,6 +211,7 @@ export class ViewingReportsService {
       {
         sessions: number;
         durationSec: number;
+        uploadedBytes: bigint;
         downloadedBytes: bigint;
         channels: Set<string>;
       }
@@ -219,11 +222,13 @@ export class ViewingReportsService {
       const cur = map.get(day) ?? {
         sessions: 0,
         durationSec: 0,
+        uploadedBytes: 0n,
         downloadedBytes: 0n,
         channels: new Set<string>(),
       };
       cur.sessions += 1;
       cur.durationSec += row.durationSec;
+      cur.uploadedBytes += row.uploadedBytes;
       cur.downloadedBytes += row.downloadedBytes;
       cur.channels.add(row.streamName);
       map.set(day, cur);
@@ -234,6 +239,7 @@ export class ViewingReportsService {
         day,
         sessions: v.sessions,
         durationSec: v.durationSec,
+        uploadedBytes: v.uploadedBytes.toString(),
         downloadedBytes: v.downloadedBytes.toString(),
         channels: v.channels.size,
       }))

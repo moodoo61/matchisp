@@ -43,7 +43,7 @@ export class DashboardService {
         },
         { key: 'live', name: 'البث المباشر', status: 'in_progress' },
         { key: 'magazine', name: 'المجلة', status: 'scaffolded' },
-        { key: 'maintenance', name: 'الصيانة', status: 'scaffolded' },
+        { key: 'maintenance', name: 'الصيانة', status: 'active' },
       ],
     };
   }

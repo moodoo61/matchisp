@@ -32,6 +32,119 @@
   font-weight: 400;
 }
 
+.sidebar-user {
+  position: relative;
+  margin-top: -0.5rem;
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+  padding: 0.15rem 0.1rem 0.25rem;
+}
+
+.sidebar-user-name {
+  display: block;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.sidebar-bell-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.sidebar-bell-badge {
+  position: absolute;
+  top: -0.2rem;
+  inset-inline-start: -0.15rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: #d97706;
+  color: #111;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.sidebar-notifications {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 40;
+  background: var(--sidebar-sub-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.65rem;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  max-height: 320px;
+  overflow: auto;
+}
+
+.sidebar-notifications-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sidebar-notifications-head .btn {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  min-height: auto;
+}
+
+.sidebar-notifications-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sidebar-notification-item {
+  width: 100%;
+  text-align: start;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.55rem 0.6rem;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.sidebar-notification-item:hover {
+  background: var(--sidebar-sub-active);
+}
+
+.sidebar-notification-item.unread {
+  border-color: rgba(217, 119, 6, 0.45);
+  background: rgba(217, 119, 6, 0.08);
+}
+
+.sidebar-notification-item strong {
+  font-size: 0.88rem;
+}
+
+.sidebar-notification-item span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.sidebar-notification-item time {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .nav {
   display: flex;
   flex-direction: column;

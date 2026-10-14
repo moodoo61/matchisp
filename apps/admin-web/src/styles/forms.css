@@ -5,6 +5,112 @@
   max-width: 420px;
 }
 
+.form.form-wide {
+  max-width: 640px;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.form-display {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.form-display-label {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.form-display-value {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 0.7rem 0.8rem;
+  min-height: 2.65rem;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .form-grid-2,
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inbox-task-detail {
+  gap: 1rem;
+}
+
+.inbox-replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.inbox-reply {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: var(--bg);
+}
+
+.inbox-reply-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.inbox-reply-meta time {
+  color: var(--muted);
+}
+
+.inbox-reply p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.inbox-reply-form {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.inbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inbox-attachments {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.inbox-attachments a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .form label {
   display: grid;
   gap: 0.35rem;
@@ -28,6 +134,21 @@
   align-items: center;
   gap: 0.5rem;
   flex-direction: row !important;
+}
+
+.form fieldset {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.form fieldset legend {
+  color: var(--muted);
+  font-size: 0.92rem;
+  padding: 0 0.25rem;
 }
 
 .field-row {

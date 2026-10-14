@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@isp/shared';
 import { clearTokens, getTokens, api } from '@/lib/api';
 import { clearAuthUser } from '@/lib/authSession';
 import { usePermissions } from '@/lib/usePermissions';
+import { SidebarUserNotifications } from '@/features/maintenance/notifications/components/SidebarUserNotifications';
 import { SidebarNav, ToastProvider, type NavItem } from '@/shared/ui';
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -194,7 +195,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       if (liveChildren.length) {
         items.push({
           href: '/live',
-          label: 'خـ.البث المباشر',
+          label: 'البث المباشر',
           children: liveChildren,
         });
       }
@@ -211,6 +212,71 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       ])
     ) {
       items.push({ href: '/partners', label: 'الوكلاء' });
+    }
+    if (
+      canAny([
+        PERMISSIONS.MAINTENANCE_READ,
+        PERMISSIONS.MAINTENANCE_REQUEST_CREATE,
+        PERMISSIONS.MAINTENANCE_TRIAGE,
+        PERMISSIONS.MAINTENANCE_DISPATCH,
+        PERMISSIONS.MAINTENANCE_EXECUTE,
+        PERMISSIONS.MAINTENANCE_PARTS,
+        PERMISSIONS.MAINTENANCE_SUPERVISE,
+      ])
+    ) {
+      const maintenanceChildren: NonNullable<NavItem['children']> = [
+        { href: '/maintenance', label: 'البلاغات' },
+        { href: '/maintenance/work-orders', label: 'أوامر العمل' },
+        { href: '/maintenance/history', label: 'سجل الصيانة' },
+      ];
+      if (can(PERMISSIONS.MAINTENANCE_EXECUTE)) {
+        maintenanceChildren.push({
+          href: '/maintenance/my-work',
+          label: 'أوامري',
+        });
+      }
+      if (
+        canAny([
+          PERMISSIONS.MAINTENANCE_PARTS,
+          PERMISSIONS.MAINTENANCE_SUPERVISE,
+        ])
+      ) {
+        maintenanceChildren.push({
+          href: '/maintenance/parts',
+          label: 'طلبات القطع',
+        });
+      }
+      if (can(PERMISSIONS.MAINTENANCE_SUPERVISE)) {
+        maintenanceChildren.push({
+          href: '/maintenance/review',
+          label: 'المراجعة',
+        });
+      }
+      items.push({
+        href: '/maintenance',
+        label: 'الصيانة',
+        children: maintenanceChildren,
+      });
+    }
+    if (
+      canAny([
+        PERMISSIONS.INVENTORY_READ,
+        PERMISSIONS.INVENTORY_MANAGE,
+        PERMISSIONS.INVENTORY_RECEIVE,
+        PERMISSIONS.INVENTORY_ISSUE,
+      ])
+    ) {
+      items.push({
+        href: '/inventory',
+        label: 'المخازن',
+        children: [
+          { href: '/inventory', label: 'لوحة المخزن' },
+          { href: '/inventory/items', label: 'الأصناف' },
+          { href: '/inventory/devices', label: 'الأجهزة' },
+          { href: '/inventory/documents', label: 'توريد وصرف' },
+          { href: '/inventory/movements', label: 'سجل الحركات' },
+        ],
+      });
     }
     if (
       canAny([
@@ -371,6 +437,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             ISP Admin
             <span>نظام إدارة مكتب خدمات إنترنت</span>
           </div>
+          <SidebarUserNotifications />
           <SidebarNav items={navItems} />
           <button className="btn secondary" type="button" onClick={logout}>
             تسجيل الخروج

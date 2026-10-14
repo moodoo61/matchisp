@@ -164,6 +164,30 @@ export const PERMISSION_TREE: readonly PermissionTreeNode[] = [
     ],
   },
   {
+    key: 'maintenance',
+    label: 'الصيانة',
+    codes: [
+      'maintenance:read',
+      'maintenance.request:create',
+      'maintenance:triage',
+      'maintenance:dispatch',
+      'maintenance:execute',
+      'maintenance:parts',
+      'maintenance:supervise',
+      'maintenance:delete',
+    ],
+  },
+  {
+    key: 'inventory',
+    label: 'المخازن',
+    codes: [
+      'inventory:read',
+      'inventory:manage',
+      'inventory:receive',
+      'inventory:issue',
+    ],
+  },
+  {
     key: 'service_monitor',
     label: 'مراقب خدمات',
     codes: [
@@ -350,6 +374,8 @@ export const PERMISSION_SECTION_ORDER = [
   'live',
   'team',
   'partners',
+  'maintenance',
+  'inventory',
   'service_monitor',
   'settings',
   'network',
@@ -367,6 +393,8 @@ export const PERMISSION_SECTION_LABELS: Record<PermissionSectionKey, string> = {
   live: 'البث المباشر',
   team: 'الفريق',
   partners: 'الوكلاء',
+  maintenance: 'الصيانة',
+  inventory: 'المخازن',
   service_monitor: 'مراقب الخدمات',
   settings: 'الإعدادات',
   network: 'الشبكة',

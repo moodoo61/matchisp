@@ -10,6 +10,7 @@ databases=(
   db_magazine
   db_maintenance
   db_partners
+  db_tasks
   db_inventory
   db_orders
   db_support

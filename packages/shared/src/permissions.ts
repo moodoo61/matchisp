@@ -110,6 +110,22 @@ export const PERMISSIONS = {
   PARTNERS_UPDATE: 'partners:update',
   PARTNERS_DELETE: 'partners:delete',
 
+  /** الصيانة — بلاغات وأوامر عمل ميدانية */
+  MAINTENANCE_READ: 'maintenance:read',
+  MAINTENANCE_REQUEST_CREATE: 'maintenance.request:create',
+  MAINTENANCE_TRIAGE: 'maintenance:triage',
+  MAINTENANCE_DISPATCH: 'maintenance:dispatch',
+  MAINTENANCE_EXECUTE: 'maintenance:execute',
+  MAINTENANCE_PARTS: 'maintenance:parts',
+  MAINTENANCE_SUPERVISE: 'maintenance:supervise',
+  MAINTENANCE_DELETE: 'maintenance:delete',
+
+  /** المخازن — أصناف وأجهزة وتوريد/صرف */
+  INVENTORY_READ: 'inventory:read',
+  INVENTORY_MANAGE: 'inventory:manage',
+  INVENTORY_RECEIVE: 'inventory:receive',
+  INVENTORY_ISSUE: 'inventory:issue',
+
   /** مراقب خدمات — متابعة MistServer / LibreNMS / Asterisk */
   SERVICE_MONITOR_READ: 'service_monitor:read',
   /** اختصار: كل مهام مراقب الخدمات */
@@ -240,6 +256,18 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'partners:create': 'إضافة وكيل',
   'partners:update': 'تعديل وكيل',
   'partners:delete': 'حذف وكيل',
+  'maintenance:read': 'عرض الصيانة وأوامر العمل',
+  'maintenance.request:create': 'إنشاء بلاغ صيانة',
+  'maintenance:triage': 'فرز البلاغات وتحويلها لأوامر عمل',
+  'maintenance:dispatch': 'توزيع أوامر العمل على الفنيين',
+  'maintenance:execute': 'تنفيذ أوامر العمل (قبول/بدء/إنجاز)',
+  'maintenance:parts': 'إدارة طلبات قطع الغيار والصرف',
+  'maintenance:supervise': 'مراجعة وإغلاق أوامر العمل',
+  'maintenance:delete': 'حذف البلاغات وأوامر العمل المرتبطة',
+  'inventory:read': 'عرض المخزن والأرصدة والأجهزة',
+  'inventory:manage': 'إدارة الأصناف والتعديلات المخزنية',
+  'inventory:receive': 'أوامر توريد وإرجاع للمخزن',
+  'inventory:issue': 'أوامر صرف من المخزن',
   'service_monitor:read': 'عرض مراقب الخدمات',
   'service_monitor:manage': 'إدارة مراقب الخدمات (الكل)',
   'service_monitor:update': 'تعديل إعدادات الخدمة المراقبة',
@@ -446,6 +474,41 @@ export function hasPermission(
         userPermissions.includes(PERMISSIONS.SERVICE_MONITOR_MANAGE) ||
         userPermissions.includes(PERMISSIONS.SERVICE_MONITOR_UPDATE)
       );
+    }
+  }
+
+  if (required.startsWith('maintenance')) {
+    if (userPermissions.includes(PERMISSIONS.MAINTENANCE_SUPERVISE)) {
+      return true;
+    }
+    if (
+      required === PERMISSIONS.MAINTENANCE_DELETE &&
+      userPermissions.includes(PERMISSIONS.MAINTENANCE_DELETE)
+    ) {
+      return true;
+    }
+    if (
+      required === PERMISSIONS.MAINTENANCE_READ &&
+      (userPermissions.includes(PERMISSIONS.MAINTENANCE_TRIAGE) ||
+        userPermissions.includes(PERMISSIONS.MAINTENANCE_DISPATCH) ||
+        userPermissions.includes(PERMISSIONS.MAINTENANCE_EXECUTE) ||
+        userPermissions.includes(PERMISSIONS.MAINTENANCE_PARTS) ||
+        userPermissions.includes(PERMISSIONS.MAINTENANCE_REQUEST_CREATE))
+    ) {
+      return true;
+    }
+  }
+
+  if (required.startsWith('inventory:')) {
+    if (userPermissions.includes(PERMISSIONS.INVENTORY_MANAGE)) {
+      return true;
+    }
+    if (
+      required === PERMISSIONS.INVENTORY_READ &&
+      (userPermissions.includes(PERMISSIONS.INVENTORY_RECEIVE) ||
+        userPermissions.includes(PERMISSIONS.INVENTORY_ISSUE))
+    ) {
+      return true;
     }
   }
 

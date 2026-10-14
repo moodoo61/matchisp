@@ -20,6 +20,25 @@ async function main() {
     });
   }
 
+  // إزالة صلاحيات أُلغيت من الكود (مثل نظام المهام القديم)
+  const allowed = new Set<string>(ALL_PERMISSIONS);
+  const obsolete = await prisma.permission.findMany({
+    where: { code: { notIn: [...allowed] } },
+    select: { id: true, code: true },
+  });
+  if (obsolete.length) {
+    await prisma.rolePermission.deleteMany({
+      where: { permissionId: { in: obsolete.map((p) => p.id) } },
+    });
+    await prisma.permission.deleteMany({
+      where: { id: { in: obsolete.map((p) => p.id) } },
+    });
+    // eslint-disable-next-line no-console
+    console.log(
+      `Removed obsolete permissions: ${obsolete.map((p) => p.code).join(', ')}`,
+    );
+  }
+
   const role = await prisma.role.upsert({
     where: { code: 'super_admin' },
     update: { name: 'مدير النظام', isSystem: true },

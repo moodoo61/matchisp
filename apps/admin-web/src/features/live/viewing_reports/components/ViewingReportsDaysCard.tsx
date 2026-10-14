@@ -112,6 +112,7 @@ export function ViewingReportsDaysCard() {
               <th>إجمالي الوقت</th>
               <th>القنوات</th>
               <th>إجمالي التحميل</th>
+              <th>إجمالي الرفع</th>
             </tr>
           </thead>
           <tbody>
@@ -129,18 +130,19 @@ export function ViewingReportsDaysCard() {
                 <td>{formatDuration(row.durationSec)}</td>
                 <td>{row.channels}</td>
                 <td dir="ltr">{formatBytes(row.downloadedBytes)}</td>
+                <td dir="ltr">{formatBytes(row.uploadedBytes)}</td>
               </tr>
             ))}
             {!days.length && !loading ? (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={6} className="muted">
                   لا توجد أيام في هذه الفترة
                 </td>
               </tr>
             ) : null}
             {loading && !days.length ? (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={6} className="muted">
                   جاري التحميل…
                 </td>
               </tr>

@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/api/generated/tasks"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_TASKS")
+}
+
+/// Placeholder — نظام المهام القديم أُزيل لصالح الصيانة (أوامر العمل)
+model SectionMeta {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now())
+
+  @@map("_section_meta")
+}

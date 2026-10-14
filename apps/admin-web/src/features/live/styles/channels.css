@@ -176,3 +176,39 @@
   opacity: 0.55;
   cursor: default;
 }
+
+/* المصدر / الجهاز — مخفي حتى تمرير المؤشر */
+.source-reveal {
+  display: inline-flex;
+  align-items: center;
+  max-width: 16rem;
+  min-height: 1.35em;
+  cursor: default;
+}
+
+.source-reveal-mask {
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  user-select: none;
+}
+
+.source-reveal-value {
+  display: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 16rem;
+  font-size: 0.88em;
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
+
+.source-reveal:hover .source-reveal-mask,
+.source-reveal:focus-within .source-reveal-mask {
+  display: none;
+}
+
+.source-reveal:hover .source-reveal-value,
+.source-reveal:focus-within .source-reveal-value {
+  display: inline;
+}

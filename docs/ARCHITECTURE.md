@@ -44,9 +44,10 @@ docs/                             الخطة + المعمارية + تنظيم �
 | `db_break` | الاستراحة |
 | `db_comms` | الاتصالات المحلية |
 | `db_magazine` | المجلة / اشتراكات الشبكات |
-| `db_maintenance` | الصيانة |
+| `db_maintenance` | الصيانة — بلاغات وأوامر عمل ميدانية |
 | `db_partners` | الوكلاء والموردين |
-| `db_inventory` | مشتريات ومخازن |
+| `db_tasks` | مُهمَل (placeholder) — استُبدل بـ `db_maintenance` |
+| `db_inventory` | المخازن — أصناف وأجهزة متسلسلة وتوريد/صرف |
 | `db_orders` | طلبات الكروت |
 | `db_support` | خدمة العملاء |
 | `db_expenses` | النفقات |
@@ -91,12 +92,24 @@ Guard عام JWT + Guard صلاحيات RBAC
 - استقبال عام: `POST /api/public/live/viewing-reports/user-end`
 - صلاحيات: `live.viewing_reports:read|update|delete|manage`
 
+## قسم المخازن (منفّذ — مرحلة أولى)
+- الاسم الظاهر: **المخازن** (قاعدة: `db_inventory`) — تصميم: [INVENTORY_DESIGN.md](./INVENTORY_DESIGN.md)
+- مخزن واحد + أصناف (استهلاكي / متسلسل) + أجهزة بأرقام تسلسلية
+- أوامر توريد / صرف / إرجاع / تعديل (مسودة → اعتماد) + دفتر حركات
+- تتبع: لدى من الجهاز، ربط اختياري بأمر عمل صيانة
+- واجهة Admin: `/inventory` و `/inventory/items|devices|documents|movements`
+- صلاحيات: `inventory:read|manage|receive|issue`
+
 ## قسم الوكلاء (منفّذ)
 - الاسم الظاهر: **الوكلاء** (قاعدة البيانات التقنية: `db_partners`)
 - حقول الوكيل: اسم الوكيل، اسم المحل، العنوان، رقم الهاتف
 - واجهة Admin: `/partners`
 - API: `GET|POST /partners/agents` و `GET|PATCH|DELETE /partners/agents/:id`
 - صلاحيات: `partners:read|create|update|delete`
+
+## قسم الصيانة (منفّذ)
+- الاسم الظاهر: **الصيانة** (قاعدة: `db_maintenance`) — بلاغات + أوامر عمل؛ التصميم في [WORK_ORDERS_DESIGN.md](./WORK_ORDERS_DESIGN.md)
+- نظام المهام القديم (`/tasks` و `/task-management`) أُزيل بالكامل
 
 ## قسم مراقب خدمات (منفّذ — هيكل أولي)
 - الاسم الظاهر: **مراقب خدمات** (قاعدة البيانات التقنية: `db_service_monitor`)

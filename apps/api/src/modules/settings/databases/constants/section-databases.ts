@@ -58,7 +58,7 @@ export const SECTION_DATABASES: readonly SectionDatabaseDef[] = [
     dbName: 'db_maintenance',
     envKey: 'DATABASE_URL_MAINTENANCE',
     label: 'الصيانة',
-    description: 'بلاغات الصيانة',
+    description: 'بلاغات وأوامر العمل الميدانية',
   },
   {
     key: 'partners',
@@ -68,11 +68,18 @@ export const SECTION_DATABASES: readonly SectionDatabaseDef[] = [
     description: 'بيانات الوكلاء',
   },
   {
+    key: 'tasks',
+    dbName: 'db_tasks',
+    envKey: 'DATABASE_URL_TASKS',
+    label: 'المهام (مُهمَل)',
+    description: 'قاعدة قديمة فارغة — استُبدلت بالصيانة',
+  },
+  {
     key: 'inventory',
     dbName: 'db_inventory',
     envKey: 'DATABASE_URL_INVENTORY',
     label: 'المخازن',
-    description: 'مشتريات ومخازن',
+    description: 'أصناف وأجهزة وتوريد/صرف',
   },
   {
     key: 'orders',

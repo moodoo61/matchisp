@@ -7,6 +7,7 @@ import { PrismaClient as CommsClient } from '../../generated/comms';
 import { PrismaClient as MagazineClient } from '../../generated/magazine';
 import { PrismaClient as MaintenanceClient } from '../../generated/maintenance';
 import { PrismaClient as PartnersClient } from '../../generated/partners';
+import { PrismaClient as TasksClient } from '../../generated/tasks';
 import { PrismaClient as InventoryClient } from '../../generated/inventory';
 import { PrismaClient as OrdersClient } from '../../generated/orders';
 import { PrismaClient as SupportClient } from '../../generated/support';
@@ -90,6 +91,18 @@ export class PrismaMaintenanceService
 
 export class PrismaPartnersService
   extends PartnersClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  async onModuleInit() {
+    await this.$connect();
+  }
+  async onModuleDestroy() {
+    await this.$disconnect();
+  }
+}
+
+export class PrismaTasksService
+  extends TasksClient
   implements OnModuleInit, OnModuleDestroy
 {
   async onModuleInit() {
@@ -201,6 +214,7 @@ export class PrismaNetworkService
     PrismaMagazineService,
     PrismaMaintenanceService,
     PrismaPartnersService,
+    PrismaTasksService,
     PrismaInventoryService,
     PrismaOrdersService,
     PrismaSupportService,
@@ -219,6 +233,7 @@ export class PrismaNetworkService
     PrismaMagazineService,
     PrismaMaintenanceService,
     PrismaPartnersService,
+    PrismaTasksService,
     PrismaInventoryService,
     PrismaOrdersService,
     PrismaSupportService,

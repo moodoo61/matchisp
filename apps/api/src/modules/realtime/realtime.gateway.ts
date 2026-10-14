@@ -1,10 +1,11 @@
 import {
+  ConnectedSocket,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { Public } from '../../common/guards';
 
 function resolveCorsOrigins(): string | string[] | boolean {
@@ -40,7 +41,28 @@ export class RealtimeGateway {
     return { event: 'pong', data };
   }
 
+  /** ربط الاتصال بغرفة المستخدم لاستقبال إشعاراته */
+  @Public()
+  @SubscribeMessage('join_user')
+  handleJoinUser(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { userId?: string },
+  ) {
+    const userId = typeof data?.userId === 'string' ? data.userId.trim() : '';
+    if (!userId) return { ok: false };
+    void client.join(userRoom(userId));
+    return { ok: true };
+  }
+
   emitNotification(payload: Record<string, unknown>) {
     this.server.emit('notification', payload);
   }
+
+  emitToUser(userId: string, event: string, payload: Record<string, unknown>) {
+    this.server.to(userRoom(userId)).emit(event, payload);
+  }
+}
+
+function userRoom(userId: string) {
+  return `user:${userId}`;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Ref } from 'react';
+import { DEFAULT_SCHEDULE_TIMEZONE } from '../../lib/scheduleTimezone';
 import type { PublicSportMatch } from '../../types';
 import {
   formatGoalLine,
@@ -13,8 +13,7 @@ import {
 
 type Props = {
   match: PublicSportMatch;
-  nearest: boolean;
-  cardRef?: Ref<HTMLDivElement>;
+  timeZone?: string;
   onSelectChannel?: (channelId: string) => void;
 };
 
@@ -40,8 +39,7 @@ function TeamLogo({
 
 export function MatchScheduleCard({
   match,
-  nearest,
-  cardRef,
+  timeZone = DEFAULT_SCHEDULE_TIMEZONE,
   onSelectChannel,
 }: Props) {
   const homeGoals = goalsForSide(match.goals, true);
@@ -64,10 +62,8 @@ export function MatchScheduleCard({
 
   return (
     <div
-      ref={cardRef}
-      className={`cl-schedule-card tone-${tone}${
-        nearest ? ' is-nearest' : ''
-      }`}
+      data-schedule-match-id={match.id}
+      className={`cl-schedule-card tone-${tone}`}
     >
       <div className="cl-schedule-card-main">
         <span className="cl-schedule-cell">
@@ -148,7 +144,9 @@ export function MatchScheduleCard({
             <span className="cl-schedule-channel is-unlinked">بدون قناة</span>
           ) : null}
         </span>
-        <span className="cl-schedule-tail-time">{formatMatchTime(match.kickoffAt)}</span>
+        <span className="cl-schedule-tail-time">
+          {formatMatchTime(match.kickoffAt, timeZone)}
+        </span>
         <span className="cl-schedule-tail-status">{statusText}</span>
       </footer>
     </div>

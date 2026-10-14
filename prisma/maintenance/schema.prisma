@@ -16,3 +16,174 @@ model SectionMeta {
 
   @@map("_section_meta")
 }
+
+/// أصل / موقع / مشترك — مرجع تاريخ الأوامر
+model Asset {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// subscriber | device | site | address | other
+  kind        String
+  label       String
+  externalRef String?
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  requests    ServiceRequest[]
+  workOrders  WorkOrder[]
+
+  @@index([kind])
+  @@index([label])
+  @@map("assets")
+}
+
+/// بلاغ / طلب خدمة قبل اعتماد التنفيذ
+model ServiceRequest {
+  id             String      @id @default(uuid()) @db.Uuid
+  number         Int         @unique @default(autoincrement())
+  title          String
+  description    String      @default("")
+  /// draft | submitted | triaged | rejected | converted | closed
+  status         String      @default("draft")
+  /// install | corrective | preventive | outage
+  workType       String
+  /// p1 | p2 | p3 | p4
+  priority       String      @default("p3")
+  assetId        String?     @db.Uuid
+  locationText   String      @default("")
+  reporterUserId String      @db.Uuid
+  triageNotes    String      @default("")
+  rejectReason   String?
+  submittedAt    DateTime?
+  closedAt       DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  asset          Asset?      @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  workOrders     WorkOrder[]
+
+  @@index([status])
+  @@index([workType])
+  @@index([priority])
+  @@index([reporterUserId])
+  @@index([assetId])
+  @@map("service_requests")
+}
+
+/// أمر عمل — وحدة التنفيذ الميداني
+model WorkOrder {
+  id                   String           @id @default(uuid()) @db.Uuid
+  number               Int              @unique @default(autoincrement())
+  /// install | corrective | preventive | outage
+  type                 String
+  /// p1 | p2 | p3 | p4
+  priority             String           @default("p3")
+  /// draft | approved | assigned | accepted | in_progress | waiting_parts | waiting_access | done_field | rework | closed | cancelled
+  status               String           @default("draft")
+  title                String
+  description          String           @default("")
+  requestId            String?          @db.Uuid
+  assetId              String?          @db.Uuid
+  locationText         String           @default("")
+  assigneeUserId       String?          @db.Uuid
+  createdByUserId      String           @db.Uuid
+  respondBy            DateTime?
+  resolveBy            DateTime?
+  startedAt            DateTime?
+  fieldFinishedAt      DateTime?
+  closedAt             DateTime?
+  completionNotes      String           @default("")
+  rootCause            String           @default("")
+  /// ملاحظات اعتماد المشرف عند الإغلاق
+  reviewNotes          String           @default("")
+  reviewedByUserId     String?          @db.Uuid
+  reviewedAt           DateTime?
+  cancelReason         String?
+  reworkReason         String?
+  assignmentRejectReason String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  request              ServiceRequest?  @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  asset                Asset?           @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  statusEvents         StatusEvent[]
+  partsRequests        PartsRequest[]
+  attachments          WorkOrderAttachment[]
+  notifications        MaintenanceNotification[]
+
+  @@index([status])
+  @@index([type])
+  @@index([priority])
+  @@index([assigneeUserId])
+  @@index([createdByUserId])
+  @@index([requestId])
+  @@index([assetId])
+  @@index([respondBy])
+  @@index([resolveBy])
+  @@index([reviewedByUserId])
+  @@map("work_orders")
+}
+
+/// طلب قطع / مواد مرتبط بأمر العمل
+model PartsRequest {
+  id            String    @id @default(uuid()) @db.Uuid
+  workOrderId   String    @db.Uuid
+  requestedById String    @db.Uuid
+  description   String
+  quantity      Int       @default(1)
+  /// open | acknowledged | fulfilled | rejected
+  status        String    @default("open")
+  rejectReason  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workOrder     WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId, createdAt])
+  @@index([requestedById])
+  @@index([status])
+  @@map("parts_requests")
+}
+
+/// سجل انتقالات حالة أمر العمل — append-only
+model StatusEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  workOrderId String    @db.Uuid
+  fromStatus  String
+  toStatus    String
+  actorId     String    @db.Uuid
+  reason      String?
+  createdAt   DateTime  @default(now())
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId, createdAt])
+  @@index([actorId])
+  @@map("status_events")
+}
+
+/// صور مرفقة أثناء التنفيذ / للمراجعة
+model WorkOrderAttachment {
+  id           String    @id @default(uuid()) @db.Uuid
+  workOrderId  String    @db.Uuid
+  uploadedById String    @db.Uuid
+  url          String
+  originalName String
+  createdAt    DateTime  @default(now())
+  workOrder    WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId, createdAt])
+  @@index([uploadedById])
+  @@map("work_order_attachments")
+}
+
+/// إشعارات قسم الصيانة
+model MaintenanceNotification {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  workOrderId String?   @db.Uuid
+  title       String
+  body        String
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  workOrder   WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([workOrderId])
+  @@map("maintenance_notifications")
+}

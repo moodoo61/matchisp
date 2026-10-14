@@ -103,6 +103,7 @@ export function ViewingReportsDaySessionsCard({ day }: Props) {
               <th>القناة</th>
               <th>المدة</th>
               <th>التحميل</th>
+              <th>الرفع</th>
               <th>البروتوكول</th>
               <th>العنوان</th>
               <th>انتهت</th>
@@ -114,6 +115,7 @@ export function ViewingReportsDaySessionsCard({ day }: Props) {
                 <td>{row.channelLabel || row.streamName}</td>
                 <td>{formatDuration(row.durationSec)}</td>
                 <td dir="ltr">{formatBytes(row.downloadedBytes)}</td>
+                <td dir="ltr">{formatBytes(row.uploadedBytes)}</td>
                 <td>{row.connector || '—'}</td>
                 <td dir="ltr">{row.connectionAddress || '—'}</td>
                 <td>
@@ -125,14 +127,14 @@ export function ViewingReportsDaySessionsCard({ day }: Props) {
             ))}
             {!items.length && !loading ? (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   لا توجد جلسات لهذا اليوم
                 </td>
               </tr>
             ) : null}
             {loading && !items.length ? (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   جاري التحميل…
                 </td>
               </tr>

@@ -26,8 +26,8 @@ export function useLiveMatchLines() {
 
     const load = () => {
       void listPublicTodayMatches()
-        .then((list) => {
-          if (!cancelled) setItems(list);
+        .then((res) => {
+          if (!cancelled) setItems(res.matches);
         })
         .catch(() => {
           if (!cancelled) setItems([]);

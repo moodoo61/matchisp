@@ -25,6 +25,7 @@ import {
   formatMistDuration,
 } from './mist-duration';
 import { mistStatusLabel } from './mist-status';
+import { SourceRevealCell } from './SourceRevealCell';
 
 type Props = {
   channels: Channel[];
@@ -78,11 +79,14 @@ export function ChannelsTable({
     {
       key: 'source',
       header: 'المصدر / الجهاز',
-      render: (row) =>
-        row.type === 'IPTV'
-          ? row.sourceUrl || '—'
-          : [row.videoDevice, row.audioDevice].filter(Boolean).join(' · ') ||
-            '—',
+      render: (row) => {
+        const value =
+          row.type === 'IPTV'
+            ? row.sourceUrl || '—'
+            : [row.videoDevice, row.audioDevice].filter(Boolean).join(' · ') ||
+              '—';
+        return <SourceRevealCell value={value} />;
+      },
     },
     {
       key: 'status',

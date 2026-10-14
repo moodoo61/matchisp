@@ -34,10 +34,15 @@ export class SportMatchesService {
     });
   }
 
-  /** مباريات الجدول للواجهة العامة (صفحة المشاهدة) — أمس/اليوم/غداً */
+  /**
+   * مباريات الجدول للواجهة العامة (صفحة المشاهدة) — أمس/اليوم/غداً
+   * يُرجع المنطقة الزمنية مع القائمة ليطابق العرض والتمرير توقيت الإعدادات.
+   */
   async listTodayPublic() {
     const settings = await this.settings.getSettings();
-    if (!settings.enabled) return [];
+    if (!settings.enabled) {
+      return { timezone: settings.timezone, matches: [] as const };
+    }
 
     const { timezone } = settings;
     const now = new Date();
@@ -61,7 +66,7 @@ export class SportMatchesService {
     );
     const channelById = new Map(channels.map((c) => [c.id, c]));
 
-    return rows
+    const matches = rows
       .map((row) => {
         const resolved = resolveMatchChannels(
           row.channelLabels,
@@ -99,6 +104,8 @@ export class SportMatchesService {
         };
       })
       .filter((row): row is NonNullable<typeof row> => row != null);
+
+    return { timezone, matches };
   }
 
   list() {

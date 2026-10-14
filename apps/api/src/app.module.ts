@@ -14,6 +14,8 @@ import { QueueModule } from './modules/queue/queue.module';
 import { PageManagementModule } from './modules/page_management/page_management.module';
 import { LiveModule } from './modules/live/live.module';
 import { PartnersModule } from './modules/partners/partners.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { ServiceMonitorModule } from './modules/service_monitor/service_monitor.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { NetworkModule } from './modules/network/network.module';
@@ -36,6 +38,8 @@ import { NetworkModule } from './modules/network/network.module';
     PageManagementModule,
     LiveModule,
     PartnersModule,
+    MaintenanceModule,
+    InventoryModule,
     ServiceMonitorModule,
     SettingsModule,
     NetworkModule,

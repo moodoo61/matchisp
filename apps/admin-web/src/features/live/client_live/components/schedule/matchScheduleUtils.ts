@@ -1,24 +1,38 @@
 import type { PublicSportMatch, PublicSportMatchGoal } from '../../types';
+import {
+  DEFAULT_SCHEDULE_TIMEZONE,
+  zonedDayKey,
+} from '../../lib/scheduleTimezone';
 
-export function formatMatchTime(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-}
-
-export function matchDateKey(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 'unknown';
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-export function formatMatchDateLabel(iso: string) {
+export function formatMatchTime(
+  iso: string,
+  timeZone: string = DEFAULT_SCHEDULE_TIMEZONE,
+) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
   return new Intl.DateTimeFormat('ar', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(d);
+}
+
+export function matchDateKey(
+  iso: string,
+  timeZone: string = DEFAULT_SCHEDULE_TIMEZONE,
+) {
+  return zonedDayKey(iso, timeZone);
+}
+
+export function formatMatchDateLabel(
+  iso: string,
+  timeZone: string = DEFAULT_SCHEDULE_TIMEZONE,
+) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return new Intl.DateTimeFormat('ar', {
+    timeZone,
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -162,27 +176,42 @@ export function formatGoalLine(goal: PublicSportMatchGoal) {
   return minute || player || 'هدف';
 }
 
+/**
+ * أقرب مباراة لـ «الآن» بالمقارنة المطلقة مع kickoffAt (ISO UTC).
+ * تفضيل المباريات الجارية، ثم مباريات «اليوم» في المنطقة الزمنية المعطاة.
+ */
 export function findNearestMatchId(
   items: PublicSportMatch[],
   nowMs: number,
+  timeZone: string = DEFAULT_SCHEDULE_TIMEZONE,
 ) {
   if (!items.length) return null;
-  let bestId = items[0].id;
+
+  const todayKey = zonedDayKey(nowMs, timeZone);
+  let bestId: string | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
+
   for (const match of items) {
     const kickoff = new Date(match.kickoffAt).getTime();
     if (Number.isNaN(kickoff)) continue;
+
     const elapsed = nowMs - kickoff;
-    const score =
-      elapsed >= 0 && elapsed <= 2 * 60 * 60 * 1000
-        ? elapsed / 4
-        : Math.abs(elapsed);
+    const abs = Math.abs(elapsed);
+    const isLive = elapsed >= 0 && elapsed <= LIVE_WINDOW_MS;
+    const isToday = matchDateKey(match.kickoffAt, timeZone) === todayKey;
+
+    // جارية أولاً، ثم أقرب زمنياً، مع تفضيل خفيف لمباريات اليوم
+    let score = abs;
+    if (isLive) score = abs * 0.2;
+    else if (isToday) score = abs * 0.85;
+
     if (score < bestScore) {
       bestScore = score;
       bestId = match.id;
     }
   }
-  return bestId;
+
+  return bestId ?? items[0]?.id ?? null;
 }
 
 export type MatchDateGroup = {
@@ -193,6 +222,7 @@ export type MatchDateGroup = {
 
 export function groupMatchesByDate(
   items: PublicSportMatch[],
+  timeZone: string = DEFAULT_SCHEDULE_TIMEZONE,
 ): MatchDateGroup[] {
   const sorted = [...items].sort(
     (a, b) =>
@@ -200,7 +230,7 @@ export function groupMatchesByDate(
   );
   const map = new Map<string, MatchDateGroup>();
   for (const match of sorted) {
-    const key = matchDateKey(match.kickoffAt);
+    const key = matchDateKey(match.kickoffAt, timeZone);
     const existing = map.get(key);
     if (existing) {
       existing.matches.push(match);
@@ -208,7 +238,7 @@ export function groupMatchesByDate(
     }
     map.set(key, {
       key,
-      label: formatMatchDateLabel(match.kickoffAt),
+      label: formatMatchDateLabel(match.kickoffAt, timeZone),
       matches: [match],
     });
   }
