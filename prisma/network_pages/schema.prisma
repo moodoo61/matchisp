@@ -119,3 +119,70 @@ model PageCardFlag {
 
   @@map("page_card_flags")
 }
+
+/// إعدادات صفحة المزيد العامة (singleton)
+model MorePageSettings {
+  id                     String   @id @default("default")
+  heroTitle              String   @default("خدماتنا")
+  heroSubtitle           String   @default("حلول إنترنت متقدمة وخدمات شاملة")
+  itemsSectionTitle      String   @default("خدماتنا")
+  itemsSectionSubtitle   String   @default("نقدم مجموعة واسعة من الخدمات لتلبية احتياجاتك")
+  aboutSectionTitle      String   @default("من نحن")
+  aboutSectionSubtitle   String   @default("تعرف على رؤيتنا ومهمتنا وقيمنا")
+  storySectionTitle      String   @default("قصة ماتش لينك")
+  storySectionSubtitle   String   @default("حكاية ماتش لينك: حين يتحوّل التعب إلى اتصال")
+  footerText             String   @default("خدمات متاحة")
+  updatedAt              DateTime @updatedAt
+
+  @@map("more_page_settings")
+}
+
+/// بطاقة محتوى — تبويب العناصر في صفحة المزيد
+model MorePageItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  imageUrl     String
+  description  String
+  /// خطوات التعليمات (مصفوفة نصوص) — اختياري
+  instructions Json?
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("more_page_items")
+}
+
+/// بطاقة «من نحن» — صفحة المزيد
+model MorePageAboutCard {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String
+  body      String
+  /// vision | mission | values | custom
+  iconKey   String   @default("custom")
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("more_page_about_cards")
+}
+
+/// مقطع قصة — صفحة المزيد
+model MorePageStoryBlock {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String?
+  body      String
+  imageUrl  String
+  /// intro | section | highlight | conclusion
+  variant   String   @default("section")
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("more_page_story_blocks")
+}

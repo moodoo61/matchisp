@@ -135,3 +135,116 @@ export type LoginServiceInput = {
   sortOrder?: number;
   isActive?: boolean;
 };
+
+export type MorePageSettings = {
+  id: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  itemsSectionTitle: string;
+  itemsSectionSubtitle: string;
+  aboutSectionTitle: string;
+  aboutSectionSubtitle: string;
+  storySectionTitle: string;
+  storySectionSubtitle: string;
+  footerText: string;
+  updatedAt: string;
+};
+
+export type MorePageSettingsInput = {
+  heroTitle?: string;
+  heroSubtitle?: string;
+  itemsSectionTitle?: string;
+  itemsSectionSubtitle?: string;
+  aboutSectionTitle?: string;
+  aboutSectionSubtitle?: string;
+  storySectionTitle?: string;
+  storySectionSubtitle?: string;
+  footerText?: string;
+};
+
+export type MorePageItem = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  description: string;
+  instructions: string[] | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MorePageItemInput = {
+  name: string;
+  imageUrl: string;
+  description: string;
+  instructions?: string[] | null;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+export type MorePageAboutIconKey = 'vision' | 'mission' | 'values' | 'custom';
+
+export const MORE_PAGE_ABOUT_ICON_LABELS: Record<MorePageAboutIconKey, string> =
+  {
+    vision: 'رؤية',
+    mission: 'مهمة',
+    values: 'قيم',
+    custom: 'مخصص',
+  };
+
+export type MorePageAboutCard = {
+  id: string;
+  title: string;
+  body: string;
+  iconKey: MorePageAboutIconKey | string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MorePageAboutInput = {
+  title: string;
+  body: string;
+  iconKey?: MorePageAboutIconKey | string;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+export type MorePageStoryVariant =
+  | 'intro'
+  | 'section'
+  | 'highlight'
+  | 'conclusion';
+
+export const MORE_PAGE_STORY_VARIANT_LABELS: Record<
+  MorePageStoryVariant,
+  string
+> = {
+  intro: 'مقدمة',
+  section: 'مقطع',
+  highlight: 'تمييز',
+  conclusion: 'خاتمة',
+};
+
+export type MorePageStoryBlock = {
+  id: string;
+  title: string | null;
+  body: string;
+  imageUrl: string;
+  variant: MorePageStoryVariant | string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MorePageStoryInput = {
+  title?: string | null;
+  body: string;
+  imageUrl: string;
+  variant?: MorePageStoryVariant | string;
+  sortOrder?: number;
+  isActive?: boolean;
+};

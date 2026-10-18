@@ -1,0 +1,19 @@
+/* عزل صفحة المزيد العامة عن لوحة التحكم — مطابق لأصل hotspotyy */
+html:has(.mp-app),
+body:has(.mp-app) {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  background: #f1f5f9 !important;
+  color: #1e293b;
+  color-scheme: light;
+}
+
+@media (max-width: 1024px) {
+  html:has(.mp-app),
+  body:has(.mp-app) {
+    overflow-y: auto;
+  }
+}

@@ -9,6 +9,14 @@ import type {
   LoginPackageInput,
   LoginService,
   LoginServiceInput,
+  MorePageAboutCard,
+  MorePageAboutInput,
+  MorePageItem,
+  MorePageItemInput,
+  MorePageSettings,
+  MorePageSettingsInput,
+  MorePageStoryBlock,
+  MorePageStoryInput,
   StatusService,
   StatusServiceInput,
   TextAd,
@@ -17,6 +25,7 @@ import type {
 
 const loginBase = '/pages/login';
 const statusBase = '/pages/status';
+const moreBase = '/pages/more';
 
 /** مسارات عامة لصفحات العملاء — تُعرض في لوحة الإدارة للنسخ */
 export const PUBLIC_LOGIN_ENDPOINTS = {
@@ -30,6 +39,9 @@ export const PUBLIC_LOGIN_ENDPOINTS = {
 export const PUBLIC_STATUS_ENDPOINTS = {
   services: '/api/public/status/services',
 } as const;
+
+/** رابط الصفحة العامة لـ «ص المزيد» */
+export const PUBLIC_MORE_PAGE_PATH = '/more';
 
 export function listImageAds() {
   return api<ImageAd[]>(`${loginBase}/images`);
@@ -210,5 +222,105 @@ export function updatePageCardFlag(key: string, isEnabled: boolean) {
   return api<PageCardFlag>(`/pages/card-flags/${encodeURIComponent(key)}`, {
     method: 'PATCH',
     body: JSON.stringify({ isEnabled }),
+  });
+}
+
+export function getMorePageSettings() {
+  return api<MorePageSettings>(`${moreBase}/settings`);
+}
+
+export function updateMorePageSettings(input: MorePageSettingsInput) {
+  return api<MorePageSettings>(`${moreBase}/settings`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function listMorePageItems() {
+  return api<MorePageItem[]>(`${moreBase}/items`);
+}
+
+export function uploadMorePageItemFile(file: File) {
+  return apiUpload<{ imageUrl: string }>(`${moreBase}/items/upload`, file);
+}
+
+export function createMorePageItem(input: MorePageItemInput) {
+  return api<MorePageItem>(`${moreBase}/items`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateMorePageItem(
+  id: string,
+  input: Partial<MorePageItemInput>,
+) {
+  return api<MorePageItem>(`${moreBase}/items/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteMorePageItem(id: string) {
+  return api<{ success: boolean }>(`${moreBase}/items/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function listMorePageAbout() {
+  return api<MorePageAboutCard[]>(`${moreBase}/about`);
+}
+
+export function createMorePageAbout(input: MorePageAboutInput) {
+  return api<MorePageAboutCard>(`${moreBase}/about`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateMorePageAbout(
+  id: string,
+  input: Partial<MorePageAboutInput>,
+) {
+  return api<MorePageAboutCard>(`${moreBase}/about/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteMorePageAbout(id: string) {
+  return api<{ success: boolean }>(`${moreBase}/about/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function listMorePageStory() {
+  return api<MorePageStoryBlock[]>(`${moreBase}/story`);
+}
+
+export function uploadMorePageStoryFile(file: File) {
+  return apiUpload<{ imageUrl: string }>(`${moreBase}/story/upload`, file);
+}
+
+export function createMorePageStory(input: MorePageStoryInput) {
+  return api<MorePageStoryBlock>(`${moreBase}/story`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateMorePageStory(
+  id: string,
+  input: Partial<MorePageStoryInput>,
+) {
+  return api<MorePageStoryBlock>(`${moreBase}/story/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteMorePageStory(id: string) {
+  return api<{ success: boolean }>(`${moreBase}/story/${id}`, {
+    method: 'DELETE',
   });
 }
