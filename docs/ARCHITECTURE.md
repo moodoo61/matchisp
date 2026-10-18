@@ -42,7 +42,7 @@ docs/                             الخطة + المعمارية + تنظيم �
 | `db_network_pages` | إدارة الصفحة (تسجيل الدخول / الحالة) |
 | `db_live` | البث المباشر (خادم) — القنوات والأحداث الرياضية |
 | `db_break` | الاستراحة |
-| `db_comms` | الاتصالات المحلية |
+| `db_comms` | الاتصال (Asterisk — أرقام داخلية + CDR) |
 | `db_magazine` | المجلة / اشتراكات الشبكات |
 | `db_maintenance` | الصيانة — بلاغات وأوامر عمل ميدانية |
 | `db_partners` | الوكلاء والموردين |
@@ -119,6 +119,15 @@ Guard عام JWT + Guard صلاحيات RBAC
 - واجهة Admin: `/service-monitor`
 - API: `GET|PATCH /service-monitor/services/:key` و `GET /service-monitor/services/:key/status`
 - صلاحيات: `service_monitor:read|update|manage`
+
+## قسم الاتصال (Asterisk)
+- الاسم الظاهر: **الاتصال** — قاعدة `db_comms`
+- الواجهة: `/comms` — حالة الخادم، الأرقام الداخلية، المكالمات الجارية، سجل المكالمات
+- هاتف عام (خارج اللوحة): `/call` — WebRTC صوتي (SIP.js) بتسجيل رقم داخلي ثم طلب رقم آخر
+- PBX: خدمة `asterisk` من `/opt/asterisk`؛ إدارة حيّة عبر AMI؛ مزامنة PJSIP إلى `/etc/asterisk/pjsip_match_extensions.conf`؛ WS/WSS على 8088/8089
+- API: `GET /comms/asterisk/status` و `GET|POST|PATCH|DELETE /comms/extensions` و `GET /comms/calls/active|cdr`
+- صلاحيات: `comms:read|create|update|delete|manage`
+- توثيق التثبيت: `docs/ASTERISK.md`
 
 ## قسم الإعدادات (منفّذ جزئياً)
 - الاسم الظاهر: **الإعدادات** (قواعد: `db_settings` + `db_network` لفرع الشبكة)

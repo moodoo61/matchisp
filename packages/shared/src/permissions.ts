@@ -132,6 +132,14 @@ export const PERMISSIONS = {
   SERVICE_MONITOR_MANAGE: 'service_monitor:manage',
   SERVICE_MONITOR_UPDATE: 'service_monitor:update',
 
+  /** الاتصال — إدارة Asterisk والأرقام الداخلية والمكالمات */
+  COMMS_READ: 'comms:read',
+  COMMS_CREATE: 'comms:create',
+  COMMS_UPDATE: 'comms:update',
+  COMMS_DELETE: 'comms:delete',
+  /** اختصار: كل مهام قسم الاتصال */
+  COMMS_MANAGE: 'comms:manage',
+
   /** الإعدادات */
   SETTINGS_READ: 'settings:read',
   SETTINGS_MANAGE: 'settings:manage',
@@ -271,6 +279,11 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'service_monitor:read': 'عرض مراقب الخدمات',
   'service_monitor:manage': 'إدارة مراقب الخدمات (الكل)',
   'service_monitor:update': 'تعديل إعدادات الخدمة المراقبة',
+  'comms:read': 'عرض قسم الاتصال',
+  'comms:create': 'إضافة رقم داخلي',
+  'comms:update': 'تعديل رقم داخلي',
+  'comms:delete': 'حذف رقم داخلي',
+  'comms:manage': 'إدارة الاتصال (الكل)',
   'settings:read': 'عرض الإعدادات (الكل)',
   'settings:manage': 'إدارة الإعدادات (الكل)',
   'settings.general:read': 'عرض الإعدادات العامة',
@@ -473,6 +486,21 @@ export function hasPermission(
         userPermissions.includes(PERMISSIONS.SERVICE_MONITOR_READ) ||
         userPermissions.includes(PERMISSIONS.SERVICE_MONITOR_MANAGE) ||
         userPermissions.includes(PERMISSIONS.SERVICE_MONITOR_UPDATE)
+      );
+    }
+  }
+
+  if (required.startsWith('comms:')) {
+    if (userPermissions.includes(PERMISSIONS.COMMS_MANAGE)) {
+      return true;
+    }
+    const action = required.slice('comms:'.length);
+    if (action === 'read') {
+      return (
+        userPermissions.includes(PERMISSIONS.COMMS_READ) ||
+        userPermissions.includes(PERMISSIONS.COMMS_CREATE) ||
+        userPermissions.includes(PERMISSIONS.COMMS_UPDATE) ||
+        userPermissions.includes(PERMISSIONS.COMMS_DELETE)
       );
     }
   }

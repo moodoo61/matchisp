@@ -16,3 +16,46 @@ model SectionMeta {
 
   @@map("_section_meta")
 }
+
+/// رقم داخلي — مصدر الحقيقة للمنصة ويُزامَن إلى Asterisk PJSIP
+model Extension {
+  id          String   @id @default(uuid()) @db.Uuid
+  number      String   @unique
+  displayName String
+  secret      String
+  enabled     Boolean  @default(true)
+  context     String   @default("from-internal")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([enabled])
+  @@map("extensions")
+}
+
+/// سجل مكالمات — يكتبه Asterisk عبر cdr_pgsql (أسماء أعمدة متوافقة)
+model CallRecord {
+  calldate    DateTime @default(now())
+  clid        String   @default("")
+  src         String   @default("")
+  dst         String   @default("")
+  dcontext    String   @default("")
+  channel     String   @default("")
+  dstchannel  String   @default("")
+  lastapp     String   @default("")
+  lastdata    String   @default("")
+  duration    Int      @default(0)
+  billsec     Int      @default(0)
+  disposition String   @default("")
+  amaflags    Int      @default(0)
+  accountcode String   @default("")
+  uniqueid    String   @id
+  userfield   String   @default("")
+  peeraccount String   @default("")
+  linkedid    String   @default("")
+  sequence    Int      @default(0)
+
+  @@index([src])
+  @@index([dst])
+  @@index([calldate])
+  @@map("cdr")
+}

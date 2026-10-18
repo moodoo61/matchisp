@@ -19,6 +19,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { ServiceMonitorModule } from './modules/service_monitor/service_monitor.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { NetworkModule } from './modules/network/network.module';
+import { CommsModule } from './modules/comms/comms.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { NetworkModule } from './modules/network/network.module';
     ServiceMonitorModule,
     SettingsModule,
     NetworkModule,
+    CommsModule,
   ],
   providers: [
     {

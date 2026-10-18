@@ -289,6 +289,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
     if (
       canAny([
+        PERMISSIONS.COMMS_READ,
+        PERMISSIONS.COMMS_CREATE,
+        PERMISSIONS.COMMS_UPDATE,
+        PERMISSIONS.COMMS_DELETE,
+        PERMISSIONS.COMMS_MANAGE,
+      ])
+    ) {
+      items.push({ href: '/comms', label: 'الاتصال' });
+    }
+    if (
+      canAny([
         PERMISSIONS.SETTINGS_READ,
         PERMISSIONS.SETTINGS_MANAGE,
         PERMISSIONS.SETTINGS_GENERAL_READ,

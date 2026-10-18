@@ -1,0 +1,27 @@
+[Unit]
+Description=Asterisk PBX (Match — قسم الاتصال)
+Documentation=file:///opt/match/docs/ASTERISK.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=HOME=/var/lib/asterisk
+WorkingDirectory=/var/lib/asterisk
+User=asterisk
+Group=asterisk
+ExecStart=/usr/sbin/asterisk -f -C /etc/asterisk/asterisk.conf
+ExecReload=/usr/sbin/asterisk -rx 'core reload'
+ExecStop=/usr/sbin/asterisk -rx 'core stop now'
+Restart=on-failure
+RestartSec=5
+LimitCORE=infinity
+LimitNOFILE=65536
+# Type=simple أوضح من notify إن لم تُبنَ sd_notify
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=asterisk
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -245,6 +245,17 @@ export const PERMISSION_TREE: readonly PermissionTreeNode[] = [
     ],
   },
   {
+    key: 'comms',
+    label: 'الاتصال',
+    codes: [
+      'comms:read',
+      'comms:create',
+      'comms:update',
+      'comms:delete',
+      'comms:manage',
+    ],
+  },
+  {
     key: 'settings',
     label: 'الإعدادات',
     codes: ['settings:read', 'settings:manage'],
@@ -425,6 +436,7 @@ export const PERMISSION_SECTION_ORDER = [
   'maintenance',
   'inventory',
   'service_monitor',
+  'comms',
   'settings',
   'network',
   'roles',
@@ -444,6 +456,7 @@ export const PERMISSION_SECTION_LABELS: Record<PermissionSectionKey, string> = {
   maintenance: 'الصيانة',
   inventory: 'المخازن',
   service_monitor: 'مراقب الخدمات',
+  comms: 'الاتصال',
   settings: 'الإعدادات',
   network: 'الشبكة',
   roles: 'الأدوار',

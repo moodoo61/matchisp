@@ -1,0 +1,257 @@
+.call-page {
+  --call-bg0: #0c1222;
+  --call-bg1: #152238;
+  --call-accent: #3b82f6;
+  --call-ok: #22c55e;
+  --call-warn: #f59e0b;
+  --call-danger: #ef4444;
+  --call-text: #e8eef8;
+  --call-muted: #94a3b8;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--call-text);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59, 130, 246, 0.25), transparent),
+    linear-gradient(165deg, var(--call-bg0), var(--call-bg1));
+  font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 2.5rem;
+  box-sizing: border-box;
+}
+
+.call-brand {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.call-brand h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.call-brand p {
+  margin: 0.4rem 0 0;
+  color: var(--call-muted);
+  font-size: 0.95rem;
+}
+
+.call-shell {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 1rem;
+}
+
+.call-panel {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  padding: 1.1rem 1.15rem;
+  backdrop-filter: blur(10px);
+}
+
+.call-panel h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.call-field {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--call-muted);
+}
+
+.call-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(2, 6, 23, 0.55);
+  color: var(--call-text);
+  font: inherit;
+  font-size: 1rem;
+  direction: ltr;
+  text-align: left;
+}
+
+.call-field input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.7);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.call-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.call-btn {
+  appearance: none;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.call-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.call-btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.call-btn-primary {
+  background: var(--call-accent);
+  color: #fff;
+  flex: 1;
+}
+
+.call-btn-ok {
+  background: var(--call-ok);
+  color: #052e16;
+  flex: 1;
+}
+
+.call-btn-danger {
+  background: var(--call-danger);
+  color: #fff;
+  flex: 1;
+}
+
+.call-btn-ghost {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--call-text);
+}
+
+.call-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--call-muted);
+  margin-bottom: 0.75rem;
+}
+
+.call-status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.call-status.is-ok {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.call-status.is-busy {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.call-status.is-err {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.call-dialpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.call-dialpad button {
+  appearance: none;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(2, 6, 23, 0.4);
+  color: var(--call-text);
+  border-radius: 12px;
+  padding: 0.85rem 0;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  direction: ltr;
+}
+
+.call-dialpad button:active {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.call-timer {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  direction: ltr;
+  margin: 0.5rem 0 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.call-peer {
+  text-align: center;
+  font-size: 1.15rem;
+  margin: 0 0 0.35rem;
+}
+
+.call-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--call-muted);
+  line-height: 1.5;
+}
+
+.call-error {
+  margin: 0.5rem 0 0;
+  color: #fca5a5;
+  font-size: 0.88rem;
+}
+
+.call-secure-banner {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.call-incoming-banner {
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  margin-bottom: 0.75rem;
+  animation: call-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes call-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@media (max-width: 480px) {
+  .call-page {
+    padding: 1rem 0.75rem 2rem;
+  }
+}
