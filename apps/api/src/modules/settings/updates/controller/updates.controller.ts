@@ -20,6 +20,12 @@ export class UpdatesController {
     return this.updates.getStatus({ fetch: false });
   }
 
+  @Get('job')
+  @RequirePermissions(PERMISSIONS.SETTINGS_UPDATES_READ)
+  job() {
+    return this.updates.getJob();
+  }
+
   @Post('check')
   @RequirePermissions(PERMISSIONS.SETTINGS_UPDATES_READ)
   check(@CurrentUser() user: RequestUser) {

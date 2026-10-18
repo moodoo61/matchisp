@@ -125,9 +125,9 @@ Guard عام JWT + Guard صلاحيات RBAC
 - فروع القائمة: عامة | إدارة الأقراص | قواعد البيانات | التحديث | الشبكة
 - الأقراص: `/settings/disks`
 - قواعد البيانات: `/settings/databases`
-- التحديث: `/settings/updates` — فحص وتنزيل من مستودع Git (`origin`)
+- التحديث: `/settings/updates` — فحص وتنزيل من مستودع Git (`origin`) ثم خط أنابيب تنفيذي (تثبيت اعتماديات / إنشاء قواعد جديدة / ترحيل Prisma / إعادة تشغيل الخدمة)
 - الشبكة: `/settings/network/interfaces` و `/routes` و `/dns`
-- API التحديث: `GET /settings/updates` و `POST /settings/updates/check|apply`
+- API التحديث: `GET /settings/updates` و `GET /settings/updates/job` و `POST /settings/updates/check|apply`
 - صلاحيات التحديث: `settings.updates:read|apply|manage`
 - API الشبكة: `/settings/network/interfaces|routes|dns`
 - صلاحيات الشبكة: `network.interfaces|routes|dns:read|manage`

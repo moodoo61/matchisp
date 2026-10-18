@@ -1,15 +1,32 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PERMISSIONS } from '@isp/shared';
 import {
   applyUpdates,
   checkForUpdates,
+  getUpdateJob,
   getUpdateStatus,
 } from '@/features/settings/updates/api';
-import type { UpdateStatus } from '@/features/settings/updates/types';
+import type {
+  UpdateJobPhase,
+  UpdateJobStatus,
+  UpdateStatus,
+} from '@/features/settings/updates/types';
 import { usePermissions } from '@/lib/usePermissions';
 import { TaskCard, notifyMutation, useToast } from '@/shared/ui';
+
+const JOB_POLL_MS = 2000;
+
+const PIPELINE_STEPS: { id: string; label: string; phases: UpdateJobPhase[] }[] =
+  [
+    { id: 'pull', label: 'تنزيل', phases: ['pulling', 'queued'] },
+    { id: 'deps', label: 'اعتماديات', phases: ['install', 'build', 'env'] },
+    { id: 'db', label: 'قواعد', phases: ['databases', 'generate'] },
+    { id: 'migrate', label: 'ترحيل', phases: ['migrate'] },
+    { id: 'restart', label: 'إعادة تشغيل', phases: ['restart'] },
+    { id: 'done', label: 'اكتمل', phases: ['done'] },
+  ];
 
 function formatCheckedAt(value: string) {
   try {
@@ -33,6 +50,39 @@ function formatCommitDate(value: string) {
   }
 }
 
+function resolveStepStates(
+  phase: UpdateJobPhase,
+  lastActivePhase: UpdateJobPhase | null,
+): Array<'pending' | 'active' | 'done' | 'failed'> {
+  if (phase === 'idle') {
+    return PIPELINE_STEPS.map(() => 'pending');
+  }
+  if (phase === 'done') {
+    return PIPELINE_STEPS.map(() => 'done');
+  }
+
+  const effectivePhase =
+    phase === 'failed' && lastActivePhase ? lastActivePhase : phase;
+  const currentStep = PIPELINE_STEPS.findIndex((s) =>
+    s.phases.includes(effectivePhase),
+  );
+
+  return PIPELINE_STEPS.map((_, stepIndex) => {
+    if (phase === 'failed') {
+      if (currentStep < 0) {
+        return stepIndex === 0 ? 'failed' : 'pending';
+      }
+      if (stepIndex < currentStep) return 'done';
+      if (stepIndex === currentStep) return 'failed';
+      return 'pending';
+    }
+    if (currentStep < 0) return 'pending';
+    if (stepIndex < currentStep) return 'done';
+    if (stepIndex === currentStep) return 'active';
+    return 'pending';
+  });
+}
+
 export function UpdatesCard() {
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.SETTINGS_UPDATES_READ);
@@ -40,9 +90,13 @@ export function UpdatesCard() {
   const toast = useToast();
 
   const [status, setStatus] = useState<UpdateStatus | null>(null);
+  const [job, setJob] = useState<UpdateJobStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [polling, setPolling] = useState(false);
+  const lastActivePhaseRef = useRef<UpdateJobPhase | null>(null);
+  const notifiedRef = useRef<'done' | 'failed' | null>(null);
 
   const reload = useCallback(async () => {
     setBusy(true);
@@ -57,10 +111,65 @@ export function UpdatesCard() {
     }
   }, []);
 
+  const refreshJob = useCallback(async () => {
+    try {
+      const next = await getUpdateJob();
+      if (
+        next.running &&
+        next.phase !== 'failed' &&
+        next.phase !== 'done' &&
+        next.phase !== 'idle'
+      ) {
+        lastActivePhaseRef.current = next.phase;
+      }
+      setJob(next);
+      return next;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!canRead) return;
     void reload();
-  }, [canRead, reload]);
+    void refreshJob().then((j) => {
+      if (j?.running) setPolling(true);
+    });
+  }, [canRead, reload, refreshJob]);
+
+  useEffect(() => {
+    if (!polling || !canRead) return;
+
+    let cancelled = false;
+    const tick = async () => {
+      const next = await refreshJob();
+      if (cancelled || !next) return;
+
+      if (next.phase === 'done' && notifiedRef.current !== 'done') {
+        notifiedRef.current = 'done';
+        toast.success(next.message || 'اكتمل التحديث بنجاح');
+        setPolling(false);
+        await reload();
+        return;
+      }
+      if (next.phase === 'failed' && notifiedRef.current !== 'failed') {
+        notifiedRef.current = 'failed';
+        toast.error(next.error || next.message || 'فشل التحديث');
+        setPolling(false);
+        return;
+      }
+      if (!next.running && next.phase !== 'done' && next.phase !== 'failed') {
+        setPolling(false);
+      }
+    };
+
+    void tick();
+    const id = window.setInterval(() => void tick(), JOB_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [polling, canRead, refreshJob, reload, toast]);
 
   async function onCheck() {
     if (!canRead) return;
@@ -83,18 +192,22 @@ export function UpdatesCard() {
     if (!canApply || !status) return;
     if (
       !confirm(
-        `تنزيل وتطبيق ${status.behindBy} تحديثاً من المستودع؟\nقد تُعاد تشغيل الخدمات تلقائياً بعد التنزيل.`,
+        `تنزيل وتطبيق ${status.behindBy} تحديثاً من المستودع؟\nسيُثبَّت الاعتماديات وتُنشأ/تُرحَّل القواعد ثم تُعاد تشغيل الخدمات تلقائياً.`,
       )
     ) {
       return;
     }
     setBusy(true);
+    notifiedRef.current = null;
+    lastActivePhaseRef.current = 'pulling';
     try {
       const result = await notifyMutation(toast, () => applyUpdates(), {
         success: 'تم تنزيل التحديثات',
         error: 'تعذر تنزيل التحديثات',
       });
       toast.info(result.message);
+      setPolling(true);
+      await refreshJob();
       await reload();
     } catch {
       /* toast */
@@ -111,12 +224,19 @@ export function UpdatesCard() {
     );
   }
 
+  const jobRunning = Boolean(job?.running) || polling;
   const canDownload =
     canApply &&
     !!status?.updateAvailable &&
     !status.dirty &&
     status.aheadBy === 0 &&
-    status.lastFetchOk;
+    status.lastFetchOk &&
+    !jobRunning;
+
+  const stepStates =
+    job && job.phase !== 'idle'
+      ? resolveStepStates(job.phase, lastActivePhaseRef.current)
+      : null;
 
   return (
     <TaskCard
@@ -126,7 +246,7 @@ export function UpdatesCard() {
           <button
             type="button"
             className="btn secondary"
-            disabled={busy || checking}
+            disabled={busy || checking || jobRunning}
             onClick={() => void onCheck()}
           >
             {checking ? 'جارٍ الفحص…' : 'فحص التحديثات'}
@@ -138,7 +258,7 @@ export function UpdatesCard() {
               disabled={busy || checking || !canDownload}
               onClick={() => void onApply()}
             >
-              تنزيل التحديثات
+              {jobRunning ? 'جارٍ التطبيق…' : 'تنزيل التحديثات'}
             </button>
           ) : null}
         </div>
@@ -162,6 +282,39 @@ export function UpdatesCard() {
           >
             {status.message}
           </p>
+
+          {job && stepStates && job.phase !== 'idle' ? (
+            <div
+              className={[
+                'updates-pipeline',
+                job.phase === 'failed' ? 'is-failed' : '',
+                job.phase === 'done' ? 'is-done' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <p className="updates-pipeline-msg">{job.message}</p>
+              <ol className="updates-steps">
+                {PIPELINE_STEPS.map((step, idx) => (
+                  <li
+                    key={step.id}
+                    className={`updates-step is-${stepStates[idx]}`}
+                  >
+                    <span className="updates-step-dot" aria-hidden />
+                    <span className="updates-step-label">{step.label}</span>
+                  </li>
+                ))}
+              </ol>
+              {job.phase === 'failed' && job.error ? (
+                <p className="error-text updates-job-error">{job.error}</p>
+              ) : null}
+              {job.phase === 'failed' && job.logTail ? (
+                <pre className="updates-log-tail" dir="ltr">
+                  {job.logTail.trim().slice(-2000)}
+                </pre>
+              ) : null}
+            </div>
+          ) : null}
 
           <dl className="updates-meta">
             <div>

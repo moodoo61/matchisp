@@ -8,7 +8,8 @@ import {
 } from '@nestjs/common';
 import { spawn, execFile } from 'child_process';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { readFile, writeFile, mkdir } from 'fs/promises';
+import { dirname, join } from 'path';
 import { promisify } from 'util';
 import { AuditService } from '../../../audit/audit.service';
 
@@ -55,8 +56,48 @@ export type ApplyUpdateResult = {
   message: string;
 };
 
+export type UpdateJobPhase =
+  | 'idle'
+  | 'pulling'
+  | 'queued'
+  | 'install'
+  | 'build'
+  | 'env'
+  | 'databases'
+  | 'generate'
+  | 'migrate'
+  | 'restart'
+  | 'done'
+  | 'failed';
+
+export type UpdateJobStatus = {
+  phase: UpdateJobPhase;
+  ok: boolean;
+  message: string;
+  startedAt: string | null;
+  updatedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+  logPath: string;
+  logTail: string;
+  running: boolean;
+};
+
+const ACTIVE_JOB_PHASES = new Set<UpdateJobPhase>([
+  'pulling',
+  'queued',
+  'install',
+  'build',
+  'env',
+  'databases',
+  'generate',
+  'migrate',
+  'restart',
+]);
+
 const GIT_TIMEOUT_MS = 120_000;
 const POST_UPDATE_DELAY_MS = 3000;
+const LOG_TAIL_BYTES = 8_000;
 
 @Injectable()
 export class UpdatesService {
@@ -100,33 +141,60 @@ export class UpdatesService {
     return status;
   }
 
+  async getJob(): Promise<UpdateJobStatus> {
+    const repoRoot = await this.resolveRepoRoot();
+    return this.readJobStatus(repoRoot);
+  }
+
   async apply(actorId: string): Promise<ApplyUpdateResult> {
     if (this.busy) {
       throw new ConflictException('عملية تحديث جارية بالفعل');
     }
 
+    const repoRoot = await this.resolveRepoRoot();
+    const existingJob = await this.readJobStatus(repoRoot);
+    if (existingJob.running) {
+      throw new ConflictException('عملية تحديث جارية بالفعل');
+    }
+
     this.busy = true;
+    const startedAt = new Date().toISOString();
     try {
+      await this.writeJobStatus(repoRoot, {
+        phase: 'pulling',
+        ok: true,
+        message: 'جارٍ تنزيل التحديث من المستودع…',
+        startedAt,
+        updatedAt: startedAt,
+        finishedAt: null,
+        error: null,
+      });
+
       const before = await this.getStatus({ fetch: true });
       if (!before.lastFetchOk) {
+        await this.clearJob(repoRoot);
         throw new ServiceUnavailableException(
           'تعذر الاتصال بالمستودع. تحقق من الشبكة أو صلاحية الوصول',
         );
       }
       if (!before.upstream) {
+        await this.clearJob(repoRoot);
         throw new BadRequestException(
           'الفرع الحالي غير مرتبط بمستودع بعيد',
         );
       }
       if (before.dirty) {
+        await this.clearJob(repoRoot);
         throw new BadRequestException(
           'توجد تعديلات محلية غير محفوظة. احفظها أو تراجع عنها قبل التحديث',
         );
       }
       if (!before.updateAvailable || before.behindBy <= 0) {
+        await this.clearJob(repoRoot);
         throw new BadRequestException('لا توجد تحديثات جديدة للتنزيل');
       }
       if (before.aheadBy > 0) {
+        await this.clearJob(repoRoot);
         throw new BadRequestException(
           'الفرع المحلي متقدّم على المستودع. التحديث التلقائي غير متاح',
         );
@@ -142,7 +210,18 @@ export class UpdatesService {
       ]);
 
       const after = await this.buildStatus(before.repoRoot, true, false);
-      this.schedulePostUpdate(before.repoRoot);
+      const queuedAt = new Date().toISOString();
+      await this.writeJobStatus(before.repoRoot, {
+        phase: 'queued',
+        ok: true,
+        message:
+          'تم التنزيل. جارٍ جدولة تثبيت الاعتماديات وترحيل القواعد وإعادة التشغيل…',
+        startedAt,
+        updatedAt: queuedAt,
+        finishedAt: null,
+        error: null,
+      });
+      this.schedulePostUpdate(before.repoRoot, startedAt);
 
       await this.audit.log({
         actorId,
@@ -165,17 +244,30 @@ export class UpdatesService {
         pulledCommits: before.behindBy,
         postUpdateScheduled: true,
         message:
-          'تم تنزيل التحديث. جارٍ تثبيت الاعتماديات وإعادة تشغيل الخدمات خلال ثوانٍ',
+          'تم تنزيل التحديث. جارٍ تثبيت الاعتماديات وإنشاء القواعد وترحيلها وإعادة تشغيل الخدمات',
       };
+    } catch (err) {
+      if (
+        err instanceof BadRequestException ||
+        err instanceof ServiceUnavailableException ||
+        err instanceof ConflictException
+      ) {
+        throw err;
+      }
+      const msg =
+        err instanceof Error ? err.message : 'فشل غير متوقع أثناء التحديث';
+      await this.failJob(repoRoot, startedAt, msg);
+      throw err;
     } finally {
       this.busy = false;
     }
   }
 
-  private schedulePostUpdate(repoRoot: string) {
+  private schedulePostUpdate(repoRoot: string, startedAt: string) {
     const script = join(repoRoot, 'scripts', 'apply-system-update.sh');
     if (!existsSync(script)) {
       this.logger.warn(`سكربت ما بعد التحديث غير موجود: ${script}`);
+      void this.failJob(repoRoot, startedAt, `سكربت ما بعد التحديث غير موجود: ${script}`);
       return;
     }
 
@@ -190,14 +282,138 @@ export class UpdatesService {
         });
         child.on('error', (err) => {
           this.logger.error(`فشل تشغيل سكربت التحديث: ${err.message}`);
+          void this.failJob(repoRoot, startedAt, `فشل تشغيل سكربت التحديث: ${err.message}`);
         });
         child.unref();
       } catch (err) {
-        this.logger.error(
-          `فشل إطلاق سكربت التحديث: ${err instanceof Error ? err.message : err}`,
-        );
+        const msg =
+          err instanceof Error ? err.message : String(err);
+        this.logger.error(`فشل إطلاق سكربت التحديث: ${msg}`);
+        void this.failJob(repoRoot, startedAt, `فشل إطلاق سكربت التحديث: ${msg}`);
       }
     }, POST_UPDATE_DELAY_MS);
+  }
+
+  private statusFilePath(repoRoot: string) {
+    return join(repoRoot, 'var', 'logs', 'system-update-status.json');
+  }
+
+  private logFilePath(repoRoot: string) {
+    return join(repoRoot, 'var', 'logs', 'system-update.log');
+  }
+
+  private async clearJob(repoRoot: string) {
+    const now = new Date().toISOString();
+    await this.writeJobStatus(repoRoot, {
+      phase: 'idle',
+      ok: true,
+      message: 'لا توجد مهمة تحديث جارية',
+      startedAt: null,
+      updatedAt: now,
+      finishedAt: null,
+      error: null,
+    });
+  }
+
+  private async failJob(
+    repoRoot: string,
+    startedAt: string,
+    error: string,
+  ) {
+    const now = new Date().toISOString();
+    await this.writeJobStatus(repoRoot, {
+      phase: 'failed',
+      ok: false,
+      message: error,
+      startedAt,
+      updatedAt: now,
+      finishedAt: now,
+      error,
+    });
+  }
+
+  private async writeJobStatus(
+    repoRoot: string,
+    data: {
+      phase: UpdateJobPhase;
+      ok: boolean;
+      message: string;
+      startedAt: string | null;
+      updatedAt: string | null;
+      finishedAt: string | null;
+      error: string | null;
+    },
+  ) {
+    const path = this.statusFilePath(repoRoot);
+    await mkdir(dirname(path), { recursive: true });
+    const payload = {
+      ...data,
+      logPath: 'var/logs/system-update.log',
+    };
+    await writeFile(path, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  }
+
+  private async readJobStatus(repoRoot: string): Promise<UpdateJobStatus> {
+    const statusPath = this.statusFilePath(repoRoot);
+    const logPath = this.logFilePath(repoRoot);
+    let logTail = '';
+    if (existsSync(logPath)) {
+      try {
+        const raw = await readFile(logPath, 'utf8');
+        logTail = raw.length > LOG_TAIL_BYTES ? raw.slice(-LOG_TAIL_BYTES) : raw;
+      } catch {
+        logTail = '';
+      }
+    }
+
+    if (!existsSync(statusPath)) {
+      return {
+        phase: 'idle',
+        ok: true,
+        message: 'لا توجد مهمة تحديث جارية',
+        startedAt: null,
+        updatedAt: null,
+        finishedAt: null,
+        error: null,
+        logPath: 'var/logs/system-update.log',
+        logTail,
+        running: false,
+      };
+    }
+
+    try {
+      const raw = await readFile(statusPath, 'utf8');
+      const parsed = JSON.parse(raw) as Partial<UpdateJobStatus>;
+      const phase = (parsed.phase ?? 'idle') as UpdateJobPhase;
+      return {
+        phase,
+        ok: parsed.ok !== false,
+        message: parsed.message ?? '',
+        startedAt: parsed.startedAt ?? null,
+        updatedAt: parsed.updatedAt ?? null,
+        finishedAt: parsed.finishedAt ?? null,
+        error: parsed.error ?? null,
+        logPath: parsed.logPath ?? 'var/logs/system-update.log',
+        logTail,
+        running: ACTIVE_JOB_PHASES.has(phase),
+      };
+    } catch (err) {
+      this.logger.warn(
+        `تعذر قراءة حالة مهمة التحديث: ${err instanceof Error ? err.message : err}`,
+      );
+      return {
+        phase: 'idle',
+        ok: true,
+        message: 'لا توجد مهمة تحديث جارية',
+        startedAt: null,
+        updatedAt: null,
+        finishedAt: null,
+        error: null,
+        logPath: 'var/logs/system-update.log',
+        logTail,
+        running: false,
+      };
+    }
   }
 
   private async buildStatus(

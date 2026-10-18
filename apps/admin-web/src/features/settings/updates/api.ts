@@ -1,8 +1,12 @@
 import { api } from '@/lib/api';
-import type { ApplyUpdateResult, UpdateStatus } from './types';
+import type { ApplyUpdateResult, UpdateJobStatus, UpdateStatus } from './types';
 
 export function getUpdateStatus() {
   return api<UpdateStatus>('/settings/updates');
+}
+
+export function getUpdateJob() {
+  return api<UpdateJobStatus>('/settings/updates/job');
 }
 
 export function checkForUpdates() {

@@ -38,3 +38,30 @@ export type ApplyUpdateResult = {
   postUpdateScheduled: boolean;
   message: string;
 };
+
+export type UpdateJobPhase =
+  | 'idle'
+  | 'pulling'
+  | 'queued'
+  | 'install'
+  | 'build'
+  | 'env'
+  | 'databases'
+  | 'generate'
+  | 'migrate'
+  | 'restart'
+  | 'done'
+  | 'failed';
+
+export type UpdateJobStatus = {
+  phase: UpdateJobPhase;
+  ok: boolean;
+  message: string;
+  startedAt: string | null;
+  updatedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+  logPath: string;
+  logTail: string;
+  running: boolean;
+};
