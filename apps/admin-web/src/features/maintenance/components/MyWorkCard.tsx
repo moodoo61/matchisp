@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PERMISSIONS } from '@isp/shared';
 import {
-  acceptWorkOrder,
   createPartsRequest,
   finishFieldWorkOrder,
   listMyWorkOrders,
@@ -107,12 +106,14 @@ export function MyWorkCard() {
     if (row.status === 'assigned') {
       buttons.push(
         <button
-          key="accept"
+          key="start"
           type="button"
           className="btn"
-          onClick={() => void run(() => acceptWorkOrder(row.id), 'تم القبول')}
+          onClick={() =>
+            void run(() => startWorkOrder(row.id), 'بدأ التنفيذ')
+          }
         >
-          قبول
+          تنفيذ
         </button>,
         <button
           key="reject"
@@ -134,9 +135,11 @@ export function MyWorkCard() {
           key="start"
           type="button"
           className="btn"
-          onClick={() => void run(() => startWorkOrder(row.id), 'بدأ التنفيذ')}
+          onClick={() =>
+            void run(() => startWorkOrder(row.id), 'بدأ التنفيذ')
+          }
         >
-          بدء
+          تنفيذ
         </button>,
       );
     }
@@ -153,7 +156,7 @@ export function MyWorkCard() {
             setPartsQty(1);
           }}
         >
-          قطع
+          طلب قطع
         </button>,
         <button
           key="finish"
@@ -232,7 +235,7 @@ export function MyWorkCard() {
         {!error && !items.length ? (
           <p className="muted">
             لا توجد أوامر معيَّنة لك بعد. من «أوامر العمل» عيّن الفني لنفسك
-            (أو لحسابك) حتى تظهر هنا أزرار القبول/البدء.
+            حتى تظهر هنا أزرار التنفيذ.
           </p>
         ) : (
           <DataTable

@@ -5,9 +5,11 @@ import type {
   MaintenanceMetrics,
   MaintenanceNotification,
   ServiceRequest,
+  ServiceRequestAttachment,
   UserBrief,
   WorkOrder,
   WorkOrderAttachment,
+  WorkOrderComment,
 } from './types';
 
 export type MetaOption = { value: string; label: string };
@@ -47,6 +49,16 @@ export function createAsset(input: {
 export function uploadWorkOrderAttachment(workOrderId: string, file: File) {
   return apiUpload<WorkOrderAttachment>(
     `/maintenance/work-orders/${workOrderId}/attachments`,
+    file,
+  );
+}
+
+export function uploadServiceRequestAttachment(
+  requestId: string,
+  file: File,
+) {
+  return apiUpload<ServiceRequestAttachment>(
+    `/maintenance/requests/${requestId}/attachments`,
     file,
   );
 }
@@ -133,6 +145,8 @@ export function createServiceRequest(input: {
   assetId?: string;
   locationText?: string;
   submit?: boolean;
+  convertToWorkOrder?: boolean;
+  assigneeUserId?: string;
 }) {
   return api<ServiceRequest>('/maintenance/requests', {
     method: 'POST',
@@ -165,7 +179,17 @@ export function rejectServiceRequest(id: string, reason: string) {
 
 export function convertServiceRequest(
   id: string,
-  input?: { title?: string; description?: string; approve?: boolean },
+  input?: {
+    title?: string;
+    description?: string;
+    approve?: boolean;
+    assigneeUserId?: string;
+    workType?: string;
+    priority?: string;
+    assetId?: string;
+    locationText?: string;
+    triageNotes?: string;
+  },
 ) {
   return api<ServiceRequest>(`/maintenance/requests/${id}/convert`, {
     method: 'POST',
@@ -215,6 +239,22 @@ export function countPendingReview() {
 
 export function getWorkOrder(id: string) {
   return api<WorkOrder>(`/maintenance/work-orders/${id}`);
+}
+
+export function listWorkOrderComments(workOrderId: string) {
+  return api<WorkOrderComment[]>(
+    `/maintenance/work-orders/${workOrderId}/comments`,
+  );
+}
+
+export function createWorkOrderComment(workOrderId: string, body: string) {
+  return api<WorkOrderComment>(
+    `/maintenance/work-orders/${workOrderId}/comments`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    },
+  );
 }
 
 export function listWorkOrderMembers() {

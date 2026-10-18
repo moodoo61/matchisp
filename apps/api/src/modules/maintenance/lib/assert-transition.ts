@@ -21,6 +21,7 @@ const TRANSITION_ROLES: Partial<
   'approved->cancelled': ['triage', 'supervise'],
   'assigned->approved': ['execute', 'dispatch', 'supervise'], // رفض تعيين
   'assigned->accepted': ['execute'],
+  'assigned->in_progress': ['execute'],
   'assigned->cancelled': ['supervise'],
   'accepted->approved': ['dispatch', 'supervise'],
   'accepted->assigned': ['dispatch', 'supervise'],

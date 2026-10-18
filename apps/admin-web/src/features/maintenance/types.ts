@@ -46,6 +46,24 @@ export type WorkOrderAttachment = {
   uploadedBy?: UserBrief | null;
 };
 
+export type ServiceRequestAttachment = {
+  id: string;
+  url: string;
+  originalName: string;
+  createdAt: string;
+  uploadedBy?: UserBrief | null;
+};
+
+export type WorkOrderComment = {
+  id: string;
+  workOrderId: string;
+  body: string;
+  createdAt: string;
+  author: UserBrief | null;
+  /** الفني | المنشئ | مشارك */
+  party: string;
+};
+
 export type MaintenanceMetrics = {
   openRequests: number;
   activeWorkOrders: number;
@@ -79,6 +97,7 @@ export type ServiceRequest = {
   rejectReason: string | null;
   reporter: UserBrief | null;
   asset: Asset | null;
+  attachments?: ServiceRequestAttachment[];
   workOrders: Array<{
     id: string;
     number: number;
@@ -168,7 +187,7 @@ export const PARTS_STATUS_LABELS: Record<string, string> = {
 export const REQUEST_STATUS_LABELS: Record<string, string> = {
   draft: 'مسودة',
   submitted: 'مقدَّم',
-  triaged: 'مفروز',
+  triaged: 'جاهز للتحويل',
   rejected: 'مرفوض',
   converted: 'محوَّل',
   closed: 'مغلق',

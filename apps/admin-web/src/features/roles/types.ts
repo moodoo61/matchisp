@@ -20,3 +20,9 @@ export type CreateRolePayload = {
   description?: string;
   permissionIds: string[];
 };
+
+export type UpdateRolePayload = {
+  name?: string;
+  description?: string;
+  permissionIds?: string[];
+};

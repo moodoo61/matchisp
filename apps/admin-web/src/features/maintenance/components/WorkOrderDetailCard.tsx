@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PERMISSIONS } from '@isp/shared';
 import {
-  acceptWorkOrder,
   closeWorkOrder,
   createPartsRequest,
   finishFieldWorkOrder,
@@ -13,7 +12,6 @@ import {
   resumeWorkOrder,
   reworkWorkOrder,
   startWorkOrder,
-  waitPartsWorkOrder,
 } from '@/features/maintenance/api';
 import type { WorkOrder } from '@/features/maintenance/types';
 import {
@@ -24,10 +22,21 @@ import {
   formatDt,
 } from '@/features/maintenance/types';
 import { usePermissions } from '@/lib/usePermissions';
+import { FormPanelTabs } from '@/features/maintenance/components/FormPanelTabs';
 import { WorkOrderAttachments } from '@/features/maintenance/components/WorkOrderAttachments';
+import { WorkOrderThread } from '@/features/maintenance/components/WorkOrderThread';
 import { Modal, notifyMutation, useToast } from '@/shared/ui';
 
 type Props = { id: string };
+
+const DETAIL_TABS = [
+  { id: 'details', label: 'تفاصيل' },
+  { id: 'attachments', label: 'مرفقات' },
+  { id: 'thread', label: 'حوار' },
+  { id: 'log', label: 'السجل' },
+] as const;
+
+type DetailTabId = (typeof DETAIL_TABS)[number]['id'];
 
 export function WorkOrderDetailCard({ id }: Props) {
   const toast = useToast();
@@ -36,6 +45,7 @@ export function WorkOrderDetailCard({ id }: Props) {
   const canSupervise = can(PERMISSIONS.MAINTENANCE_SUPERVISE);
 
   const [wo, setWo] = useState<WorkOrder | null>(null);
+  const [activeTab, setActiveTab] = useState<DetailTabId>('details');
   const [error, setError] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -60,6 +70,7 @@ export function WorkOrderDetailCard({ id }: Props) {
   }
 
   useEffect(() => {
+    setActiveTab('details');
     void reload();
   }, [id]);
 
@@ -97,9 +108,11 @@ export function WorkOrderDetailCard({ id }: Props) {
               <button
                 type="button"
                 className="btn"
-                onClick={() => void run(() => acceptWorkOrder(wo.id), 'تم القبول')}
+                onClick={() =>
+                  void run(() => startWorkOrder(wo.id), 'بدأ التنفيذ')
+                }
               >
-                قبول
+                تنفيذ
               </button>
               <button
                 type="button"
@@ -118,9 +131,11 @@ export function WorkOrderDetailCard({ id }: Props) {
             <button
               type="button"
               className="btn"
-              onClick={() => void run(() => startWorkOrder(wo.id), 'بدأ التنفيذ')}
+              onClick={() =>
+                void run(() => startWorkOrder(wo.id), 'بدأ التنفيذ')
+              }
             >
-              بدء التنفيذ
+              تنفيذ
             </button>
           ) : null}
           {canExecute && wo.status === 'in_progress' ? (
@@ -135,15 +150,6 @@ export function WorkOrderDetailCard({ id }: Props) {
                 }}
               >
                 طلب قطع
-              </button>
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={() =>
-                  void run(() => waitPartsWorkOrder(wo.id), 'بانتظار مواد')
-                }
-              >
-                انتظار مواد
               </button>
               <button
                 type="button"
@@ -246,143 +252,190 @@ export function WorkOrderDetailCard({ id }: Props) {
           </div>
         </header>
 
-        <dl
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '0.75rem',
-          }}
-        >
-          <div>
-            <dt className="muted">الفني</dt>
-            <dd>{wo.assignee?.name ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="muted">الأصل</dt>
-            <dd>{wo.asset?.label ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="muted">الموقع</dt>
-            <dd>{wo.locationText || '—'}</dd>
-          </div>
-          <div>
-            <dt className="muted">الاستجابة قبل</dt>
-            <dd>{formatDt(wo.respondBy)}</dd>
-          </div>
-          <div>
-            <dt className="muted">الإنجاز قبل</dt>
-            <dd>{formatDt(wo.resolveBy)}</dd>
-          </div>
-          {wo.request ? (
-            <div>
-              <dt className="muted">البلاغ</dt>
-              <dd>#{wo.request.number}</dd>
-            </div>
-          ) : null}
-        </dl>
-
-        <section style={{ marginTop: '1.25rem' }}>
-          <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>الوصف</h3>
-          <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-            {wo.description || '—'}
-          </p>
-        </section>
-
-        {wo.completionNotes ? (
-          <section style={{ marginTop: '1rem' }}>
-            <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>
-              تقرير الإنجاز الفني
-            </h3>
-            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-              {wo.completionNotes}
-            </p>
-          </section>
-        ) : null}
-
-        {wo.rootCause ? (
-          <section style={{ marginTop: '1rem' }}>
-            <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>
-              السبب الجذري
-            </h3>
-            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{wo.rootCause}</p>
-          </section>
-        ) : null}
-
-        {wo.reviewNotes || wo.reviewedBy ? (
-          <section style={{ marginTop: '1rem' }}>
-            <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>
-              اعتماد المشرف
-            </h3>
-            <p className="muted" style={{ margin: '0 0 0.35rem' }}>
-              {wo.reviewedBy?.name ?? '—'} — {formatDt(wo.reviewedAt)}
-            </p>
-            <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-              {wo.reviewNotes || '—'}
-            </p>
-          </section>
-        ) : null}
-
-        <WorkOrderAttachments
-          workOrderId={wo.id}
-          attachments={wo.attachments ?? []}
-          canUpload={
-            (canExecute &&
-              ['in_progress', 'rework', 'waiting_parts', 'waiting_access'].includes(
-                wo.status,
-              )) ||
-            (canSupervise && wo.status === 'done_field')
-          }
-          onUploaded={reload}
+        <FormPanelTabs
+          tabs={[...DETAIL_TABS]}
+          active={activeTab}
+          onChange={(tabId) => setActiveTab(tabId as DetailTabId)}
         />
 
-        {wo.partsRequests?.length ? (
-          <section style={{ marginTop: '1.25rem' }}>
+        {activeTab === 'details' ? (
+          <>
+            <dl
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: '0.75rem',
+              }}
+            >
+              <div>
+                <dt className="muted">الفني</dt>
+                <dd>{wo.assignee?.name ?? '—'}</dd>
+              </div>
+              <div>
+                <dt className="muted">الموقع</dt>
+                <dd>{wo.locationText || '—'}</dd>
+              </div>
+              <div>
+                <dt className="muted">الاستجابة قبل</dt>
+                <dd>{formatDt(wo.respondBy)}</dd>
+              </div>
+              <div>
+                <dt className="muted">الإنجاز قبل</dt>
+                <dd>{formatDt(wo.resolveBy)}</dd>
+              </div>
+              {wo.request ? (
+                <div>
+                  <dt className="muted">البلاغ</dt>
+                  <dd>#{wo.request.number}</dd>
+                </div>
+              ) : null}
+            </dl>
+
+            <section style={{ marginTop: '1.25rem' }}>
+              <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>
+                الوصف
+              </h3>
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                {wo.description || '—'}
+              </p>
+            </section>
+
+            {wo.completionNotes ? (
+              <section style={{ marginTop: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>
+                  تقرير الإنجاز الفني
+                </h3>
+                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                  {wo.completionNotes}
+                </p>
+              </section>
+            ) : null}
+
+            {wo.rootCause ? (
+              <section style={{ marginTop: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>
+                  السبب الجذري
+                </h3>
+                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                  {wo.rootCause}
+                </p>
+              </section>
+            ) : null}
+
+            {wo.reviewNotes || wo.reviewedBy ? (
+              <section style={{ marginTop: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.35rem', fontSize: '0.95rem' }}>
+                  اعتماد المشرف
+                </h3>
+                <p className="muted" style={{ margin: '0 0 0.35rem' }}>
+                  {wo.reviewedBy?.name ?? '—'} — {formatDt(wo.reviewedAt)}
+                </p>
+                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                  {wo.reviewNotes || '—'}
+                </p>
+              </section>
+            ) : null}
+
+            {wo.partsRequests?.length ? (
+              <section style={{ marginTop: '1.25rem' }}>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>
+                  طلبات القطع
+                </h3>
+                <ul style={{ margin: 0, paddingInlineStart: '1.1rem' }}>
+                  {wo.partsRequests.map((p) => (
+                    <li key={p.id}>
+                      {p.description} ×{p.quantity} —{' '}
+                      {PARTS_STATUS_LABELS[p.status] ?? p.status}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {wo.assignmentRejectReason ? (
+              <p className="error" style={{ marginTop: '1rem' }}>
+                رفض التعيين: {wo.assignmentRejectReason}
+              </p>
+            ) : null}
+            {wo.reworkReason ? (
+              <p className="error" style={{ marginTop: '1rem' }}>
+                سبب الإعادة: {wo.reworkReason}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {activeTab === 'attachments' ? (
+          <>
+            <dl style={{ margin: '0 0 1rem' }}>
+              <div>
+                <dt className="muted">الأصل</dt>
+                <dd>
+                  {wo.asset ? (
+                    <Link href={`/maintenance/assets/${wo.asset.id}`}>
+                      {wo.asset.label}
+                    </Link>
+                  ) : (
+                    '—'
+                  )}
+                </dd>
+              </div>
+            </dl>
+            <WorkOrderAttachments
+              workOrderId={wo.id}
+              attachments={wo.attachments ?? []}
+              canUpload={
+                (canExecute &&
+                  [
+                    'in_progress',
+                    'rework',
+                    'waiting_parts',
+                    'waiting_access',
+                  ].includes(wo.status)) ||
+                (canSupervise && wo.status === 'done_field')
+              }
+              onUploaded={reload}
+            />
+          </>
+        ) : null}
+
+        {activeTab === 'thread' ? (
+          <WorkOrderThread workOrderId={wo.id} />
+        ) : null}
+
+        {activeTab === 'log' ? (
+          <section>
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>
-              طلبات القطع
+              سجل الحالات
             </h3>
-            <ul style={{ margin: 0, paddingInlineStart: '1.1rem' }}>
-              {wo.partsRequests.map((p) => (
-                <li key={p.id}>
-                  {p.description} ×{p.quantity} —{' '}
-                  {PARTS_STATUS_LABELS[p.status] ?? p.status}
-                </li>
-              ))}
-            </ul>
+            {wo.statusEvents.length ? (
+              <ul style={{ margin: 0, paddingInlineStart: '1.1rem' }}>
+                {wo.statusEvents.map((e) => (
+                  <li key={e.id} style={{ marginBottom: '0.35rem' }}>
+                    <strong>
+                      {WO_STATUS_LABELS[e.fromStatus] ?? e.fromStatus}
+                    </strong>
+                    {' → '}
+                    <strong>
+                      {WO_STATUS_LABELS[e.toStatus] ?? e.toStatus}
+                    </strong>
+                    <span className="muted">
+                      {' '}
+                      — {e.actor?.name ?? '—'} — {formatDt(e.createdAt)}
+                    </span>
+                    {e.reason ? (
+                      <div className="muted">{e.reason}</div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                لا أحداث في السجل بعد
+              </p>
+            )}
           </section>
         ) : null}
-
-        {wo.assignmentRejectReason ? (
-          <p className="error" style={{ marginTop: '1rem' }}>
-            رفض التعيين: {wo.assignmentRejectReason}
-          </p>
-        ) : null}
-        {wo.reworkReason ? (
-          <p className="error" style={{ marginTop: '1rem' }}>
-            سبب الإعادة: {wo.reworkReason}
-          </p>
-        ) : null}
-
-        <section style={{ marginTop: '1.25rem' }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>
-            سجل الحالات
-          </h3>
-          <ul style={{ margin: 0, paddingInlineStart: '1.1rem' }}>
-            {wo.statusEvents.map((e) => (
-              <li key={e.id} style={{ marginBottom: '0.35rem' }}>
-                <strong>
-                  {WO_STATUS_LABELS[e.fromStatus] ?? e.fromStatus}
-                </strong>
-                {' → '}
-                <strong>{WO_STATUS_LABELS[e.toStatus] ?? e.toStatus}</strong>
-                <span className="muted">
-                  {' '}
-                  — {e.actor?.name ?? '—'} — {formatDt(e.createdAt)}
-                </span>
-                {e.reason ? <div className="muted">{e.reason}</div> : null}
-              </li>
-            ))}
-          </ul>
-        </section>
       </article>
 
       <Modal

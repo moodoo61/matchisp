@@ -12,8 +12,10 @@ import { MaintenanceMetricsService } from './service/maintenance-metrics.service
 import { MaintenanceNotificationsService } from './service/maintenance-notifications.service';
 import { MaintenanceUsersService } from './service/maintenance-users.service';
 import { PartsRequestsService } from './service/parts-requests.service';
+import { ServiceRequestAttachmentUploadService } from './service/service-request-attachment-upload.service';
 import { ServiceRequestsService } from './service/service-requests.service';
 import { WorkOrderAttachmentUploadService } from './service/work-order-attachment-upload.service';
+import { WorkOrderCommentsService } from './service/work-order-comments.service';
 import { WorkOrdersService } from './service/work-orders.service';
 
 @Module({
@@ -31,7 +33,9 @@ import { WorkOrdersService } from './service/work-orders.service';
     MaintenanceUsersService,
     ServiceRequestsService,
     WorkOrdersService,
+    WorkOrderCommentsService,
     PartsRequestsService,
+    ServiceRequestAttachmentUploadService,
     WorkOrderAttachmentUploadService,
     MaintenanceNotificationsService,
     MaintenanceMetricsService,

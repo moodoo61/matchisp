@@ -3,26 +3,33 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { PERMISSIONS } from '@isp/shared';
 import {
+  assignWorkOrder,
   convertServiceRequest,
-  createAsset,
   createServiceRequest,
   deleteServiceRequest,
-  listAssetKinds,
   listAssets,
   listRequestPriorities,
   listRequestTypes,
   listServiceRequests,
+  listWorkOrderMembers,
   rejectServiceRequest,
-  triageServiceRequest,
+  uploadServiceRequestAttachment,
   type MetaOption,
 } from '@/features/maintenance/api';
-import type { Asset, ServiceRequest } from '@/features/maintenance/types';
+import type {
+  Asset,
+  ServiceRequest,
+  UserBrief,
+} from '@/features/maintenance/types';
 import {
   PRIORITY_LABELS,
   REQUEST_STATUS_LABELS,
   WO_TYPE_LABELS,
 } from '@/features/maintenance/types';
 import { usePermissions } from '@/lib/usePermissions';
+import { FormPanelTabs } from '@/features/maintenance/components/FormPanelTabs';
+import { PendingAttachmentsField } from '@/features/maintenance/components/PendingAttachmentsField';
+import { ServiceRequestAttachments } from '@/features/maintenance/components/ServiceRequestAttachments';
 import {
   DataTable,
   Modal,
@@ -32,24 +39,39 @@ import {
   type Column,
 } from '@/shared/ui';
 
+const FORM_TABS = [
+  { id: 'details', label: 'تفاصيل' },
+  { id: 'attachments', label: 'مرفقات' },
+] as const;
+
+type FormTabId = (typeof FORM_TABS)[number]['id'];
+
 export function ServiceRequestsCard() {
   const toast = useToast();
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.MAINTENANCE_READ);
   const canCreate = can(PERMISSIONS.MAINTENANCE_REQUEST_CREATE);
   const canTriage = can(PERMISSIONS.MAINTENANCE_TRIAGE);
+  const canDispatch = can(PERMISSIONS.MAINTENANCE_DISPATCH);
   const canDelete = can(PERMISSIONS.MAINTENANCE_DELETE);
 
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [types, setTypes] = useState<MetaOption[]>([]);
   const [priorities, setPriorities] = useState<MetaOption[]>([]);
-  const [kinds, setKinds] = useState<MetaOption[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [members, setMembers] = useState<UserBrief[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [assetOpen, setAssetOpen] = useState(false);
-  const [triageRow, setTriageRow] = useState<ServiceRequest | null>(null);
+  const [createTab, setCreateTab] = useState<FormTabId>('details');
+  const [convertTab, setConvertTab] = useState<FormTabId>('details');
+  const [createPendingFiles, setCreatePendingFiles] = useState<File[]>([]);
+  const [convertPendingFiles, setConvertPendingFiles] = useState<File[]>([]);
+  const [convertRow, setConvertRow] = useState<ServiceRequest | null>(null);
+  /** بعد التحويل — يظهر حقل التعيين */
+  const [createdWorkOrderId, setCreatedWorkOrderId] = useState<string | null>(
+    null,
+  );
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [deleteRow, setDeleteRow] = useState<ServiceRequest | null>(null);
@@ -60,26 +82,30 @@ export function ServiceRequestsCard() {
   const [priority, setPriority] = useState('p3');
   const [assetId, setAssetId] = useState('');
   const [locationText, setLocationText] = useState('');
-  const [triageNotes, setTriageNotes] = useState('');
+  const [notes, setNotes] = useState('');
+  const [assigneeUserId, setAssigneeUserId] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const [assetKind, setAssetKind] = useState('subscriber');
-  const [assetLabel, setAssetLabel] = useState('');
-  const [assetRef, setAssetRef] = useState('');
+  /** خيارات نموذج الإضافة */
+  const [createConvert, setCreateConvert] = useState(false);
+  const [createAssigneeId, setCreateAssigneeId] = useState('');
+
+  const assignUnlocked = Boolean(createdWorkOrderId);
 
   async function reload() {
     try {
-      const [rows, t, p, a, k] = await Promise.all([
+      const [rows, t, p, a, m] = await Promise.all([
         listServiceRequests(),
         listRequestTypes(),
         listRequestPriorities(),
         listAssets(),
-        listAssetKinds(),
+        listWorkOrderMembers(),
       ]);
       setItems(rows);
       setTypes(t);
       setPriorities(p);
       setAssets(a);
-      setKinds(k);
+      setMembers(m);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطأ');
@@ -87,18 +113,41 @@ export function ServiceRequestsCard() {
   }
 
   useEffect(() => {
+    if (!canRead) return;
     void reload();
-  }, []);
+  }, [canRead]);
 
   if (!canRead) return null;
 
-  function openTriage(r: ServiceRequest) {
-    setTriageRow(r);
+  function openConvert(r: ServiceRequest) {
+    setConvertRow(r);
+    setConvertTab('details');
+    setConvertPendingFiles([]);
     setWorkType(r.workType);
     setPriority(r.priority);
     setAssetId(r.assetId ?? '');
     setLocationText(r.locationText ?? '');
-    setTriageNotes(r.triageNotes ?? '');
+    setNotes(r.triageNotes ?? '');
+    setAssigneeUserId('');
+    setCreatedWorkOrderId(null);
+  }
+
+  function closeConvert() {
+    setConvertRow(null);
+    setConvertTab('details');
+    setConvertPendingFiles([]);
+    setCreatedWorkOrderId(null);
+    setAssigneeUserId('');
+    setBusy(false);
+  }
+
+  async function uploadPending(
+    requestId: string,
+    files: File[],
+  ): Promise<void> {
+    for (const file of files) {
+      await uploadServiceRequestAttachment(requestId, file);
+    }
   }
 
   const columns: Column<ServiceRequest>[] = [
@@ -128,48 +177,27 @@ export function ServiceRequestsCard() {
       key: 'actions',
       header: '',
       render: (r) => {
-        const canScreen =
-          canTriage &&
-          (r.status === 'submitted' || r.status === 'triaged');
         const canConvert =
           canTriage &&
-          (canScreen ||
+          (r.status === 'triaged' ||
+            r.status === 'submitted' ||
             (r.status === 'converted' && r.workType === 'outage'));
-        if (!canScreen && !canConvert && !canDelete) return null;
+        const canReject =
+          canTriage &&
+          (r.status === 'triaged' || r.status === 'submitted');
+        if (!canConvert && !canReject && !canDelete) return null;
         return (
           <div className="row-actions">
-            {canScreen ? (
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={() => openTriage(r)}
-              >
-                فرز
-              </button>
-            ) : null}
             {canConvert ? (
               <button
                 type="button"
                 className="btn"
-                onClick={() => {
-                  void (async () => {
-                    try {
-                      await notifyMutation(
-                        toast,
-                        () => convertServiceRequest(r.id),
-                        { success: 'تم إنشاء أمر العمل' },
-                      );
-                      await reload();
-                    } catch {
-                      /* toast */
-                    }
-                  })();
-                }}
+                onClick={() => openConvert(r)}
               >
                 {r.status === 'converted' ? 'أمر عمل إضافي' : 'تحويل لأمر عمل'}
               </button>
             ) : null}
-            {canScreen ? (
+            {canReject ? (
               <button
                 type="button"
                 className="btn danger"
@@ -196,13 +224,65 @@ export function ServiceRequestsCard() {
     },
   ];
 
+  function resetCreateForm() {
+    setTitle('');
+    setDescription('');
+    setWorkType('corrective');
+    setPriority('p3');
+    setAssetId('');
+    setLocationText('');
+    setCreateConvert(false);
+    setCreateAssigneeId('');
+    setCreateTab('details');
+    setCreatePendingFiles([]);
+  }
+
+  function renderAssetField(disabled = false) {
+    return (
+      <label>
+        الأصل
+        <select
+          value={assetId}
+          onChange={(e) => setAssetId(e.target.value)}
+          disabled={disabled}
+        >
+          <option value="">—</option>
+          {assets.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
   async function onCreate(e: FormEvent) {
     e.preventDefault();
+    if (title.trim().length < 3) {
+      toast.error('العنوان مطلوب (3 أحرف على الأقل)');
+      setCreateTab('details');
+      return;
+    }
+    if (createConvert && !canTriage) {
+      toast.error('التحويل يتطلب صلاحية الفرز/التحويل');
+      return;
+    }
+    if (createConvert && createAssigneeId && !canDispatch) {
+      toast.error('التعيين يتطلب صلاحية التوزيع');
+      return;
+    }
     try {
+      const successMsg = createConvert
+        ? createAssigneeId
+          ? 'تم حفظ البلاغ وتحويله وتعيين الفني'
+          : 'تم حفظ البلاغ وتحويله لأمر عمل'
+        : 'تم إنشاء البلاغ — جاهز للتحويل';
       await notifyMutation(
         toast,
-        () =>
-          createServiceRequest({
+        async () => {
+          /** إنشاء أولاً ثم رفع المرفقات ثم التحويل — لنسخها إلى أمر العمل */
+          const created = await createServiceRequest({
             title: title.trim(),
             description: description.trim(),
             workType,
@@ -210,61 +290,88 @@ export function ServiceRequestsCard() {
             assetId: assetId || undefined,
             locationText: locationText.trim(),
             submit: true,
-          }),
-        { success: 'تم إنشاء البلاغ' },
+          });
+          if (createPendingFiles.length) {
+            await uploadPending(created.id, createPendingFiles);
+          }
+          if (createConvert) {
+            return convertServiceRequest(created.id, {
+              approve: true,
+              assigneeUserId: createAssigneeId || undefined,
+            });
+          }
+          return created;
+        },
+        { success: successMsg },
       );
       setCreateOpen(false);
-      setTitle('');
-      setDescription('');
+      resetCreateForm();
       await reload();
     } catch {
       /* toast */
     }
   }
 
-  async function onTriage(e: FormEvent) {
-    e.preventDefault();
-    if (!triageRow) return;
+  async function onConvert() {
+    if (!convertRow) return;
+    setBusy(true);
     try {
-      await notifyMutation(
+      if (convertPendingFiles.length) {
+        await uploadPending(convertRow.id, convertPendingFiles);
+        setConvertPendingFiles([]);
+      }
+      const updated = await notifyMutation(
         toast,
         () =>
-          triageServiceRequest(triageRow.id, {
+          convertServiceRequest(convertRow.id, {
             workType,
             priority,
             assetId: assetId || undefined,
             locationText: locationText.trim(),
-            triageNotes: triageNotes.trim(),
+            triageNotes: notes.trim(),
           }),
-        { success: 'تم الفرز' },
+        { success: 'تم التحويل — يمكنك التعيين الآن' },
       );
-      setTriageRow(null);
+      const newest = updated.workOrders?.[0];
+      if (!newest?.id) {
+        toast.error('تم التحويل لكن لم يُعثر على أمر العمل');
+        closeConvert();
+        await reload();
+        return;
+      }
+      setCreatedWorkOrderId(newest.id);
+      setConvertRow(updated);
       await reload();
     } catch {
       /* toast */
+    } finally {
+      setBusy(false);
     }
   }
 
-  async function onCreateAsset(e: FormEvent) {
-    e.preventDefault();
+  async function onAssign() {
+    if (!createdWorkOrderId) return;
+    if (!assigneeUserId) {
+      toast.error('اختر الفني للتعيين');
+      return;
+    }
+    if (!canDispatch) {
+      toast.error('لا تملك صلاحية التوزيع');
+      return;
+    }
+    setBusy(true);
     try {
-      const row = await notifyMutation(
+      await notifyMutation(
         toast,
-        () =>
-          createAsset({
-            kind: assetKind,
-            label: assetLabel.trim(),
-            externalRef: assetRef.trim() || undefined,
-          }),
-        { success: 'تم إنشاء الأصل' },
+        () => assignWorkOrder(createdWorkOrderId, assigneeUserId),
+        { success: 'تم تعيين الفني' },
       );
-      setAssetOpen(false);
-      setAssetLabel('');
-      setAssetRef('');
+      closeConvert();
       await reload();
-      setAssetId(row.id);
     } catch {
       /* toast */
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -273,26 +380,18 @@ export function ServiceRequestsCard() {
       <TaskCard
         title="البلاغات"
         actions={
-          <div className="row-actions">
-            {canTriage ? (
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={() => setAssetOpen(true)}
-              >
-                أصل جديد
-              </button>
-            ) : null}
-            {canCreate || canTriage ? (
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setCreateOpen(true)}
-              >
-                بلاغ جديد
-              </button>
-            ) : null}
-          </div>
+          canCreate || canTriage ? (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setCreateTab('details');
+                setCreateOpen(true);
+              }}
+            >
+              بلاغ جديد
+            </button>
+          ) : null
         }
       >
         {error ? <p className="error">{error}</p> : null}
@@ -307,18 +406,28 @@ export function ServiceRequestsCard() {
       <Modal
         open={createOpen}
         title="بلاغ جديد"
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          resetCreateForm();
+        }}
         footer={
           <>
             <button
               type="button"
               className="btn secondary"
-              onClick={() => setCreateOpen(false)}
+              onClick={() => {
+                setCreateOpen(false);
+                resetCreateForm();
+              }}
             >
               إلغاء
             </button>
             <button type="submit" form="create-request-form" className="btn">
-              إرسال للفرز
+              {createConvert
+                ? createAssigneeId
+                  ? 'حفظ وتحويل وتعيين'
+                  : 'حفظ وتحويل لأمر عمل'
+                : 'حفظ البلاغ'}
             </button>
           </>
         }
@@ -328,212 +437,279 @@ export function ServiceRequestsCard() {
           className="form form-wide"
           onSubmit={onCreate}
         >
-          <label>
-            العنوان
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              minLength={3}
-            />
-          </label>
-          <div className="form-grid-2">
-            <label>
-              النوع
-              <select
-                value={workType}
-                onChange={(e) => setWorkType(e.target.value)}
-              >
-                {types.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              الأولوية
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                {priorities.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label>
-            الأصل
-            <select
-              value={assetId}
-              onChange={(e) => setAssetId(e.target.value)}
-            >
-              <option value="">—</option>
-              {assets.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            الموقع
-            <input
-              value={locationText}
-              onChange={(e) => setLocationText(e.target.value)}
-            />
-          </label>
-          <label>
-            الوصف
-            <textarea
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </label>
+          <FormPanelTabs
+            tabs={[...FORM_TABS]}
+            active={createTab}
+            onChange={(id) => setCreateTab(id as FormTabId)}
+          />
+
+          {createTab === 'details' ? (
+            <>
+              <label>
+                العنوان
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  minLength={3}
+                />
+              </label>
+              <div className="form-grid-2">
+                <label>
+                  النوع
+                  <select
+                    value={workType}
+                    onChange={(e) => setWorkType(e.target.value)}
+                  >
+                    {types.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  الأولوية
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                  >
+                    {priorities.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label>
+                الموقع
+                <input
+                  value={locationText}
+                  onChange={(e) => setLocationText(e.target.value)}
+                />
+              </label>
+              <label>
+                الوصف
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </label>
+
+              {canTriage ? (
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    flexDirection: 'row',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={createConvert}
+                    onChange={(e) => {
+                      setCreateConvert(e.target.checked);
+                      if (!e.target.checked) setCreateAssigneeId('');
+                    }}
+                  />
+                  <span>تحويل لأمر عمل فوراً</span>
+                </label>
+              ) : null}
+
+              {canTriage && createConvert ? (
+                canDispatch ? (
+                  <label>
+                    تعيين فني
+                    <select
+                      value={createAssigneeId}
+                      onChange={(e) => setCreateAssigneeId(e.target.value)}
+                    >
+                      <option value="">— بدون تعيين الآن —</option>
+                      {members.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.username})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <p className="muted" style={{ margin: 0 }}>
+                    سيُحوَّل لأمر عمل بدون تعيين — تحتاج صلاحية التوزيع للتعيين
+                    المباشر.
+                  </p>
+                )
+              ) : null}
+            </>
+          ) : (
+            <>
+              {renderAssetField()}
+              <PendingAttachmentsField
+                files={createPendingFiles}
+                onChange={setCreatePendingFiles}
+              />
+            </>
+          )}
         </form>
       </Modal>
 
       <Modal
-        open={Boolean(triageRow)}
-        title={triageRow ? `فرز بلاغ #${triageRow.number}` : 'فرز'}
-        onClose={() => setTriageRow(null)}
+        open={Boolean(convertRow)}
+        title={
+          convertRow
+            ? assignUnlocked
+              ? `تعيين أمر العمل — بلاغ #${convertRow.number}`
+              : `تحويل بلاغ #${convertRow.number}`
+            : 'تحويل'
+        }
+        onClose={closeConvert}
         footer={
           <>
             <button
               type="button"
               className="btn secondary"
-              onClick={() => setTriageRow(null)}
+              onClick={closeConvert}
+              disabled={busy}
             >
-              إلغاء
+              {assignUnlocked ? 'إغلاق' : 'إلغاء'}
             </button>
-            <button type="submit" form="triage-form" className="btn">
-              حفظ الفرز
-            </button>
+            {!assignUnlocked ? (
+              <button
+                type="button"
+                className="btn"
+                disabled={busy || !canTriage}
+                onClick={() => {
+                  void onConvert();
+                }}
+              >
+                {busy ? 'جاري…' : 'تحويل لأمر عمل'}
+              </button>
+            ) : canDispatch ? (
+              <button
+                type="button"
+                className="btn"
+                disabled={busy || !assigneeUserId}
+                onClick={() => {
+                  void onAssign();
+                }}
+              >
+                {busy ? 'جاري…' : 'تعيين الفني'}
+              </button>
+            ) : null}
           </>
         }
       >
-        <form id="triage-form" className="form form-wide" onSubmit={onTriage}>
+        <div className="form form-wide">
           <p className="muted" style={{ margin: 0 }}>
-            {triageRow?.title}
+            {convertRow?.title}
           </p>
-          <div className="form-grid-2">
-            <label>
-              النوع
-              <select
-                value={workType}
-                onChange={(e) => setWorkType(e.target.value)}
-              >
-                {types.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              الأولوية
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                {priorities.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label>
-            الأصل
-            <select
-              value={assetId}
-              onChange={(e) => setAssetId(e.target.value)}
-            >
-              <option value="">—</option>
-              {assets.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            الموقع
-            <input
-              value={locationText}
-              onChange={(e) => setLocationText(e.target.value)}
-            />
-          </label>
-          <label>
-            ملاحظات الفرز
-            <textarea
-              rows={3}
-              value={triageNotes}
-              onChange={(e) => setTriageNotes(e.target.value)}
-            />
-          </label>
-        </form>
-      </Modal>
 
-      <Modal
-        open={assetOpen}
-        title="أصل جديد"
-        onClose={() => setAssetOpen(false)}
-        footer={
-          <>
-            <button
-              type="button"
-              className="btn secondary"
-              onClick={() => setAssetOpen(false)}
-            >
-              إلغاء
-            </button>
-            <button type="submit" form="create-asset-form" className="btn">
-              حفظ
-            </button>
-          </>
-        }
-      >
-        <form
-          id="create-asset-form"
-          className="form form-wide"
-          onSubmit={onCreateAsset}
-        >
-          <label>
-            النوع
-            <select
-              value={assetKind}
-              onChange={(e) => setAssetKind(e.target.value)}
-            >
-              {kinds.map((k) => (
-                <option key={k.value} value={k.value}>
-                  {k.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            الاسم / التسمية
-            <input
-              value={assetLabel}
-              onChange={(e) => setAssetLabel(e.target.value)}
-              required
-              minLength={2}
-            />
-          </label>
-          <label>
-            مرجع خارجي (اختياري)
-            <input
-              value={assetRef}
-              onChange={(e) => setAssetRef(e.target.value)}
-            />
-          </label>
-        </form>
+          {!assignUnlocked ? (
+            <>
+              <FormPanelTabs
+                tabs={[...FORM_TABS]}
+                active={convertTab}
+                onChange={(id) => setConvertTab(id as FormTabId)}
+              />
+              {convertTab === 'details' ? (
+                <>
+                  <div className="form-grid-2">
+                    <label>
+                      النوع
+                      <select
+                        value={workType}
+                        onChange={(e) => setWorkType(e.target.value)}
+                        disabled={busy}
+                      >
+                        {types.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      الأولوية
+                      <select
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value)}
+                        disabled={busy}
+                      >
+                        {priorities.map((p) => (
+                          <option key={p.value} value={p.value}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    الموقع
+                    <input
+                      value={locationText}
+                      onChange={(e) => setLocationText(e.target.value)}
+                      disabled={busy}
+                    />
+                  </label>
+                  <label>
+                    ملاحظات
+                    <textarea
+                      rows={3}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      disabled={busy}
+                    />
+                  </label>
+                  <p className="muted" style={{ margin: 0 }}>
+                    اضغط «تحويل لأمر عمل» أولاً، ثم سيظهر خيار التعيين.
+                  </p>
+                </>
+              ) : (
+                <>
+                  {renderAssetField(busy)}
+                  <ServiceRequestAttachments
+                    attachments={convertRow?.attachments ?? []}
+                  />
+                  <PendingAttachmentsField
+                    files={convertPendingFiles}
+                    onChange={setConvertPendingFiles}
+                    disabled={busy}
+                    hint="تُرفع قبل التحويل وتُنسخ تلقائياً إلى أمر العمل"
+                  />
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <p style={{ margin: 0 }}>
+                تم إنشاء أمر العمل. اختر الفني ثم اضغط تعيين.
+              </p>
+              {canDispatch ? (
+                <label>
+                  الفني
+                  <select
+                    value={assigneeUserId}
+                    onChange={(e) => setAssigneeUserId(e.target.value)}
+                    disabled={busy}
+                  >
+                    <option value="">— اختر الفني —</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.username})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className="muted" style={{ margin: 0 }}>
+                  لا تملك صلاحية التوزيع — عيّن لاحقاً من أوامر العمل.
+                </p>
+              )}
+            </>
+          )}
+        </div>
       </Modal>
 
       <Modal
@@ -610,10 +786,9 @@ export function ServiceRequestsCard() {
                       toast,
                       () => deleteServiceRequest(deleteRow.id),
                       {
-                        success:
-                          deleteRow.workOrders?.length
-                            ? `تم حذف البلاغ و${deleteRow.workOrders.length} أمر عمل مرتبط`
-                            : 'تم حذف البلاغ',
+                        success: deleteRow.workOrders?.length
+                          ? `تم حذف البلاغ و${deleteRow.workOrders.length} أمر عمل مرتبط`
+                          : 'تم حذف البلاغ',
                       },
                     );
                     setDeleteRow(null);

@@ -166,25 +166,73 @@ export const PERMISSION_TREE: readonly PermissionTreeNode[] = [
   {
     key: 'maintenance',
     label: 'الصيانة',
-    codes: [
-      'maintenance:read',
-      'maintenance.request:create',
-      'maintenance:triage',
-      'maintenance:dispatch',
-      'maintenance:execute',
-      'maintenance:parts',
-      'maintenance:supervise',
-      'maintenance:delete',
+    children: [
+      {
+        key: 'maintenance.read',
+        label: 'عرض فقط',
+        codes: ['maintenance:read'],
+      },
+      {
+        key: 'maintenance.request',
+        label: 'تقديم بلاغ (دعم / مكتب)',
+        codes: ['maintenance.request:create'],
+      },
+      {
+        key: 'maintenance.triage',
+        label: 'فرز وتحويل لأمر عمل',
+        codes: ['maintenance:triage'],
+      },
+      {
+        key: 'maintenance.dispatch',
+        label: 'توزيع على الفنيين',
+        codes: ['maintenance:dispatch'],
+      },
+      {
+        key: 'maintenance.execute',
+        label: 'تنفيذ ميداني (فني)',
+        codes: ['maintenance:execute'],
+      },
+      {
+        key: 'maintenance.parts',
+        label: 'طلبات القطع / أمين مواد',
+        codes: ['maintenance:parts'],
+      },
+      {
+        key: 'maintenance.supervise',
+        label: 'إشراف ومراجعة وإغلاق',
+        codes: ['maintenance:supervise'],
+      },
+      {
+        key: 'maintenance.delete',
+        label: 'حذف بلاغات وأوامر',
+        codes: ['maintenance:delete'],
+      },
     ],
   },
   {
     key: 'inventory',
     label: 'المخازن',
-    codes: [
-      'inventory:read',
-      'inventory:manage',
-      'inventory:receive',
-      'inventory:issue',
+    children: [
+      {
+        key: 'inventory.read',
+        label: 'عرض الأرصدة والأجهزة',
+        codes: ['inventory:read'],
+      },
+      {
+        key: 'inventory.manage',
+        label: 'إدارة الأصناف والتعديلات',
+        codes: ['inventory:manage'],
+      },
+      {
+        key: 'inventory.receive',
+        label: 'توريد / إرجاع',
+        codes: ['inventory:receive'],
+      },
+      {
+        key: 'inventory.issue',
+        label: 'صرف للأفراد / أوامر العمل',
+        codes: ['inventory:issue'],
+      },
     ],
   },
   {

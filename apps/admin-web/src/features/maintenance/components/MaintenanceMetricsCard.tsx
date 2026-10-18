@@ -57,18 +57,6 @@ export function MaintenanceMetricsCard() {
           href: '/maintenance/work-orders',
           hot: m.overdue > 0,
         },
-        {
-          label: 'متوسط زمن الإصلاح',
-          value:
-            m.avgRepairHours == null
-              ? '—'
-              : `${m.avgRepairHours} س`,
-          href: '/maintenance/history',
-          hint:
-            m.sampleSize > 0
-              ? `من آخر ${m.sampleSize} أمر مغلق`
-              : 'لا بيانات بعد',
-        },
       ]
     : [];
 

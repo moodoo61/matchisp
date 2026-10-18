@@ -59,8 +59,9 @@ export function WorkOrdersCard() {
   }
 
   useEffect(() => {
+    if (!canRead) return;
     void reload();
-  }, []);
+  }, [canRead]);
 
   if (!canRead) return null;
 
@@ -101,22 +102,31 @@ export function WorkOrdersCard() {
     {
       key: 'actions',
       header: '',
-      render: (r) =>
-        canDispatch &&
-        (r.status === 'approved' ||
-          r.status === 'assigned' ||
-          r.status === 'accepted') ? (
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              setAssignId(r.id);
-              setAssigneeUserId(r.assigneeUserId ?? '');
-            }}
+      render: (r) => (
+        <div className="row-actions">
+          <Link
+            href={`/maintenance/work-orders/${r.id}`}
+            className="btn secondary"
           >
-            تعيين
-          </button>
-        ) : null,
+            فتح
+          </Link>
+          {canDispatch &&
+          (r.status === 'approved' ||
+            r.status === 'assigned' ||
+            r.status === 'accepted') ? (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setAssignId(r.id);
+                setAssigneeUserId(r.assigneeUserId ?? '');
+              }}
+            >
+              تعيين
+            </button>
+          ) : null}
+        </div>
+      ),
     },
   ];
 

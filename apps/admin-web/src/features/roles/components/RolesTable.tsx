@@ -4,9 +4,17 @@ import type { RoleRow } from '../types';
 
 type Props = {
   roles: RoleRow[];
+  canManage?: boolean;
+  onEdit?: (role: RoleRow) => void;
+  onDelete?: (role: RoleRow) => void;
 };
 
-export function RolesTable({ roles }: Props) {
+export function RolesTable({
+  roles,
+  canManage = false,
+  onEdit,
+  onDelete,
+}: Props) {
   return (
     <div className="card">
       <table className="table">
@@ -16,6 +24,7 @@ export function RolesTable({ roles }: Props) {
             <th>الرمز</th>
             <th>المستخدمون</th>
             <th>الصلاحيات</th>
+            {canManage ? <th></th> : null}
           </tr>
         </thead>
         <tbody>
@@ -34,6 +43,34 @@ export function RolesTable({ roles }: Props) {
                   {role.permissions.length} صلاحية
                 </span>
               </td>
+              {canManage ? (
+                <td>
+                  <div className="row-actions">
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      onClick={() => onEdit?.(role)}
+                    >
+                      تعديل
+                    </button>
+                    {!role.isSystem ? (
+                      <button
+                        type="button"
+                        className="btn danger"
+                        onClick={() => onDelete?.(role)}
+                        disabled={role.usersCount > 0}
+                        title={
+                          role.usersCount > 0
+                            ? 'الدور مرتبط بمستخدمين'
+                            : 'حذف الدور'
+                        }
+                      >
+                        حذف
+                      </button>
+                    ) : null}
+                  </div>
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>

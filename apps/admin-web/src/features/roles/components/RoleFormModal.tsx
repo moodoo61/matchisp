@@ -3,11 +3,13 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Modal } from '@/shared/ui';
 import { PermissionPicker } from './PermissionPicker';
-import type { RolePermission } from '../types';
+import type { RolePermission, RoleRow } from '../types';
 
 type Props = {
   open: boolean;
   permissions: RolePermission[];
+  /** إن وُجد = وضع تعديل */
+  role?: RoleRow | null;
   busy?: boolean;
   onClose: () => void;
   onSubmit: (payload: {
@@ -18,13 +20,15 @@ type Props = {
   }) => Promise<void>;
 };
 
-export function RoleCreateModal({
+export function RoleFormModal({
   open,
   permissions,
+  role = null,
   busy = false,
   onClose,
   onSubmit,
 }: Props) {
+  const editing = Boolean(role);
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -32,11 +36,18 @@ export function RoleCreateModal({
 
   useEffect(() => {
     if (!open) return;
-    setCode('');
-    setName('');
-    setDescription('');
-    setPermissionIds([]);
-  }, [open]);
+    if (role) {
+      setCode(role.code);
+      setName(role.name);
+      setDescription(role.description ?? '');
+      setPermissionIds(role.permissions.map((p) => p.id));
+    } else {
+      setCode('');
+      setName('');
+      setDescription('');
+      setPermissionIds([]);
+    }
+  }, [open, role]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -51,7 +62,7 @@ export function RoleCreateModal({
   return (
     <Modal
       open={open}
-      title="دور جديد"
+      title={editing ? `تعديل الدور — ${role?.name ?? ''}` : 'دور جديد'}
       onClose={onClose}
       panelClassName="roles-create-modal"
       footer={
@@ -67,17 +78,17 @@ export function RoleCreateModal({
           <button
             className="btn"
             type="submit"
-            form="roles-create-form"
+            form="roles-form"
             disabled={busy}
           >
-            {busy ? 'جاري الحفظ...' : 'حفظ الدور'}
+            {busy ? 'جاري الحفظ...' : editing ? 'حفظ التعديلات' : 'حفظ الدور'}
           </button>
         </div>
       }
     >
       <div className="roles-create-layout">
         <form
-          id="roles-create-form"
+          id="roles-form"
           className="form roles-create-fields"
           onSubmit={handleSubmit}
         >
@@ -90,7 +101,7 @@ export function RoleCreateModal({
                 required
                 pattern="[a-z0-9_\-]+"
                 title="حروف إنجليزية صغيرة وأرقام و _ فقط"
-                disabled={busy}
+                disabled={busy || editing}
                 autoComplete="off"
               />
             </label>

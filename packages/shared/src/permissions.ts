@@ -256,14 +256,14 @@ export const PERMISSION_LABELS: Record<PermissionCode, string> = {
   'partners:create': 'إضافة وكيل',
   'partners:update': 'تعديل وكيل',
   'partners:delete': 'حذف وكيل',
-  'maintenance:read': 'عرض الصيانة وأوامر العمل',
-  'maintenance.request:create': 'إنشاء بلاغ صيانة',
-  'maintenance:triage': 'فرز البلاغات وتحويلها لأوامر عمل',
-  'maintenance:dispatch': 'توزيع أوامر العمل على الفنيين',
-  'maintenance:execute': 'تنفيذ أوامر العمل (قبول/بدء/إنجاز)',
-  'maintenance:parts': 'إدارة طلبات قطع الغيار والصرف',
-  'maintenance:supervise': 'مراجعة وإغلاق أوامر العمل',
-  'maintenance:delete': 'حذف البلاغات وأوامر العمل المرتبطة',
+  'maintenance:read': 'عرض البلاغات وأوامر العمل (بدون أفعال)',
+  'maintenance.request:create': 'تقديم بلاغ صيانة جديد',
+  'maintenance:triage': 'فرز البلاغات ورفضها وتحويلها لأوامر عمل',
+  'maintenance:dispatch': 'تعيين أوامر العمل على الفنيين',
+  'maintenance:execute': 'قبول/بدء/إنجاز أمر العمل ميدانياً (فني)',
+  'maintenance:parts': 'استلام وطلب قطع الغيار المرتبطة بأمر العمل',
+  'maintenance:supervise': 'مراجعة الإنجاز الميداني وإغلاق/إعادة تنفيذ (مسؤول صيانة)',
+  'maintenance:delete': 'حذف بلاغ مع كل أوامر العمل المرتبطة',
   'inventory:read': 'عرض المخزن والأرصدة والأجهزة',
   'inventory:manage': 'إدارة الأصناف والتعديلات المخزنية',
   'inventory:receive': 'أوامر توريد وإرجاع للمخزن',
@@ -478,25 +478,20 @@ export function hasPermission(
   }
 
   if (required.startsWith('maintenance')) {
-    if (userPermissions.includes(PERMISSIONS.MAINTENANCE_SUPERVISE)) {
-      return true;
-    }
-    if (
-      required === PERMISSIONS.MAINTENANCE_DELETE &&
-      userPermissions.includes(PERMISSIONS.MAINTENANCE_DELETE)
-    ) {
-      return true;
-    }
+    // أي صلاحية تشغيلية في الصيانة تتضمن العرض
     if (
       required === PERMISSIONS.MAINTENANCE_READ &&
       (userPermissions.includes(PERMISSIONS.MAINTENANCE_TRIAGE) ||
         userPermissions.includes(PERMISSIONS.MAINTENANCE_DISPATCH) ||
         userPermissions.includes(PERMISSIONS.MAINTENANCE_EXECUTE) ||
         userPermissions.includes(PERMISSIONS.MAINTENANCE_PARTS) ||
+        userPermissions.includes(PERMISSIONS.MAINTENANCE_SUPERVISE) ||
+        userPermissions.includes(PERMISSIONS.MAINTENANCE_DELETE) ||
         userPermissions.includes(PERMISSIONS.MAINTENANCE_REQUEST_CREATE))
     ) {
       return true;
     }
+    // لا تُوسَّع supervise إلى كل الصلاحيات — تُمنح الحزم عبر الأدوار
   }
 
   if (required.startsWith('inventory:')) {

@@ -109,6 +109,8 @@ Guard عام JWT + Guard صلاحيات RBAC
 
 ## قسم الصيانة (منفّذ)
 - الاسم الظاهر: **الصيانة** (قاعدة: `db_maintenance`) — بلاغات + أوامر عمل؛ التصميم في [WORK_ORDERS_DESIGN.md](./WORK_ORDERS_DESIGN.md)
+- صلاحيات مفصّلة في الأدوار: عرض | بلاغ | فرز | توزيع | تنفيذ | مواد | إشراف | حذف
+- أدوار seed جاهزة: `maintenance_manager` / `maintenance_technician` / `maintenance_desk`
 - نظام المهام القديم (`/tasks` و `/task-management`) أُزيل بالكامل
 
 ## قسم مراقب خدمات (منفّذ — هيكل أولي)

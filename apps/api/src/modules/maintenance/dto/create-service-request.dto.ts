@@ -40,9 +40,21 @@ export class CreateServiceRequestDto {
   @IsString()
   locationText?: string;
 
-  /** إن true يُرسل مباشرة للفرز */
+  /** إن true يُنشأ البلاغ مفروزاً وجاهزاً للتحويل */
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()
   submit?: boolean;
+
+  /** تحويل فوري لأمر عمل بعد الإنشاء */
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  convertToWorkOrder?: boolean;
+
+  /** تعيين فني مع التحويل (يتطلب convertToWorkOrder) */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  assigneeUserId?: string;
 }

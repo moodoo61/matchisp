@@ -277,8 +277,14 @@ export class WorkOrdersService {
     if (row.assigneeUserId !== actorId) {
       throw new BadRequestException('فقط الفني المعيَّن يبدأ التنفيذ');
     }
-    if (row.status !== 'accepted' && row.status !== 'rework') {
-      throw new BadRequestException('البدء متاح بعد القبول أو إعادة التنفيذ');
+    if (
+      row.status !== 'assigned' &&
+      row.status !== 'accepted' &&
+      row.status !== 'rework'
+    ) {
+      throw new BadRequestException(
+        'التنفيذ متاح بعد التعيين أو إعادة التنفيذ',
+      );
     }
     return this.transition(row, 'in_progress', actorId, roles, {
       startedAt: row.startedAt ?? new Date(),

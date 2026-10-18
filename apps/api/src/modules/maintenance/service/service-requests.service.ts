@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,10 +11,13 @@ import { ConvertServiceRequestDto } from '../dto/convert-service-request.dto';
 import { CreateServiceRequestDto } from '../dto/create-service-request.dto';
 import { RejectServiceRequestDto } from '../dto/reject-service-request.dto';
 import { TriageServiceRequestDto } from '../dto/triage-service-request.dto';
+import type { TransitionRole } from '../lib/assert-transition';
+import { MaintenanceNotificationsService } from './maintenance-notifications.service';
 import { MaintenanceUsersService } from './maintenance-users.service';
 
 const INCLUDE = {
   asset: true,
+  attachments: { orderBy: { createdAt: 'desc' as const } },
   workOrders: {
     select: {
       id: true,
@@ -32,6 +36,7 @@ export class ServiceRequestsService {
     private readonly prisma: PrismaMaintenanceService,
     private readonly audit: AuditService,
     private readonly users: MaintenanceUsersService,
+    private readonly notifications: MaintenanceNotificationsService,
   ) {}
 
   async list() {
@@ -47,8 +52,26 @@ export class ServiceRequestsService {
     return this.enrichOne(row);
   }
 
-  async create(dto: CreateServiceRequestDto, actorId: string) {
+  async create(
+    dto: CreateServiceRequestDto,
+    actorId: string,
+    roles: TransitionRole[] = [],
+  ) {
+    if (dto.convertToWorkOrder) {
+      if (!roles.includes('triage') && !roles.includes('supervise')) {
+        throw new ForbiddenException(
+          'التحويل لأمر عمل يتطلب صلاحية الفرز أو الإشراف',
+        );
+      }
+    }
+    if (dto.assigneeUserId && !dto.convertToWorkOrder) {
+      throw new BadRequestException(
+        'التعيين يتطلب تفعيل التحويل لأمر عمل',
+      );
+    }
+
     const submit = dto.submit !== false;
+    const now = submit ? new Date() : null;
     const row = await this.prisma.serviceRequest.create({
       data: {
         title: dto.title.trim(),
@@ -58,8 +81,9 @@ export class ServiceRequestsService {
         assetId: dto.assetId ?? null,
         locationText: dto.locationText?.trim() ?? '',
         reporterUserId: actorId,
-        status: submit ? 'submitted' : 'draft',
-        submittedAt: submit ? new Date() : null,
+        /** يُنشأ مفروزاً مباشرة — جاهز للتحويل دون خطوة فرز منفصلة */
+        status: submit ? 'triaged' : 'draft',
+        submittedAt: now,
       },
       include: INCLUDE,
     });
@@ -70,6 +94,19 @@ export class ServiceRequestsService {
       resourceId: row.id,
       metadata: { number: row.number, status: row.status },
     });
+
+    if (dto.convertToWorkOrder && submit) {
+      return this.convert(
+        row.id,
+        {
+          approve: true,
+          assigneeUserId: dto.assigneeUserId,
+        },
+        actorId,
+        roles,
+      );
+    }
+
     return this.enrichOne(row);
   }
 
@@ -80,7 +117,10 @@ export class ServiceRequestsService {
     }
     const updated = await this.prisma.serviceRequest.update({
       where: { id },
-      data: { status: 'submitted', submittedAt: new Date() },
+      data: {
+        status: 'triaged',
+        submittedAt: new Date(),
+      },
       include: INCLUDE,
     });
     await this.audit.log({
@@ -88,7 +128,7 @@ export class ServiceRequestsService {
       action: 'submit',
       resource: 'maintenance.service_request',
       resourceId: id,
-      metadata: { number: row.number },
+      metadata: { number: row.number, status: 'triaged' },
     });
     return this.enrichOne(updated);
   }
@@ -151,11 +191,13 @@ export class ServiceRequestsService {
    * تحويل بلاغ إلى أمر عمل.
    * من submitted/triaged: أول أمر عمل → converted.
    * من converted: أمر عمل إضافي (مفيد للانقطاع متعدد الفرق).
+   * اختياري: تطبيق حقول الفرز + تعيين فني في نفس العملية.
    */
   async convert(
     id: string,
     dto: ConvertServiceRequestDto,
     actorId: string,
+    roles: TransitionRole[] = [],
   ) {
     const row = await this.getRaw(id);
     if (
@@ -168,8 +210,33 @@ export class ServiceRequestsService {
       );
     }
 
+    if (dto.assigneeUserId) {
+      if (!roles.includes('dispatch') && !roles.includes('supervise')) {
+        throw new ForbiddenException(
+          'تعيين الفني يتطلب صلاحية التوزيع أو الإشراف',
+        );
+      }
+      if (dto.approve === false) {
+        throw new BadRequestException(
+          'لا يمكن التعيين مع أمر عمل غير معتمد — أزل approve=false',
+        );
+      }
+    }
+
     const approve = dto.approve !== false;
-    const priority = row.priority as WorkPriority;
+    const workType = dto.workType ?? row.workType;
+    const priority = (dto.priority ?? row.priority) as WorkPriority;
+    const assetId =
+      dto.assetId !== undefined ? dto.assetId || null : row.assetId;
+    const locationText =
+      dto.locationText !== undefined
+        ? dto.locationText.trim()
+        : row.locationText;
+    const triageNotes =
+      dto.triageNotes !== undefined
+        ? dto.triageNotes.trim()
+        : row.triageNotes;
+    const description = (dto.description ?? row.description).trim();
     const sla = approve ? computeSlaDates(priority) : {};
     const titleBase = (dto.title ?? row.title).trim();
     const title =
@@ -177,21 +244,55 @@ export class ServiceRequestsService {
         ? `${titleBase} (${row.workOrders.length + 1})`
         : titleBase;
 
+    const applyTriageFields =
+      row.status === 'submitted' || row.status === 'triaged';
+
     const result = await this.prisma.$transaction(async (tx) => {
+      if (applyTriageFields) {
+        await tx.serviceRequest.update({
+          where: { id },
+          data: {
+            workType,
+            priority,
+            assetId,
+            locationText,
+            triageNotes,
+            status: 'triaged',
+          },
+        });
+      }
+
+      let woStatus: string = approve ? 'approved' : 'draft';
       const wo = await tx.workOrder.create({
         data: {
-          type: row.workType,
-          priority: row.priority,
-          status: approve ? 'approved' : 'draft',
+          type: workType,
+          priority,
+          status: woStatus,
           title,
-          description: (dto.description ?? row.description).trim(),
+          description,
           requestId: row.id,
-          assetId: row.assetId,
-          locationText: row.locationText,
+          assetId,
+          locationText,
           createdByUserId: actorId,
           ...sla,
         },
       });
+
+      const requestAttachments = await tx.serviceRequestAttachment.findMany({
+        where: { serviceRequestId: id },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (requestAttachments.length) {
+        await tx.workOrderAttachment.createMany({
+          data: requestAttachments.map((a) => ({
+            workOrderId: wo.id,
+            uploadedById: a.uploadedById,
+            url: a.url,
+            originalName: a.originalName,
+          })),
+        });
+      }
+
       if (approve) {
         await tx.statusEvent.create({
           data: {
@@ -203,15 +304,47 @@ export class ServiceRequestsService {
           },
         });
       }
+
+      if (dto.assigneeUserId) {
+        await tx.statusEvent.create({
+          data: {
+            workOrderId: wo.id,
+            fromStatus: 'approved',
+            toStatus: 'assigned',
+            actorId,
+            reason: 'تعيين عند التحويل من بلاغ',
+          },
+        });
+        await tx.workOrder.update({
+          where: { id: wo.id },
+          data: {
+            status: 'assigned',
+            assigneeUserId: dto.assigneeUserId,
+          },
+        });
+        woStatus = 'assigned';
+      }
+
       const request = await tx.serviceRequest.update({
         where: { id },
         data: {
           status: 'converted',
           closedAt: null,
+          ...(applyTriageFields
+            ? { workType, priority, assetId, locationText, triageNotes }
+            : {}),
         },
         include: INCLUDE,
       });
-      return { request, workOrderId: wo.id };
+      return {
+        request,
+        workOrderId: wo.id,
+        workOrderNumber: wo.number,
+        workOrderTitle: title,
+        assigned: Boolean(dto.assigneeUserId),
+        assigneeUserId: dto.assigneeUserId ?? null,
+        woStatus,
+      };
     });
 
     await this.audit.log({
@@ -222,10 +355,54 @@ export class ServiceRequestsService {
       metadata: {
         number: row.number,
         workOrderId: result.workOrderId,
+        assigned: result.assigned,
+        assigneeUserId: result.assigneeUserId,
       },
     });
 
+    if (result.assigneeUserId) {
+      await this.notifications.notify({
+        workOrderId: result.workOrderId,
+        workOrderNumber: result.workOrderNumber,
+        title: `تعيين أمر عمل #${result.workOrderNumber}`,
+        body: result.workOrderTitle,
+        recipientUserIds: [result.assigneeUserId],
+        excludeUserId: actorId,
+      });
+    }
+
     return this.enrichOne(result.request);
+  }
+
+  async addAttachment(
+    id: string,
+    actorId: string,
+    file: { originalname: string; url: string },
+  ) {
+    await this.getRaw(id);
+    const att = await this.prisma.serviceRequestAttachment.create({
+      data: {
+        serviceRequestId: id,
+        uploadedById: actorId,
+        url: file.url,
+        originalName: file.originalname,
+      },
+    });
+    await this.audit.log({
+      actorId,
+      action: 'attach',
+      resource: 'maintenance.service_request',
+      resourceId: id,
+      metadata: { attachmentId: att.id, name: att.originalName },
+    });
+    const users = await this.users.loadMap([actorId]);
+    return {
+      id: att.id,
+      url: att.url,
+      originalName: att.originalName,
+      createdAt: att.createdAt,
+      uploadedBy: this.users.brief(users, actorId),
+    };
   }
 
   /**
@@ -302,12 +479,20 @@ export class ServiceRequestsService {
   private async enrichMany(
     rows: Awaited<ReturnType<ServiceRequestsService['getRaw']>>[],
   ) {
-    const users = await this.users.loadMap(
-      rows.map((r) => r.reporterUserId),
-    );
+    const users = await this.users.loadMap([
+      ...rows.map((r) => r.reporterUserId),
+      ...rows.flatMap((r) => r.attachments.map((a) => a.uploadedById)),
+    ]);
     return rows.map((r) => ({
       ...r,
       reporter: this.users.brief(users, r.reporterUserId),
+      attachments: r.attachments.map((a) => ({
+        id: a.id,
+        url: a.url,
+        originalName: a.originalName,
+        createdAt: a.createdAt,
+        uploadedBy: this.users.brief(users, a.uploadedById),
+      })),
     }));
   }
 

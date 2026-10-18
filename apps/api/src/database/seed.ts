@@ -1,6 +1,83 @@
 import { hash } from 'bcrypt';
-import { ALL_PERMISSIONS, PERMISSION_LABELS } from '@isp/shared';
+import {
+  ALL_PERMISSIONS,
+  PERMISSION_LABELS,
+  PERMISSIONS,
+} from '@isp/shared';
 import { PrismaClient, UserStatus } from '../../generated/core';
+
+/** حزم أدوار تشغيلية جاهزة — تُحدَّث صلاحياتها في كل seed */
+const PRESET_ROLES: Array<{
+  code: string;
+  name: string;
+  description: string;
+  permissionCodes: string[];
+}> = [
+  {
+    code: 'maintenance_manager',
+    name: 'مسؤول الصيانة',
+    description:
+      'فرز، توزيع، مراجعة وإغلاق، قطع، وحذف — بدون تنفيذ ميداني إلزامي',
+    permissionCodes: [
+      PERMISSIONS.MAINTENANCE_READ,
+      PERMISSIONS.MAINTENANCE_REQUEST_CREATE,
+      PERMISSIONS.MAINTENANCE_TRIAGE,
+      PERMISSIONS.MAINTENANCE_DISPATCH,
+      PERMISSIONS.MAINTENANCE_PARTS,
+      PERMISSIONS.MAINTENANCE_SUPERVISE,
+      PERMISSIONS.MAINTENANCE_DELETE,
+    ],
+  },
+  {
+    code: 'maintenance_technician',
+    name: 'فني صيانة',
+    description: 'تنفيذ أوامر العمل الميدانية (قبول / بدء / إنجاز / طلب قطع)',
+    permissionCodes: [
+      PERMISSIONS.MAINTENANCE_READ,
+      PERMISSIONS.MAINTENANCE_EXECUTE,
+    ],
+  },
+  {
+    code: 'maintenance_desk',
+    name: 'مكتب البلاغات',
+    description: 'تقديم بلاغات ومتابعة العرض فقط',
+    permissionCodes: [
+      PERMISSIONS.MAINTENANCE_READ,
+      PERMISSIONS.MAINTENANCE_REQUEST_CREATE,
+    ],
+  },
+];
+
+async function syncRolePermissions(
+  prisma: PrismaClient,
+  roleId: string,
+  permissionCodes: string[],
+) {
+  const perms = await prisma.permission.findMany({
+    where: { code: { in: permissionCodes } },
+  });
+  const want = new Set(perms.map((p) => p.id));
+  const existing = await prisma.rolePermission.findMany({
+    where: { roleId },
+    select: { permissionId: true },
+  });
+  const have = new Set(existing.map((e) => e.permissionId));
+
+  for (const permissionId of want) {
+    if (have.has(permissionId)) continue;
+    await prisma.rolePermission.create({
+      data: { roleId, permissionId },
+    });
+  }
+  for (const permissionId of have) {
+    if (want.has(permissionId)) continue;
+    await prisma.rolePermission.delete({
+      where: {
+        roleId_permissionId: { roleId, permissionId },
+      },
+    });
+  }
+}
 
 async function main() {
   const prisma = new PrismaClient();
@@ -45,7 +122,7 @@ async function main() {
     create: {
       code: 'super_admin',
       name: 'مدير النظام',
-      description: 'صلاحيات كاملة',
+      description: 'صلاحيات كاملة لكل الأقسام',
       isSystem: true,
     },
   });
@@ -65,6 +142,28 @@ async function main() {
         permissionId: permission.id,
       },
     });
+  }
+
+  for (const preset of PRESET_ROLES) {
+    const presetRole = await prisma.role.upsert({
+      where: { code: preset.code },
+      update: {
+        name: preset.name,
+        description: preset.description,
+        isSystem: true,
+      },
+      create: {
+        code: preset.code,
+        name: preset.name,
+        description: preset.description,
+        isSystem: true,
+      },
+    });
+    await syncRolePermissions(
+      prisma,
+      presetRole.id,
+      preset.permissionCodes,
+    );
   }
 
   const passwordHash = await hash(password, 12);
@@ -99,6 +198,10 @@ async function main() {
 
   // eslint-disable-next-line no-console
   console.log(`Seeded admin user: ${username}`);
+  // eslint-disable-next-line no-console
+  console.log(
+    `Preset roles: ${PRESET_ROLES.map((r) => r.code).join(', ')}`,
+  );
   await prisma.$disconnect();
 }
 

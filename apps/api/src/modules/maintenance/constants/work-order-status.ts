@@ -36,7 +36,8 @@ export const WORK_ORDER_TRANSITIONS: Record<
 > = {
   draft: ['approved', 'cancelled'],
   approved: ['assigned', 'cancelled'],
-  assigned: ['approved', 'accepted', 'cancelled'],
+  /** accepted اختياري تاريخياً — التنفيذ يمكنه الانتقال مباشرة من assigned */
+  assigned: ['approved', 'accepted', 'in_progress', 'cancelled'],
   accepted: ['approved', 'assigned', 'in_progress', 'cancelled'],
   in_progress: [
     'waiting_parts',

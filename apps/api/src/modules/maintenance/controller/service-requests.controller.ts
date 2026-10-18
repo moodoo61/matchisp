@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,8 +7,11 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@isp/shared';
 import {
   CurrentUser,
@@ -27,13 +31,21 @@ import { ConvertServiceRequestDto } from '../dto/convert-service-request.dto';
 import { CreateServiceRequestDto } from '../dto/create-service-request.dto';
 import { RejectServiceRequestDto } from '../dto/reject-service-request.dto';
 import { TriageServiceRequestDto } from '../dto/triage-service-request.dto';
+import { rolesFromPermissions } from '../lib/transition-roles';
+import {
+  ServiceRequestAttachmentUploadService,
+  serviceRequestAttachmentsMulterOptions,
+} from '../service/service-request-attachment-upload.service';
 import { ServiceRequestsService } from '../service/service-requests.service';
 
 @ApiTags('maintenance-requests')
 @ApiBearerAuth()
 @Controller('maintenance/requests')
 export class ServiceRequestsController {
-  constructor(private readonly requests: ServiceRequestsService) {}
+  constructor(
+    private readonly requests: ServiceRequestsService,
+    private readonly uploads: ServiceRequestAttachmentUploadService,
+  ) {}
 
   @Get('meta/types')
   @RequirePermissions(PERMISSIONS.MAINTENANCE_READ)
@@ -75,7 +87,11 @@ export class ServiceRequestsController {
     @Body() dto: CreateServiceRequestDto,
     @CurrentUser() user: RequestUser,
   ) {
-    return this.requests.create(dto, user.id);
+    return this.requests.create(
+      dto,
+      user.id,
+      rolesFromPermissions(user.permissions),
+    );
   }
 
   @Post(':id/submit')
@@ -127,7 +143,40 @@ export class ServiceRequestsController {
     @Body() dto: ConvertServiceRequestDto,
     @CurrentUser() user: RequestUser,
   ) {
-    return this.requests.convert(id, dto, user.id);
+    return this.requests.convert(
+      id,
+      dto,
+      user.id,
+      rolesFromPermissions(user.permissions),
+    );
+  }
+
+  @Post(':id/attachments')
+  @RequireAnyPermission(
+    PERMISSIONS.MAINTENANCE_REQUEST_CREATE,
+    PERMISSIONS.MAINTENANCE_TRIAGE,
+    PERMISSIONS.MAINTENANCE_SUPERVISE,
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', serviceRequestAttachmentsMulterOptions),
+  )
+  uploadAttachment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: RequestUser,
+  ) {
+    if (!file) throw new BadRequestException('الملف مطلوب');
+    return this.requests.addAttachment(id, user.id, {
+      originalname: file.originalname,
+      url: this.uploads.toPublicUrl(file.filename),
+    });
   }
 
   @Delete(':id')

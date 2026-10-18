@@ -15,7 +15,7 @@ export const SERVICE_REQUEST_STATUS_LABELS: Record<
 > = {
   draft: 'مسودة',
   submitted: 'مقدَّم',
-  triaged: 'مفروز',
+  triaged: 'جاهز للتحويل',
   rejected: 'مرفوض',
   converted: 'محوَّل لأمر عمل',
   closed: 'مغلق',

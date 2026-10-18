@@ -7,6 +7,7 @@ export type UserBrief = { id: string; name: string; username: string };
 export class MaintenanceUsersService {
   constructor(private readonly prismaCore: PrismaCoreService) {}
 
+  /** قائمة التعيين — كل أعضاء الفريق النشطين */
   async listMembers(): Promise<UserBrief[]> {
     return this.prismaCore.user.findMany({
       where: { status: 'ACTIVE' },

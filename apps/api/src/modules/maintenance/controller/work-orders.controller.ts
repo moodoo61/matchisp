@@ -21,6 +21,7 @@ import {
 } from '../../../common/guards';
 import { AssignWorkOrderDto } from '../dto/assign-work-order.dto';
 import { CloseWorkOrderDto } from '../dto/close-work-order.dto';
+import { CreateWorkOrderCommentDto } from '../dto/create-work-order-comment.dto';
 import { FinishFieldDto } from '../dto/finish-field.dto';
 import { QueryHistoryDto } from '../dto/query-history.dto';
 import { ReasonDto } from '../dto/reason.dto';
@@ -30,6 +31,7 @@ import {
   WorkOrderAttachmentUploadService,
   workOrderAttachmentsMulterOptions,
 } from '../service/work-order-attachment-upload.service';
+import { WorkOrderCommentsService } from '../service/work-order-comments.service';
 import { WorkOrdersService } from '../service/work-orders.service';
 
 @ApiTags('maintenance-work-orders')
@@ -38,6 +40,7 @@ import { WorkOrdersService } from '../service/work-orders.service';
 export class WorkOrdersController {
   constructor(
     private readonly workOrders: WorkOrdersService,
+    private readonly comments: WorkOrderCommentsService,
     private readonly users: MaintenanceUsersService,
     private readonly uploads: WorkOrderAttachmentUploadService,
   ) {}
@@ -265,6 +268,22 @@ export class WorkOrdersController {
       user.id,
       rolesFromPermissions(user.permissions),
     );
+  }
+
+  @Get(':id/comments')
+  @RequirePermissions(PERMISSIONS.MAINTENANCE_READ)
+  listComments(@Param('id', ParseUUIDPipe) id: string) {
+    return this.comments.list(id);
+  }
+
+  @Post(':id/comments')
+  @RequirePermissions(PERMISSIONS.MAINTENANCE_READ)
+  createComment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateWorkOrderCommentDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.comments.create(id, dto, user.id);
   }
 
   @Post(':id/attachments')
