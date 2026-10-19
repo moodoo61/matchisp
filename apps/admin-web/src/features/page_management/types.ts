@@ -136,6 +136,125 @@ export type LoginServiceInput = {
   isActive?: boolean;
 };
 
+/** ميزة خلفية — صفحة تسجيل الدخول */
+export type LoginFeature = {
+  id: string;
+  title: string;
+  icon: string;
+  imageUrl: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LoginFeatureInput = {
+  title: string;
+  icon?: string;
+  imageUrl: string;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+/** خيار سرعة — قيمة domain في MikroTik */
+export type SpeedOption = {
+  id: string;
+  name: string;
+  value: string;
+  isDefault: boolean;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SpeedOptionInput = {
+  name: string;
+  value: string;
+  isDefault?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+/** إعدادات Hot Blocker — الحظر على الكوكي، القيم من السيرفر */
+export type LoginSecuritySettings = {
+  id: string;
+  enabled: boolean;
+  tryCount: number;
+  blockMinutes: number;
+  updatedAt: string;
+};
+
+export type LoginSecuritySettingsInput = {
+  enabled?: boolean;
+  tryCount?: number;
+  blockMinutes?: number;
+};
+
+/** علامة صفحة الدخول — من العامة أو تخصيص مستقل */
+export type LoginBrandSettings = {
+  id: string;
+  useCustom: boolean;
+  name: string;
+  logoUrl: string;
+  logoAbsoluteUrl: string | null;
+  updatedAt: string;
+  resolved: {
+    name: string;
+    logoUrl: string;
+    source: 'general' | 'custom';
+  };
+  general: {
+    brandName: string;
+    brandLogoUrl: string;
+    brandLogoAbsoluteUrl: string | null;
+  };
+};
+
+export type LoginBrandSettingsInput = {
+  useCustom?: boolean;
+  name?: string;
+  logoUrl?: string;
+};
+
+/** مصادقة خارجية — الدخول كمشترك عبر خادم بعيد */
+export type LoginExternalAuthSettings = {
+  id: string;
+  enabled: boolean;
+  flowMode: 'credentials' | 'redirect' | string;
+  remoteUrl: string;
+  httpMethod: 'post' | 'get' | string;
+  restBaseUrl: string;
+  restUsername: string;
+  hasRestPassword: boolean;
+  linkLabel: string;
+  sendMac: boolean;
+  sendIp: boolean;
+  sendUsername: boolean;
+  sendLinkLogin: boolean;
+  sendLinkOrig: boolean;
+  sendError: boolean;
+  updatedAt: string;
+  publicLoginUrl?: string;
+};
+
+export type LoginExternalAuthSettingsInput = {
+  enabled?: boolean;
+  flowMode?: 'credentials' | 'redirect';
+  remoteUrl?: string;
+  httpMethod?: 'post' | 'get';
+  restBaseUrl?: string;
+  restUsername?: string;
+  restPassword?: string;
+  linkLabel?: string;
+  sendMac?: boolean;
+  sendIp?: boolean;
+  sendUsername?: boolean;
+  sendLinkLogin?: boolean;
+  sendLinkOrig?: boolean;
+  sendError?: boolean;
+};
+
 export type MorePageSettings = {
   id: string;
   heroTitle: string;

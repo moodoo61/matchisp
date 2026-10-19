@@ -23,6 +23,24 @@ model ImageAd {
   @@map("advertisements")
 }
 
+/// ميزة بصرية — قائمة الميزات + صورة خلفية عند التمرير (صفحة الدخول)
+model LoginFeature {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// نص الميزة المعروض
+  title     String
+  /// أيقونة اختيارية (إيموجي أو نص قصير)
+  icon      String   @default("")
+  /// صورة الخلفية عند تمرير الماوس على الميزة
+  imageUrl  String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("login_features")
+}
+
 /// إعلان نص / شريط — صفحة تسجيل الدخول
 model TextAd {
   id        String   @id @default(uuid()) @db.Uuid
@@ -111,6 +129,25 @@ model LoginPackage {
   @@map("packages")
 }
 
+/// خيار سرعة — يُرسل كـ domain لـ MikroTik (نمط siteConfig.speedOptions)
+/// «كروت هوتسبوت» (value فارغ) تبقى ثابتة في صفحة الراوتر وليست هنا
+model SpeedOption {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// النص المعروض للمستخدم
+  name      String
+  /// قيمة profile/domain في الراوتر (مثل 1M/3M أو open)
+  value     String
+  /// الخيار الافتراضي عند فتح صفحة الدخول
+  isDefault Boolean  @default(false)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("speed_options")
+}
+
 /// مفتاح تفعيل/تعطيل لكل بطاقة محتوى (بدون مسح عناصرها)
 model PageCardFlag {
   key       String   @id
@@ -118,6 +155,66 @@ model PageCardFlag {
   updatedAt DateTime @updatedAt
 
   @@map("page_card_flags")
+}
+
+/// إعدادات أمان تسجيل الدخول — حظر المحاولات الفاشلة (Hot Blocker)
+/// الحظر نفسه يبقى على كوكي المتصفح؛ هذه القيم تُضبط من السيرفر فقط
+model LoginSecuritySettings {
+  id           String   @id @default("default")
+  /// تفعيل حظر المحاولات الفاشلة على صفحة الدخول
+  enabled      Boolean  @default(true)
+  /// عدد المحاولات الفاشلة قبل الحظر
+  tryCount     Int      @default(10)
+  /// مدة الحظر بالدقائق
+  blockMinutes Int      @default(2)
+  updatedAt    DateTime @updatedAt
+
+  @@map("login_security_settings")
+}
+
+/// مصادقة خارجية — «الدخول كمشترك» عبر بوابة/تحقق ثم عودة لـ /login على الراوتر
+model LoginExternalAuthSettings {
+  id              String   @id @default("default")
+  /// تفعيل الميزة
+  enabled         Boolean  @default(false)
+  /// credentials = إظهار حقول ثم تحقق | redirect = توجيه فوري للرابط
+  flowMode        String   @default("credentials")
+  /// عنوان بوابة ويب (لنمط redirect فقط)
+  remoteUrl       String   @default("")
+  /// طريقة الإرسال لنمط redirect: post | get
+  httpMethod      String   @default("post")
+  /// أصل RouterOS REST (مثل http://host:1616) لنمط credentials
+  restBaseUrl     String   @default("")
+  /// مستخدم API على CHR
+  restUsername    String   @default("")
+  /// كلمة مرور API على CHR
+  restPassword    String   @default("")
+  /// نص رابط «الدخول كمشترك» على الصفحة
+  linkLabel       String   @default("الدخول كمشترك")
+  /// حقول MikroTik المُرسلة (نمط redirect)
+  sendMac         Boolean  @default(true)
+  sendIp          Boolean  @default(true)
+  sendUsername    Boolean  @default(true)
+  sendLinkLogin   Boolean  @default(true)
+  sendLinkOrig    Boolean  @default(true)
+  sendError       Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+
+  @@map("login_external_auth_settings")
+}
+
+/// علامة صفحة الدخول — افتراضياً من الإعدادات العامة، مع خيار تخصيص مستقل
+model LoginBrandSettings {
+  id        String   @id @default("default")
+  /// true = استخدام name/logoUrl لهذه الصفحة بدل علامة الإعدادات العامة
+  useCustom Boolean  @default(false)
+  /// اسم مخصص (يُستخدم عند useCustom)
+  name      String   @default("")
+  /// شعار مخصص (يُستخدم عند useCustom)
+  logoUrl   String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@map("login_brand_settings")
 }
 
 /// إعدادات صفحة المزيد العامة (singleton)

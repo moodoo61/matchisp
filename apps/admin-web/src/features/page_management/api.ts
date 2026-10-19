@@ -9,6 +9,16 @@ import type {
   LoginPackageInput,
   LoginService,
   LoginServiceInput,
+  LoginSecuritySettings,
+  LoginSecuritySettingsInput,
+  LoginBrandSettings,
+  LoginBrandSettingsInput,
+  LoginExternalAuthSettings,
+  LoginExternalAuthSettingsInput,
+  LoginFeature,
+  LoginFeatureInput,
+  SpeedOption,
+  SpeedOptionInput,
   MorePageAboutCard,
   MorePageAboutInput,
   MorePageItem,
@@ -29,16 +39,25 @@ const moreBase = '/pages/more';
 
 /** مسارات عامة لصفحات العملاء — تُعرض في لوحة الإدارة للنسخ */
 export const PUBLIC_LOGIN_ENDPOINTS = {
+  brand: '/api/public/login/brand',
   ads: '/api/public/login/ads',
   ticker: '/api/public/login/ticker',
   contacts: '/api/public/login/contacts',
   packages: '/api/public/login/packages',
   services: '/api/public/login/services',
+  features: '/api/public/login/features',
+  security: '/api/public/login/security',
+  externalAuth: '/api/public/login/external-auth',
+  externalAuthLogin: '/api/public/login/external-auth/login',
 } as const;
 
 export const PUBLIC_STATUS_ENDPOINTS = {
   services: '/api/public/status/services',
 } as const;
+
+export const PUBLIC_SPEED_ENDPOINT = '/api/public/speed';
+
+const speedBase = '/pages/speed';
 
 /** رابط الصفحة العامة لـ «ص المزيد» */
 export const PUBLIC_MORE_PAGE_PATH = '/more';
@@ -176,6 +195,98 @@ export function updateLoginService(
 
 export function deleteLoginService(id: string) {
   return api<{ success: boolean }>(`${loginBase}/services/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getLoginSecurity() {
+  return api<LoginSecuritySettings>(`${loginBase}/security`);
+}
+
+export function updateLoginSecurity(input: LoginSecuritySettingsInput) {
+  return api<LoginSecuritySettings>(`${loginBase}/security`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function getLoginBrand() {
+  return api<LoginBrandSettings>(`${loginBase}/brand`);
+}
+
+export function updateLoginBrand(input: LoginBrandSettingsInput) {
+  return api<LoginBrandSettings>(`${loginBase}/brand`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function uploadLoginBrandFile(file: File) {
+  return apiUpload<{ logoUrl: string }>(`${loginBase}/brand/upload`, file);
+}
+
+export function getLoginExternalAuth() {
+  return api<LoginExternalAuthSettings>(`${loginBase}/external-auth`);
+}
+
+export function updateLoginExternalAuth(input: LoginExternalAuthSettingsInput) {
+  return api<LoginExternalAuthSettings>(`${loginBase}/external-auth`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function listLoginFeatures() {
+  return api<LoginFeature[]>(`${loginBase}/features`);
+}
+
+export function uploadLoginFeatureFile(file: File) {
+  return apiUpload<{ imageUrl: string }>(`${loginBase}/features/upload`, file);
+}
+
+export function createLoginFeature(input: LoginFeatureInput) {
+  return api<LoginFeature>(`${loginBase}/features`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateLoginFeature(
+  id: string,
+  input: Partial<LoginFeatureInput>,
+) {
+  return api<LoginFeature>(`${loginBase}/features/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteLoginFeature(id: string) {
+  return api<{ success: boolean }>(`${loginBase}/features/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function listSpeedOptions() {
+  return api<SpeedOption[]>(speedBase);
+}
+
+export function createSpeedOption(input: SpeedOptionInput) {
+  return api<SpeedOption>(speedBase, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateSpeedOption(id: string, input: Partial<SpeedOptionInput>) {
+  return api<SpeedOption>(`${speedBase}/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteSpeedOption(id: string) {
+  return api<{ success: boolean }>(`${speedBase}/${id}`, {
     method: 'DELETE',
   });
 }

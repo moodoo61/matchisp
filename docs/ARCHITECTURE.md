@@ -74,10 +74,10 @@ Guard عام JWT + Guard صلاحيات RBAC
 ## قسم إدارة الصفحة (منفّذ جزئياً)
 - الاسم الظاهر: **إدارة الصفحة** (قاعدة البيانات التقنية: `db_network_pages`)
 - مقسوم حسب الصفحات: **تسجيل الدخول** | **الحالة** | **المزيد**
-- تحت تسجيل الدخول: تبويبات **عامة** (صور/نص/خدمات/تواصل) و**الباقات**
+- تحت تسجيل الدخول: تبويبات **عامة** (صور/نص/خدمات/تواصل) و**الباقات** و**أمان** (Hot Blocker: محاولات/مدة)
 - تحت الحالة: الخدمات (اسم + صورة + رابط) — كانت «أزرار صفحة الحالة» في النظام القديم
 - تحت المزيد: إعدادات الصفحة + عناصر المحتوى + من نحن + القصة — مع تفعيل الصفحة/التبويبات
-- واجهة Admin: `/pages/login` و `/pages/login/packages` و `/pages/status` و `/pages/more`
+- واجهة Admin: `/pages/login` و `/pages/login/packages` و `/pages/login/security` و `/pages/speed` و `/pages/status` و `/pages/more`
 - صفحة عامة: `/more` (HTML كامل، بدون AuthGate)
 - endpoints عامة للعملاء:
   - `GET /api/public/login/ads`
@@ -85,6 +85,8 @@ Guard عام JWT + Guard صلاحيات RBAC
   - `GET /api/public/login/contacts`
   - `GET /api/public/login/packages`
   - `GET /api/public/login/services`
+  - `GET /api/public/login/security`
+  - `GET /api/public/speed` — خيارات السرعة (domain) لصفحات الراوتر
   - `GET /api/public/status/services`
   - `GET /api/public/more`
 

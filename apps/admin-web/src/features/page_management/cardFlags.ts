@@ -4,6 +4,7 @@ export const PAGE_CARD_FLAG_KEYS = [
   'login_services',
   'login_contacts',
   'login_packages',
+  'login_features',
   'status_services',
   'more_page',
   'more_page_items',

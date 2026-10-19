@@ -3,7 +3,7 @@
 import { PERMISSIONS } from '@isp/shared';
 import { AdminShell } from '@/components/AdminShell';
 import { AuthGate } from '@/components/AuthGate';
-import { SpeedPlaceholderCard } from '@/features/page_management/components/speed/SpeedPlaceholderCard';
+import { SpeedOptionsCard } from '@/features/page_management/components/speed/SpeedOptionsCard';
 import { usePermissions } from '@/lib/usePermissions';
 
 export default function SpeedOptionsPage() {
@@ -15,7 +15,7 @@ export default function SpeedOptionsPage() {
       <AdminShell>
         <div className="task-stack">
           {canRead ? (
-            <SpeedPlaceholderCard />
+            <SpeedOptionsCard />
           ) : (
             <p className="table-empty">لا تملك صلاحية عرض هذا القسم</p>
           )}
