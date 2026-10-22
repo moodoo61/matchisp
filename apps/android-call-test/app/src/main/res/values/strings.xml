@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Match Call Test</string>
+    <string name="app_name">Match Call</string>
     <string name="discover">بحث عن الخادم</string>
     <string name="register">تسجيل</string>
     <string name="unregister">إلغاء التسجيل</string>

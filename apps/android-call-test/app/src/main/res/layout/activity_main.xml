@@ -1,168 +1,405 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="#0F172A">
 
-    <LinearLayout
+    <!-- 1) عنوان الخادم -->
+    <ScrollView
+        android:id="@+id/screenServer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="visible">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="تجربة اتصال Match"
-            android:textSize="20sp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="48dp"
+                android:text="Match"
+                android:textColor="#F8FAFC"
+                android:textSize="36sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="أدخل عنوان خادم الاتصال على الشبكة المحلية"
+                android:textColor="#94A3B8"
+                android:textSize="15sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:hint="عنوان الخادم (IP أو اسم)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputServerHost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="172.18.1.2"
+                    android:inputType="textUri"
+                    android:textDirection="ltr" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/btnContinueServer"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:text="متابعة"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btnDiscover"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="بحث تلقائي في الشبكة" />
+
+            <Spinner
+                android:id="@+id/serverSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" />
+
+            <TextView
+                android:id="@+id/serverStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:textColor="#94A3B8"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 2) تسجيل الدخول -->
+    <ScrollView
+        android:id="@+id/screenLogin"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="48dp"
+                android:text="تسجيل الدخول"
+                android:textColor="#F8FAFC"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/loginServerLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:textColor="#38BDF8"
+                android:textDirection="ltr"
+                android:textSize="14sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:hint="@string/extension">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputExtension"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    android:textDirection="ltr" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/password">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword"
+                    android:textDirection="ltr" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:text="دخول"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btnChangeServer"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="تغيير الخادم" />
+
+            <TextView
+                android:id="@+id/loginStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:textColor="#94A3B8"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 3) هاتف / اتصال -->
+    <LinearLayout
+        android:id="@+id/screenDialer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/dialerExtension"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="#F8FAFC"
+                android:textDirection="ltr"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/dialerRegDot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● "
+                android:textColor="#22C55E"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnLogout"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="خروج"
+                android:textColor="#F87171" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/dialerStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="8dp"
+            android:text="جاهز"
+            android:textColor="#94A3B8"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/dialerDisplay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:minHeight="72dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp"
+            android:textColor="#F8FAFC"
+            android:textDirection="ltr"
+            android:textSize="36sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/statusText"
+        <GridLayout
+            android:id="@+id/dialPad"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/status_idle"
-            android:textIsSelectable="true" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:alignmentMode="alignBounds"
+            android:columnCount="3"
+            android:paddingTop="8dp"
+            android:rowCount="4"
+            android:useDefaultMargins="true">
 
-        <Button
-            android:id="@+id/btnDiscover"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/discover" />
+            <Button
+                android:id="@+id/key1"
+                style="@style/DialKey"
+                android:text="1" />
 
-        <Spinner
-            android:id="@+id/serverSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
+            <Button
+                android:id="@+id/key2"
+                style="@style/DialKey"
+                android:text="2" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/extension">
+            <Button
+                android:id="@+id/key3"
+                style="@style/DialKey"
+                android:text="3" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputExtension"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="phone"
-                android:textDirection="ltr" />
-        </com.google.android.material.textfield.TextInputLayout>
+            <Button
+                android:id="@+id/key4"
+                style="@style/DialKey"
+                android:text="4" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/password">
+            <Button
+                android:id="@+id/key5"
+                style="@style/DialKey"
+                android:text="5" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:textDirection="ltr" />
-        </com.google.android.material.textfield.TextInputLayout>
+            <Button
+                android:id="@+id/key6"
+                style="@style/DialKey"
+                android:text="6" />
+
+            <Button
+                android:id="@+id/key7"
+                style="@style/DialKey"
+                android:text="7" />
+
+            <Button
+                android:id="@+id/key8"
+                style="@style/DialKey"
+                android:text="8" />
+
+            <Button
+                android:id="@+id/key9"
+                style="@style/DialKey"
+                android:text="9" />
+
+            <Button
+                android:id="@+id/keyStar"
+                style="@style/DialKey"
+                android:text="*" />
+
+            <Button
+                android:id="@+id/key0"
+                style="@style/DialKey"
+                android:text="0" />
+
+            <Button
+                android:id="@+id/keyHash"
+                style="@style/DialKey"
+                android:text="#" />
+        </GridLayout>
 
         <LinearLayout
+            android:id="@+id/rowIdleActions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="12dp">
 
-            <Button
-                android:id="@+id/btnRegister"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/register" />
+            <ImageButton
+                android:id="@+id/btnBackspace"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="مسح"
+                android:src="@android:drawable/ic_input_delete"
+                app:tint="#94A3B8" />
 
-            <Button
-                android:id="@+id/btnUnregister"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnCall"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="@string/unregister" />
+                android:layout_marginStart="28dp"
+                android:layout_marginEnd="28dp"
+                android:contentDescription="@string/dial"
+                android:src="@android:drawable/ic_menu_call"
+                app:backgroundTint="#22C55E"
+                app:tint="#FFFFFF" />
+
+            <View
+                android:layout_width="64dp"
+                android:layout_height="64dp" />
         </LinearLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/destination">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputDestination"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="phone"
-                android:textDirection="ltr" />
-        </com.google.android.material.textfield.TextInputLayout>
-
         <LinearLayout
+            android:id="@+id/rowInCallActions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingBottom="12dp"
+            android:visibility="gone">
 
             <Button
-                android:id="@+id/btnDial"
-                android:layout_width="0dp"
+                android:id="@+id/btnMute"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/dial" />
+                android:text="@string/mute" />
 
-            <Button
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/btnHangup"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="@string/hangup" />
+                android:layout_marginStart="24dp"
+                android:contentDescription="@string/hangup"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                app:backgroundTint="#EF4444"
+                app:tint="#FFFFFF" />
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/rowIncomingActions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingBottom="12dp"
+            android:visibility="gone">
 
-            <Button
-                android:id="@+id/btnAnswer"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/answer" />
-
-            <Button
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/btnReject"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="@string/reject" />
+                android:contentDescription="@string/reject"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                app:backgroundTint="#EF4444"
+                app:tint="#FFFFFF" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnAnswer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="40dp"
+                android:contentDescription="@string/answer"
+                android:src="@android:drawable/ic_menu_call"
+                app:backgroundTint="#22C55E"
+                app:tint="#FFFFFF" />
         </LinearLayout>
-
-        <Button
-            android:id="@+id/btnMute"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/mute" />
-
-        <TextView
-            android:id="@+id/logText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:fontFamily="monospace"
-            android:textIsSelectable="true"
-            android:textSize="12sp" />
     </LinearLayout>
-</ScrollView>
+</FrameLayout>

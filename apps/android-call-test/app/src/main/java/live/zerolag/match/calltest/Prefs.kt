@@ -13,6 +13,10 @@ class Prefs(context: Context) {
         get() = sp.getString("password", "") ?: ""
         set(value) = sp.edit().putString("password", value).apply()
 
+    var lastHost: String
+        get() = sp.getString("host", "") ?: ""
+        set(value) = sp.edit().putString("host", value).apply()
+
     var lastWsUrl: String
         get() = sp.getString("wsUrl", "") ?: ""
         set(value) = sp.edit().putString("wsUrl", value).apply()
@@ -24,4 +28,11 @@ class Prefs(context: Context) {
     var lastServerName: String
         get() = sp.getString("serverName", "") ?: ""
         set(value) = sp.edit().putString("serverName", value).apply()
+
+    fun clearSession() {
+        sp.edit()
+            .remove("extension")
+            .remove("password")
+            .apply()
+    }
 }
