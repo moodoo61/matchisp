@@ -3,8 +3,11 @@ import type {
   ActiveCall,
   AsteriskStatus,
   CdrItem,
+  CommsAndroidAppPublicInfo,
+  CommsDiscoverySettings,
   CreateExtensionInput,
   ExtensionItem,
+  UpdateCommsDiscoverySettingsInput,
   UpdateExtensionInput,
 } from './types';
 
@@ -53,4 +56,30 @@ export function listCdr(params?: {
   if (params?.limit) sp.set('limit', String(params.limit));
   const qs = sp.toString();
   return api<CdrItem[]>(`/comms/calls/cdr${qs ? `?${qs}` : ''}`);
+}
+
+export function getDiscoverySettings() {
+  return api<CommsDiscoverySettings>('/comms/discovery-settings');
+}
+
+export function updateDiscoverySettings(
+  input: UpdateCommsDiscoverySettingsInput,
+) {
+  return api<CommsDiscoverySettings>('/comms/discovery-settings', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+/** معلومات عامة لزر تحميل تطبيق الأندرويد (بدون توكن) */
+export async function getPublicAndroidAppInfo(): Promise<CommsAndroidAppPublicInfo> {
+  const res = await fetch('/api/public/comms/android-app', { cache: 'no-store' });
+  if (!res.ok) {
+    return {
+      showDownloadButton: false,
+      available: false,
+      downloadPath: '/api/public/comms/android-app/download',
+    };
+  }
+  return (await res.json()) as CommsAndroidAppPublicInfo;
 }

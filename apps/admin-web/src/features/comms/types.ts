@@ -62,3 +62,28 @@ export type CdrItem = {
   dstchannel: string;
   lastapp: string;
 };
+
+export type CommsDiscoverySettings = {
+  enabled: boolean;
+  port: number;
+  displayName: string;
+  showDownloadButton: boolean;
+  allowedPorts: number[];
+  listening: boolean;
+  listenError: string | null;
+  apkAvailable: boolean;
+  apkDownloadPath: string;
+};
+
+export type UpdateCommsDiscoverySettingsInput = {
+  enabled?: boolean;
+  port?: number;
+  displayName?: string;
+  showDownloadButton?: boolean;
+};
+
+export type CommsAndroidAppPublicInfo = {
+  showDownloadButton: boolean;
+  available: boolean;
+  downloadPath: string;
+};

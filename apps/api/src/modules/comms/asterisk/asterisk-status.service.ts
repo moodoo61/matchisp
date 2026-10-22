@@ -49,6 +49,11 @@ export class AsteriskStatusService {
         ami.coreStatus().catch(() => ({}) as Record<string, string>),
       ]);
       const core = coreRaw as Record<string, string>;
+      const numOrNull = (raw: string | undefined): number | null => {
+        if (raw === undefined || raw === '') return null;
+        const n = Number(raw);
+        return Number.isFinite(n) ? n : null;
+      };
       return {
         connected: true,
         version,
@@ -58,12 +63,9 @@ export class AsteriskStatusService {
         lastReloadDate: core.CoreReloadDate
           ? `${core.CoreReloadDate} ${core.CoreReloadTime ?? ''}`.trim()
           : null,
-        callsActive: core.CoreCurrentCalls
-          ? Number(core.CoreCurrentCalls)
-          : null,
-        callsProcessed: core.CoreProcessedCalls
-          ? Number(core.CoreProcessedCalls)
-          : null,
+        // "0" يجب أن يظهر 0 وليس — (تجنّب truthiness على النص)
+        callsActive: numOrNull(core.CoreCurrentCalls),
+        callsProcessed: numOrNull(core.CoreProcessedCalls),
         message: 'Asterisk متصل عبر AMI',
       };
     } catch (err) {

@@ -39,6 +39,25 @@
   font-size: 0.95rem;
 }
 
+.call-download {
+  margin-top: 0.85rem;
+}
+
+.call-download-btn {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: var(--call-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.call-download-btn:hover {
+  background: rgba(59, 130, 246, 0.28);
+}
+
 .call-shell {
   width: min(420px, 100%);
   display: grid;

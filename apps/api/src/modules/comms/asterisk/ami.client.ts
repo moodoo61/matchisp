@@ -196,11 +196,8 @@ export class AmiClient {
 }
 
 function isListAction(name: string): boolean {
-  return (
-    name === 'PJSIPShowEndpoints' ||
-    name === 'CoreShowChannels' ||
-    name === 'CoreStatus'
-  );
+  // CoreStatus يرد Success واحداً بالحقول مباشرة — ليس قائمة EventList
+  return name === 'PJSIPShowEndpoints' || name === 'CoreShowChannels';
 }
 
 function indexOfPacketEnd(buf: string): number {

@@ -12,6 +12,7 @@ import {
   resolveCallConfig,
   secureContextMessage,
 } from '../lib/sip-session';
+import { AndroidAppDownloadLink } from '@/features/comms/components/AndroidAppDownloadLink';
 import type { CallConfig, CallStatus, RegStatus } from '../types';
 
 const DIAL_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'] as const;
@@ -279,6 +280,9 @@ export function CallSoftphone() {
       <header className="call-brand">
         <h1>الاتصال</h1>
         <p>هاتف صوتي عبر المتصفح — سجّل رقمك ثم اطلب الطرف الآخر</p>
+        <div className="call-download">
+          <AndroidAppDownloadLink className="call-download-btn" />
+        </div>
       </header>
 
       <div className="call-shell">

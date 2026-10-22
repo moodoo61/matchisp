@@ -11,6 +11,8 @@ import {
   listExtensions,
   updateExtension,
 } from '@/features/comms/api';
+import { AndroidAppDownloadLink } from '@/features/comms/components/AndroidAppDownloadLink';
+import { CommsDiscoverySettingsCard } from '@/features/comms/components/CommsDiscoverySettingsCard';
 import type {
   ActiveCall,
   AsteriskStatus,
@@ -21,7 +23,7 @@ import type {
 import { usePermissions } from '@/lib/usePermissions';
 import { TaskCard, notifyMutation, useToast } from '@/shared/ui';
 
-type Tab = 'extensions' | 'active' | 'cdr';
+type Tab = 'extensions' | 'active' | 'cdr' | 'settings';
 
 const PRESENCE_LABEL: Record<ExtensionPresence, string> = {
   online: 'متصل',
@@ -39,6 +41,24 @@ function formatDate(value: string) {
   } catch {
     return value;
   }
+}
+
+/** رقم لاتيني داخل جدول RTL دون إزاحة بصرية لعمود مجاور */
+function LtrNum({ children }: { children: string }) {
+  return <bdi className="comms-ltr-num">{children}</bdi>;
+}
+
+/** عرض المتصل: الرقم من src مع الاسم من clid إن وُجد */
+function formatCdrFrom(row: CdrItem): string {
+  const num = (row.src || '').trim();
+  const clid = (row.clid || '').trim();
+  const nameMatch = /^"([^"]*)"\s*</.exec(clid) || /^([^<]+)\s*</.exec(clid);
+  const name = nameMatch?.[1]?.trim() || '';
+  if (num && name && name !== num) return `${name} (${num})`;
+  if (num) return num;
+  if (name) return name;
+  const bare = clid.replace(/^<|>$/g, '').trim();
+  return bare || '—';
 }
 
 export function CommsOverview() {
@@ -201,14 +221,17 @@ export function CommsOverview() {
       <TaskCard
         title="حالة Asterisk"
         actions={
-          <button
-            type="button"
-            className="btn secondary"
-            disabled={busy}
-            onClick={() => void reloadAll()}
-          >
-            تحديث
-          </button>
+          <>
+            <AndroidAppDownloadLink className="btn secondary" />
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={busy}
+              onClick={() => void reloadAll()}
+            >
+              تحديث
+            </button>
+          </>
         }
       >
         {error ? <p className="error-text">{error}</p> : null}
@@ -274,6 +297,13 @@ export function CommsOverview() {
             onClick={() => setTab('cdr')}
           >
             سجل المكالمات
+          </button>
+          <button
+            type="button"
+            className={tab === 'settings' ? 'is-active' : ''}
+            onClick={() => setTab('settings')}
+          >
+            ضبط
           </button>
         </div>
 
@@ -516,11 +546,19 @@ export function CommsOverview() {
                     cdr.map((row) => (
                       <tr key={row.uniqueid}>
                         <td>{formatDate(row.calldate)}</td>
-                        <td dir="ltr">{row.src || '—'}</td>
-                        <td dir="ltr">{row.dst || '—'}</td>
+                        <td>
+                          <LtrNum>{formatCdrFrom(row)}</LtrNum>
+                        </td>
+                        <td>
+                          <LtrNum>{row.dst || '—'}</LtrNum>
+                        </td>
                         <td>{row.disposition || '—'}</td>
-                        <td dir="ltr">{row.duration}s</td>
-                        <td dir="ltr">{row.billsec}s</td>
+                        <td>
+                          <LtrNum>{`${row.duration}s`}</LtrNum>
+                        </td>
+                        <td>
+                          <LtrNum>{`${row.billsec}s`}</LtrNum>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -529,6 +567,8 @@ export function CommsOverview() {
             </div>
           </>
         ) : null}
+
+        {tab === 'settings' ? <CommsDiscoverySettingsCard /> : null}
       </TaskCard>
     </div>
   );

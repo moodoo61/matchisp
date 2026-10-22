@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MatchCallTest" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">#1D4ED8</item>
+        <item name="colorPrimaryVariant">#1E3A8A</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#0EA5E9</item>
+        <item name="android:statusBarColor">#0F172A</item>
+    </style>
+</resources>

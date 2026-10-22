@@ -83,3 +83,42 @@ sudo nginx -t && sudo systemctl reload nginx
 المنافذ: `443/tcp` (+ `10000–20000/udp` لـ RTP).
 
 > إن قُطعت المكالمة بعد الرنين: تأكد أن قالب الـ endpoint لا يضع `transport=` بقائمة مفصولة بفواصل، وأن `qualify_frequency=0` لـ WebSocket خلف البروكسي.
+
+## اكتشاف LAN + تطبيق أندرويد للتجربة
+
+للتجربة على شبكة محلية بدون HTTPS في المتصفح، استخدم تطبيق [`apps/android-call-test`](../apps/android-call-test/README.md).
+
+### ضبط الإعلان (لوحة التحكم)
+
+1. الاتصال → تبويب **ضبط**.
+2. فعّل «إعلان الاكتشاف» واختر منفذاً من القائمة الثابتة فقط: **18760–18769**.
+3. احفظ — يجب أن تظهر «الإعلان يعمل على UDP :المنفذ».
+
+الـ API: `GET/PATCH /api/comms/discovery-settings`.
+
+اختياري في `.env`:
+
+| متغير | المعنى |
+| --- | --- |
+| `COMMS_DISCOVERY_ADVERTISE_HOST` | IP يُعلن في الـ beacon (إن لم يُضبط يُفضَّل أول عنوان `172.*` ثم أي IPv4 LAN) |
+| `ASTERISK_WS_PORT` | منفذ WebSocket Asterisk (افتراضي `8088`) |
+
+### تحميل تطبيق الأندرويد
+
+- البناء: `bash infra/scripts/build-android-call-test.sh` → `var/comms/android/match-call-test.apk`
+- التحميل العام: `GET /api/public/comms/android-app/download`
+- معلومات الزر: `GET /api/public/comms/android-app` (`showDownloadButton` من تبويب **ضبط**، الافتراضي: عرض)
+- يظهر زر التحميل في قسم الاتصال وصفحة `/call` عندما يكون الإظهار مفعّلاً والملف موجوداً.
+
+افتح جدار النار لـ **UDP** على المنفذ المختار، و`8088/tcp` (WS)، و`10000–20000/udp` (RTP).
+
+### بروتوكول الاكتشاف
+
+- التطبيق يبث نص `MATCH_DISCOVER` إلى `255.255.255.255` على كل منفذ في `18760–18769`.
+- الخادم يرد بـ `MATCH_BEACON` + JSON يتضمن `wsUrl` و `sipDomain` و `host`.
+
+### تجربة مكالمة
+
+1. أنشئ رقمين من لوحة الاتصال.
+2. على هاتفين (أو هاتف + `/call` عبر HTTPS): سجّل كل طرف رقمه.
+3. التطبيق يتصل بـ `ws://HOST:8088/ws` مباشرة — لا يتطلب شهادة على الجهاز.

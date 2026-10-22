@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Match Call Test</string>
+    <string name="discover">بحث عن الخادم</string>
+    <string name="register">تسجيل</string>
+    <string name="unregister">إلغاء التسجيل</string>
+    <string name="dial">اتصال</string>
+    <string name="hangup">إنهاء</string>
+    <string name="answer">قبول</string>
+    <string name="reject">رفض</string>
+    <string name="mute">كتم</string>
+    <string name="unmute">إلغاء الكتم</string>
+    <string name="extension">الرقم الداخلي</string>
+    <string name="password">كلمة المرور</string>
+    <string name="destination">الوجهة</string>
+    <string name="status_idle">جاهز</string>
+</resources>
