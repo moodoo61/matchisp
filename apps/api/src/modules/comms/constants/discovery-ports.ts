@@ -37,8 +37,8 @@ export const DEFAULT_COMMS_DISCOVERY_SETTINGS: CommsDiscoveryStoredSettings = {
   showDownloadButton: true,
 };
 
-/** مسار ثابت لنسخة التجربة الجاهزة للتحميل */
-export const COMMS_ANDROID_APK_RELATIVE = 'var/comms/android/match-call-test.apk';
+/** مسار ثابت داخل المستودع: downloads/match-call-test.apk */
+export const COMMS_ANDROID_APK_RELATIVE = 'downloads/match-call-test.apk';
 export const COMMS_ANDROID_APK_PUBLIC_PATH =
   '/api/public/comms/android-app/download';
 

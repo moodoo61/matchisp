@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html class="client-nojs" lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<title>Manual:Customizing Hotspot - MikroTik Wiki</title>
+<script>document.documentElement.className = document.documentElement.className.replace( /(^|\s)client-nojs(\s|$)/, "$1client-js$2" );</script>
+<script>(window.RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgCanonicalNamespace":"Manual","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":100,"wgPageName":"Manual:Customizing_Hotspot","wgTitle":"Customizing Hotspot","wgCurRevisionId":34170,"wgRevisionId":34170,"wgArticleId":5085,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Manual","Hotspot","IP","Examples"],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgPageContentModel":"wikitext","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgMonthNamesShort":["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"wgRelevantPageName":"Manual:Customizing_Hotspot","wgRelevantArticleId":5085,"wgRequestId":"9de3240a592dc3d5a9296d4a","wgIsProbablyEditable":false,"wgRestrictionEdit":[],"wgRestrictionMove":[]});mw.loader.state({"site.styles":"ready","noscript":"ready","user.styles":"ready","user":"ready","user.options":"loading","user.tokens":"loading","mediawiki.legacy.shared":"ready","mediawiki.legacy.commonPrint":"ready","mediawiki.sectionAnchor":"ready","mediawiki.skinning.interface":"ready","skins.vector.styles":"ready"});mw.loader.implement("user.options@0j3lz3q",function($,jQuery,require,module){mw.user.options.set({"variant":"en"});});mw.loader.implement("user.tokens@0b5cs7y",function ( $, jQuery, require, module ) {
+mw.user.tokens.set({"editToken":"+\\","patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});/*@nomin*/;
+
+});mw.loader.load(["mediawiki.toc","mediawiki.action.view.postEdit","site","mediawiki.page.startup","mediawiki.user","mediawiki.hidpi","mediawiki.page.ready","mediawiki.searchSuggest","skins.vector.js"]);});</script>
+<link rel="stylesheet" href="/load.php?debug=false&amp;lang=en&amp;modules=mediawiki.legacy.commonPrint%2Cshared%7Cmediawiki.sectionAnchor%7Cmediawiki.skinning.interface%7Cskins.vector.styles&amp;only=styles&amp;printable=1&amp;skin=vector"/>
+<script async="" src="/load.php?debug=false&amp;lang=en&amp;modules=startup&amp;only=scripts&amp;printable=1&amp;skin=vector"></script>
+<meta name="ResourceLoaderDynamicStyles" content=""/>
+<link rel="stylesheet" href="/load.php?debug=false&amp;lang=en&amp;modules=site.styles&amp;only=styles&amp;printable=1&amp;skin=vector"/>
+<meta name="generator" content="MediaWiki 1.29.2"/>
+<meta name="robots" content="noindex,follow"/>
+<link rel="shortcut icon" href="/favicon.ico"/>
+<link rel="search" type="application/opensearchdescription+xml" href="/opensearch_desc.php" title="MikroTik Wiki (en)"/>
+<link rel="EditURI" type="application/rsd+xml" href="https://wiki.mikrotik.com/api.php?action=rsd"/>
+<link rel="alternate" type="application/atom+xml" title="MikroTik Wiki Atom feed" href="/index.php?title=Special:RecentChanges&amp;feed=atom"/>
+</head>
+<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-100 ns-subject page-Manual_Customizing_Hotspot rootpage-Manual_Customizing_Hotspot skin-vector action-view">		<div id="mw-page-base" class="noprint"></div>
+		<div id="mw-head-base" class="noprint"></div>
+		<div id="content" class="mw-body" role="main">
+			<a id="top"></a>
+
+						<div class="mw-indicators mw-body-content">
+</div>
+			<h1 id="firstHeading" class="firstHeading" lang="en">Manual:Customizing Hotspot</h1>
+									<div id="bodyContent" class="mw-body-content">
+									<div id="siteSub">From MikroTik Wiki</div>
+								<div id="contentSub"></div>
+												<div id="jump-to-nav" class="mw-jump">
+					Jump to:					<a href="#mw-head">navigation</a>, 					<a href="#p-search">search</a>
+				</div>
+				<div id="mw-content-text" lang="en" dir="ltr" class="mw-content-ltr"><div id="shbox" style="float:right; border:1px solid #c1c1c1; padding: 10px; width:100px;">
+<div class="floatright"><a href="/wiki/File:Version.png" class="image"><img alt="Version.png" src="/images/c/c4/Version.png" width="32" height="32" /></a></div>
+<p><small><b>Applies to RouterOS:</b> <strong> v3, v4, v5+</strong></small>
+</p>
+</div>
+<div id="toc" class="toc"><div id="toctitle" class="toctitle"><h2>Contents</h2></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#HTML_customizations"><span class="tocnumber">1</span> <span class="toctext">HTML customizations</span></a>
+<ul>
+<li class="toclevel-2 tocsection-2"><a href="#Summary"><span class="tocnumber">1.1</span> <span class="toctext">Summary</span></a></li>
+<li class="toclevel-2 tocsection-3"><a href="#Available_Pages"><span class="tocnumber">1.2</span> <span class="toctext">Available Pages</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="#Serving_Servlet_Pages"><span class="tocnumber">1.3</span> <span class="toctext">Serving Servlet Pages</span></a></li>
+<li class="toclevel-2 tocsection-5"><a href="#Variables"><span class="tocnumber">1.4</span> <span class="toctext">Variables</span></a>
+<ul>
+<li class="toclevel-3 tocsection-6"><a href="#List_of_available_variables"><span class="tocnumber">1.4.1</span> <span class="toctext">List of available variables</span></a></li>
+<li class="toclevel-3 tocsection-7"><a href="#Working_with_variables"><span class="tocnumber">1.4.2</span> <span class="toctext">Working with variables</span></a></li>
+<li class="toclevel-3 tocsection-8"><a href="#Redirects_and_custom_Headers"><span class="tocnumber">1.4.3</span> <span class="toctext">Redirects and custom Headers</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-9"><a href="#Customizing_Error_Messages"><span class="tocnumber">1.5</span> <span class="toctext">Customizing Error Messages</span></a></li>
+<li class="toclevel-2 tocsection-10"><a href="#Multiple_Versions_of_HotSpot_Pages"><span class="tocnumber">1.6</span> <span class="toctext">Multiple Versions of HotSpot Pages</span></a></li>
+<li class="toclevel-2 tocsection-11"><a href="#Misc"><span class="tocnumber">1.7</span> <span class="toctext">Misc</span></a></li>
+<li class="toclevel-2 tocsection-12"><a href="#Examples"><span class="tocnumber">1.8</span> <span class="toctext">Examples</span></a>
+<ul>
+<li class="toclevel-3 tocsection-13"><a href="#External_authentication"><span class="tocnumber">1.8.1</span> <span class="toctext">External authentication</span></a></li>
+<li class="toclevel-3 tocsection-14"><a href="#HTTP_header_detection"><span class="tocnumber">1.8.2</span> <span class="toctext">HTTP header detection</span></a></li>
+<li class="toclevel-3 tocsection-15"><a href="#One_click_login"><span class="tocnumber">1.8.3</span> <span class="toctext">One click login</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-16"><a href="#Firewall_customizations"><span class="tocnumber">2</span> <span class="toctext">Firewall customizations</span></a>
+<ul>
+<li class="toclevel-2 tocsection-17"><a href="#Summary_2"><span class="tocnumber">2.1</span> <span class="toctext">Summary</span></a></li>
+<li class="toclevel-2 tocsection-18"><a href="#NAT"><span class="tocnumber">2.2</span> <span class="toctext">NAT</span></a></li>
+<li class="toclevel-2 tocsection-19"><a href="#Packet_Filtering"><span class="tocnumber">2.3</span> <span class="toctext">Packet  Filtering</span></a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="HTML_customizations">HTML customizations</span></h2>
+<h3><span class="mw-headline" id="Summary">Summary</span></h3>
+<p>You can create a completely different set of servlet pages for each HotSpot server you have, specifying the directory in "html-override-directory" property of a HotSpot server profile <a href="/wiki/Manual:IP/Hotspot/Profile" title="Manual:IP/Hotspot/Profile"> /ip hotspot profile</a>. The default servlet pages are copied in the directory "hotspot" directory right after you create server profile. This directory can be accessed by connecting to the router with an FTP client. You can copy this directory and modify the pages as you like using the information from this section of the manual. Note that it is suggested to edit the files manually, as automated HTML editing tools may corrupt the pages by removing variables or other vital parts. After you are finished with content modification you need to upload this modified content to some custom directory on hotspot router and point previously mentioned property "html-override-directory" value as path to this new custom HTML directory. 
+</p>
+<div id="shbox" style="border-width:1px; border-color:lightgrey; padding: 2px 5px 2px 10px; min-height:56px; border-style:solid; font-size: 0.9em; width=500px; display: block; margin-top:20px">
+<div class="floatleft"><a href="/wiki/File:Icon-note.png" class="image"><img alt="Icon-note.png" src="/images/thumb/e/ee/Icon-note.png/56px-Icon-note.png" width="56" height="56" srcset="/images/thumb/e/ee/Icon-note.png/84px-Icon-note.png 1.5x, /images/thumb/e/ee/Icon-note.png/112px-Icon-note.png 2x" /></a></div>
+<p style="margin-top:10px; margin-left: 56px;"><b>Note:</b>  If "html-override-directory" value path is missing or empty then hotspot server will revert back to default HTML files.</p></div>
+<p><br style="clear:both" />
+</p>
+<h3><span class="mw-headline" id="Available_Pages">Available Pages</span></h3>
+<p>Main HTML servlet pages, which are shown to user:
+</p>
+<ul><li> <b>redirect.html</b> - redirects user to another url (for example, to login page)</li>
+<li> <b>login.html</b> - login page shown to a user to ask for username and password. This page may take the following parameters:
+<ul><li><b>username</b> - username</li>
+<li><b>password</b> - either plain-text password (in case of PAP authentication) or MD5 hash of chap-id variable, password and CHAP challenge (in case of CHAP authentication). This value is used as e-mail address for trial users</li>
+<li><b>dst</b> - original URL requested before the redirect. This will be opened on successfull login</li>
+<li><b>popup</b> - whether to pop-up a status window on successfull login</li>
+<li><b>radius&lt;id&gt;</b> - send the attribute identified with &lt;id&gt; in text string form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)</li>
+<li><b>radius&lt;id&gt;u</b> - send the attribute identified with &lt;id&gt; in unsigned integer form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)</li>
+<li><b>radius&lt;id&gt;-&lt;vnd-id&gt;</b> - send the attribute identified with &lt;id&gt; and vendor ID &lt;vnd-id&gt; in text string form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)</li>
+<li><b>radius&lt;id&gt;-&lt;vnd-id&gt;u</b> - send the attribute identified with &lt;id&gt; and vendor ID &lt;vnd-id&gt; in unsigned integer form to the RADIUS server (in case RADIUS authentication is used; lost otherwise)</li></ul></li>
+<li><b>md5.js</b> - JavaScript for MD5 password hashing. Used together with http-chap login method</li>
+<li><b>alogin.html</b> - page shown after client has logged in. It pops-up status page and redirects browser to originally requested page (before he/she was redirected to the HotSpot login page)</li>
+<li><b>status.html</b> - status page, shows statistics for the client. It is also able to display advertisements automatically</li>
+<li><b>logout.html</b> - logout page, shown after user is logged out. Shows final statistics about the finished session. This page may take the following additional parameters:
+<ul><li><b>erase-cookie</b> - whether to erase cookies from the HotSpot server on logout (makes impossible to log in with cookie next time from the same browser, might be useful in multiuser environments)</li></ul></li>
+<li><b>error.html</b> - error page, shown on fatal errors only</li></ul>
+<p><br />
+Some other pages are available as well, if more control is needed:
+</p>
+<ul><li><b>rlogin.html</b> - page, which redirects client from some other URL to the login page, if authorization of the client is required to access that URL</li>
+<li><b>rstatus.html</b> - similarly to rlogin.html, only in case if the client is already logged in and the original URL is not known</li>
+<li><b>radvert.html</b> - redirects client to the scheduled advertisement link</li>
+<li><b>flogin.html</b> - shown instead of login.html, if some error has happened (invalid username or password, for example)</li>
+<li><b>fstatus.html</b> - shown instead of redirect, if status page is requested, but client is not logged in</li>
+<li><b>flogout.html</b> - shown instead of redirect, if logout page is requested, but client is not logged in</li></ul>
+<p><br />
+</p>
+<h3><span class="mw-headline" id="Serving_Servlet_Pages">Serving Servlet Pages</span></h3>
+<p>The HotSpot servlet recognizes 5 different request types:
+</p>
+<ol><li> <b>request for a remote host</b>
+<ul><li>if user is logged in and advertisement is due to be displayed, radvert.html is displayed. This page makes redirect to the scheduled advertisment page</li>
+<li>if user is logged in and advertisement is not scheduled for this user, the requested page is served</li>
+<li>if user is not logged in, but the destination host is allowed by walled garden, then the request is also served</li>
+<li>if user is not logged in, and the destination host is disallowed by walled garden, rlogin.html is displayed; if rlogin.html is not found, redirect.html is used to redirect to the login page</li></ul>
+<dl><dd></dd></dl></li>
+<li> <b>request for "/" on the HotSpot host</b>
+<ul><li>if user is logged in, rstatus.html is displayed; if rstatus.html is not found, redirect.html is used to redirect to the status page</li>
+<li>if user is not logged in, rlogin.html is displayed; if rlogin.html is not found, redirect.html is used to redirect to the login page</li></ul>
+<dl><dd></dd></dl></li>
+<li> <b>request for "/login" page</b>
+<ul><li>if user has successfully logged in (or is already logged in), alogin.html is displayed; if alogin.html is not found, redirect.html is used to redirect to the originally requested page or the status page (in case, original destination page was not given)</li>
+<li>if user is not logged in (username was not supplied, no error message appeared), login.html is showed</li>
+<li>if login procedure has failed (error message is supplied), flogin.html is displayed; if flogin.html is not found, login.html is used</li>
+<li>in case of fatal errors, error.html is showed</li></ul>
+<dl><dd></dd></dl></li>
+<li> <b>request for "/status" page</b>
+<ul><li>if user is logged in, status.html is displayed</li>
+<li>if user is not logged in, fstatus.html is displayed; if fstatus.html is not found, redirect.html is used to redirect to the login page</li></ul>
+<dl><dd></dd></dl></li>
+<li> <b>request for '/logout' page</b>
+<ul><li>if user is logged in, logout.html is displayed</li>
+<li>if user is not logged in, flogout.html is displayed; if flogout.html is not found, redirect.html is used to redirect to the login page</li></ul></li></ol>
+<div id="shbox" style="border-width:1px; border-color:lightgrey; padding: 2px 5px 2px 10px; min-height:56px; border-style:solid; font-size: 0.9em; width=500px; display: block; margin-top:20px">
+<div class="floatleft"><a href="/wiki/File:Icon-note.png" class="image"><img alt="Icon-note.png" src="/images/thumb/e/ee/Icon-note.png/56px-Icon-note.png" width="56" height="56" srcset="/images/thumb/e/ee/Icon-note.png/84px-Icon-note.png 1.5x, /images/thumb/e/ee/Icon-note.png/112px-Icon-note.png 2x" /></a></div>
+<p style="margin-top:10px; margin-left: 56px;"><b>Note:</b>  If it is not possible to meet a request using the pages stored on the router's FTP server, Error 404 is displayed </p></div>
+<p><br style="clear:both" />
+</p><p>There are many possibilities to customize what the HotSpot authentication pages look like:
+</p>
+<ul class="bullets">
+<li> The pages are easily modifiable. They are stored on the router's FTP server in the directory you choose for the respective HotSpot server profile.
+<li> By changing the variables, which client sends to the HotSpot servlet, it is possible to reduce keyword count to one (username or password; for example, the client's MAC address may be used as the other value) or even to zero (License Agreement; some predefined values general for all users or client's MAC address may be used as username and password)
+<li> Registration may occur on a different server (for example, on a server that is able to charge Credit Cards). Client's MAC address may be passed to it, so that this information need not be written in manually. After the registration, the server should change RADIUS database enabling client to log in for some amount of time.
+</ul>
+<p><br />
+To insert variable in some place in HTML file, the $(var_name) syntax is used, where the "var_name" is the name of the variable (without quotes). This construction may be used in any HotSpot HTML file accessed as '/', '/login', '/status' or '/logout', as well as any text or HTML (.txt, .htm or .html) file stored on the HotSpot server (with the exception of traffic counters, which are available in status page only, and <b>error</b>, <b>error-orig</b>, <b>chap-id</b>, <b>chap-challenge</b> and <b>popup</b> variables, which are available in login page only). For example, to show a link to the login page, following construction can be used:
+</p>
+<pre>
+&lt;a href="$(link-login)"&gt;login&lt;/a&gt;
+</pre>
+<p><br />
+</p>
+<h3><span class="mw-headline" id="Variables">Variables</span></h3>
+<p>All of the Servlet HTML pages use variables to show user specific values. Variable names appear only in the HTML source of the servlet pages - they are automatically replaced with the respective values by the HotSpot Servlet. For most variables there is an example of their possible value included in brackets. All the described variables are valid in all servlet pages, but some of them just might be empty at the time they are accesses (for example, there is no uptime before a user has logged in).
+</p><p><br />
+</p>
+<h4><span class="mw-headline" id="List_of_available_variables">List of available variables</span></h4>
+<div id="shbox" style="border-width:1px; border-color:lightgrey; padding: 2px 5px 2px 10px; min-height:56px; border-style:solid; font-size: 0.9em; width=500px; display: block; margin-top:20px">
+<div class="floatleft"><a href="/wiki/File:Icon-note.png" class="image"><img alt="Icon-note.png" src="/images/thumb/e/ee/Icon-note.png/56px-Icon-note.png" width="56" height="56" srcset="/images/thumb/e/ee/Icon-note.png/84px-Icon-note.png 1.5x, /images/thumb/e/ee/Icon-note.png/112px-Icon-note.png 2x" /></a></div>
+<p style="margin-top:10px; margin-left: 56px;"><b>Note:</b> Some of the variables use hard coded http URL, if you are using https, you can construct the link in some other way, for example for $link-status, you can use <a rel="nofollow" class="external free" href="https://$(hostname)/$(target-dir)status">https://$(hostname)/$(target-dir)status</a></p></div>
+<p><br style="clear:both" />
+</p><p><b>Common server variables:</b>
+</p>
+<ul><li> <var><b>hostname</b></var> - DNS name or IP address (if DNS name is not given) of the HotSpot Servlet ("hotspot.example.net")</li>
+<li> <var><b>identity</b></var> - RouterOS identity name ("MikroTik")</li>
+<li> <var><b>login-by</b></var> - authentication method used by user</li>
+<li> <var><b>plain-passwd</b></var> - a "yes/no" representation of whether HTTP-PAP login method is allowed ("no")</li>
+<li> <var><b>server-address</b></var> - HotSpot server address ("10.5.50.1:80")</li>
+<li> <var><b>ssl-login</b></var> - a "yes/no" representation of whether HTTPS method was used to access that servlet page ("no")</li>
+<li> <var><b>server-name</b></var> - HotSpot server name (set in the /ip hotspot menu, as the name property)</li></ul>
+<p><br />
+<b>Links:</b>
+</p>
+<ul><li> <var><b>link-login</b></var> - link to login page including original URL requested ("<a rel="nofollow" class="external free" href="http://10.5.50.1/login?dst=http://www.example.com/">http://10.5.50.1/login?dst=http://www.example.com/</a>")</li>
+<li> <var><b>link-login-only</b></var> - link to login page, not including original URL requested ("<a rel="nofollow" class="external free" href="http://10.5.50.1/login">http://10.5.50.1/login</a>")</li>
+<li> <var><b>link-logout</b></var> - link to logout page ("<a rel="nofollow" class="external free" href="http://10.5.50.1/logout">http://10.5.50.1/logout</a>")</li>
+<li> <var><b>link-status</b></var> - link to status page ("<a rel="nofollow" class="external free" href="http://10.5.50.1/status">http://10.5.50.1/status</a>")</li>
+<li> <var><b>link-orig</b></var> - original URL requested ("<a rel="nofollow" class="external free" href="http://www.example.com/">http://www.example.com/</a>")</li></ul>
+<p><br />
+<b>General client information:</b>
+</p>
+<ul><li> <var><b>domain</b></var> - domain name of the user ("example.com")</li>
+<li> <var><b>interface-name</b></var> - physical HotSpot interface name (in case of bridged interfaces, this will return the actual bridge port name)</li>
+<li> <var><b>ip</b></var> - IP address of the client ("10.5.50.2")</li>
+<li> <var><b>logged-in</b></var> - "yes" if the user is logged in, otherwise - "no" ("yes")</li>
+<li> <var><b>mac</b></var> - MAC address of the user ("01:23:45:67:89:AB")</li>
+<li> <var><b>trial</b></var> - a "yes/no" representation of whether the user has access to trial time. If users trial time has expired, the value is "no"</li>
+<li> <var><b>username</b></var> - the name of the user ("John")</li>
+<li> <var><b>host-ip</b></var> - client IP address from /ip hotspot host table</li></ul>
+<p><br />
+<b>User status information:</b>
+</p>
+<ul><li> <var><b>idle-timeout</b></var> - idle timeout ("20m" or "" if none)</li>
+<li> <var><b>idle-timeout-secs</b></var> - idle timeout in seconds ("88" or "0" if there is such timeout)</li>
+<li> <var><b>limit-bytes-in</b></var> - byte limit for send ("1000000" or "---" if there is no limit)</li>
+<li> <var><b>limit-bytes-out</b></var> - byte limit for receive ("1000000" or "---" if there is no limit)</li>
+<li> <var><b>refresh-timeout</b></var> - status page refresh timeout ("1m30s" or "" if none)</li>
+<li> <var><b>refresh-timeout-secs</b></var> - status page refresh timeout in seconds ("90s" or "0" if none)</li>
+<li> <var><b>session-timeout</b></var> - session time left for the user ("5h" or "" if none)</li>
+<li> <var><b>session-timeout-secs</b></var> - session time left for the user, in seconds ("3475" or "0" if there is such timeout)</li>
+<li> <var><b>session-time-left</b></var> - session time left for the user ("5h" or "" if none)</li>
+<li> <var><b>session-time-left-secs</b></var> - session time left for the user, in seconds ("3475" or "0" if there is such timeout)</li>
+<li> <var><b>uptime</b></var> - current session uptime ("10h2m33s")</li>
+<li> <var><b>uptime-secs</b></var> - current session uptime in seconds ("125")</li></ul>
+<p><br />
+<b>Traffic counters, which are available only in the status page:</b>
+</p>
+<ul><li> <var><b>bytes-in</b></var> - number of bytes received from the user ("15423")</li>
+<li> <var><b>bytes-in-nice</b></var> - user-friendly form of number of bytes received from the user ("15423")</li>
+<li> <var><b>bytes-out</b></var> - number of bytes sent to the user ("11352")</li>
+<li> <var><b>bytes-out-nice</b></var> - user-friendly form of number of bytes sent to the user ("11352")</li>
+<li> <var><b>packets-in</b></var> - number of packets received from the user ("251")</li>
+<li> <var><b>packets-out</b></var> - number of packets sent to the user ("211")</li>
+<li> <var><b>remain-bytes-in</b></var> - remaining bytes until limit-bytes-in will be reached ("337465" or "---" if there is no limit)</li>
+<li> <var><b>remain-bytes-out</b></var> - remaining bytes until limit-bytes-out will be reached ("124455" or "---" if there is no limit)</li></ul>
+<p><br />
+<b>Miscellaneous variables:</b>
+</p>
+<ul><li> <var><b>session-id</b></var> - value of 'session-id' parameter in the last request</li>
+<li> <var><b>var</b></var> - value of 'var' parameter in the last request</li>
+<li> <var><b>error</b></var> - error message, if something failed ("invalid username or password")</li>
+<li> <var><b>error-orig</b></var> - original error message (without translations retrieved from errors.txt), if something failed ("invalid username or password")</li>
+<li> <var><b>chap-id</b></var> - value of chap ID ("\371")</li>
+<li> <var><b>chap-challenge</b></var> - value of chap challenge ("\357\015\330\013\021\234\145\245\303\253\142\246\133\175\375\316")</li>
+<li> <var><b>popup</b></var> - whether to pop-up checkbox ("true" or "false")</li>
+<li> <var><b>advert-pending</b></var> - whether an advertisement is pending to be displayed ("yes" or "no")</li>
+<li> <var><b>http-status</b></var>	- allows the setting of the http status code and message</li>
+<li> <var><b>http-header</b></var>	- allows the setting of the http header</li></ul>
+<p><b>RADIUS-related variables:</b>
+</p>
+<ul><li> <var><b>radius&lt;id&gt;</b></var> - show the attribute identified with &lt;id&gt; in text string form (in case RADIUS authentication was used; "" otherwise)</li>
+<li> <var><b>radius&lt;id&gt;u</b></var> - show the attribute identified with &lt;id&gt; in unsigned integer form (in case RADIUS authentication was used; "0" otherwise)</li>
+<li> <var><b>radius&lt;id&gt;-&lt;vnd-id&gt;</b></var> - show the attribute identified with &lt;id&gt; and vendor ID &lt;vnd-id&gt; in text string form (in case RADIUS authentication was used; "" otherwise)</li>
+<li> <var><b>radius&lt;id&gt;-&lt;vnd-id&gt;u</b></var> - show the attribute identified with &lt;id&gt; and vendor ID &lt;vnd-id&gt; in unsigned integer form (in case RADIUS authentication was used; "0" otherwise)</li></ul>
+<h4><span class="mw-headline" id="Working_with_variables">Working with variables</span></h4>
+<p>$(if &lt;var_name&gt;) statements can be used in theses pages. Following content will be included, if value of &lt;var_name&gt; will not be an empty string. It is an equivalent to $(if &lt;var_name&gt;&#160;!= "") It is possible to compare on equivalence as well:         $(if &lt;var_name&gt; == &lt;value&gt;) These statements have effect until $(elif &lt;var_name&gt;), $(else) or $(endif). In general case it looks like this:
+</p>
+<pre>
+some content, which will always be displayed
+$(if username == john)
+Hey, your username is john
+$(elif username == dizzy)
+Hello, Dizzy! How are you? Your administrator.
+$(elif ip == 10.1.2.3)
+You are sitting at that crappy computer, which is damn slow...
+$(elif mac == 00:01:02:03:04:05)
+This is an ethernet card, which was stolen few months ago...
+$(else)
+I don't know who you are, so lets live in peace.
+$(endif)
+other content, which will always be displayed
+</pre>
+<p>Only one of those expressions will be shown. Which one - depends on values of those variables for each client.
+</p><p><br />
+</p>
+<h4><span class="mw-headline" id="Redirects_and_custom_Headers">Redirects and custom Headers</span></h4>
+<p>Starting from RouterOS 5.12 there are 2 new hotspot html page variables:
+</p>
+<ul><li> <b>http-status</b>	- allows the setting of the http status code and message</li>
+<li> <b>http-header</b>	- allows the setting of the http header message</li></ul>
+<p><br />
+Example:
+</p>
+<pre>
+	$(if http-status == 302)Hotspot login required$(endif)
+	$(if http-header == "Location")$(link-redirect)$(endif)
+</pre>
+<div id="shbox" style="border-width:1px; border-color:lightgrey; padding: 2px 5px 2px 10px; min-height:56px; border-style:solid; font-size: 0.9em; width=500px; display: block; margin-top:20px">
+<div class="floatleft"><a href="/wiki/File:Icon-note.png" class="image"><img alt="Icon-note.png" src="/images/thumb/e/ee/Icon-note.png/56px-Icon-note.png" width="56" height="56" srcset="/images/thumb/e/ee/Icon-note.png/84px-Icon-note.png 1.5x, /images/thumb/e/ee/Icon-note.png/112px-Icon-note.png 2x" /></a></div>
+<p style="margin-top:10px; margin-left: 56px;"><b>Note:</b>  Although the above appears to use the conditional expression 'if' it is in fact setting the 'http-status' to '302' not testing for it.  Also the same for the variable 'http-header'. Once again, even though it uses an 'if' it is in fact setting the variable to 'Location' followed by the url set from the variable 'link-redirect'.</p></div>
+<p><br style="clear:both" />
+</p><p>E.g. in the case where $(link-redirect) evaluates to "<a rel="nofollow" class="external free" href="http://192.168.88.1/login">http://192.168.88.1/login</a>", then the HTTP response returned to the client will be changed to:
+</p>
+<pre>
+HTTP/1.0 302 Hotspot login required
+&lt;regular HTTP headers&gt;
+Location: http://192.168.88.1/login
+</pre>
+<p><br />
+<b>http-status syntax</b>:
+</p>
+<pre>
+	$(if http-status == XYZ)HTTP_STATUS_MESSAGE$(endif)
+</pre>
+<ul><li> <i>XYZ</i> - The status code you wish to return. Should be 3 decimal digits, first one must not be 0</li>
+<li> <i>HTTP_STATUS_MESSAGE</i> - any text you wish to return to the client which will follow the above status code in the HTTP reply</li></ul>
+<p>In any HTTP response it will be on the first line and will be as follows:
+</p>
+<pre>
+HTTP/1.0 XYZ HTTP_STATUS_MESSAGE
+</pre>
+<p><br />
+<b>http-header syntax:</b>
+</p>
+<pre>
+	$(if http-header == HTTP_HEADER_NAME)HTTP_HEADER_VALUE$(endif)
+</pre>
+<ul><li> <i>HTTP_HEADER_NAME</i> - name of the HTTP header to be sent in the response</li>
+<li> <i>HTTP_HEADER_VALUE</i> - value of the HTTP header with name HTTP_HEADER_NAME to be sent in the response</li></ul>
+<p>The HTTP response will appear as:
+</p>
+<pre>
+HTTP_HEADER_NAME: HTTP_HEADER_VALUE
+</pre>
+<p><br />
+All variables and conditional expressions within HTTP_HEADER_VALUE and HTTP_STATUS_MESSAGE are processed as usual.
+</p><p>In case multiple headers with the same name are added, then only the last one will be used (previous ones will be discarded). It allows the system to override regular HTTP headers (for example, Content-Type and Cache-Control).
+</p>
+<h3><span class="mw-headline" id="Customizing_Error_Messages">Customizing Error Messages</span></h3>
+<p>All error messages are stored in the errors.txt file within the respective HotSpot servlet directory. You can change and translate all these messages to your native language. To do so, edit the errors.txt file. You can also use variables in the messages. All instructions are given in that file.
+</p><p><br />
+</p>
+<h3><span class="mw-headline" id="Multiple_Versions_of_HotSpot_Pages">Multiple Versions of HotSpot Pages</span></h3>
+<p>Multiple HotSpot page sets for the same HotSpot server are supported. They can be chosen by user (to select language) or automatically by JavaScript (to select PDA/regular version of HTML pages).
+</p><p>To utilize this feature, create subdirectories in HotSpot HTML directory, and place those HTML files, which are different, in that subdirectory. For example, to translate everything in Latvian, subdirectory "lv" can be created with login.html, logout.html, status.html, alogin.html, radvert.html and errors.txt files, which are translated into Latvian. If the requested HTML page can not be found in the requested subdirectory, the corresponding HTML file from the main directory will be used. Then main login.html file would contain link to "/lv/login?dst=$(link-orig-esc)", which then displays Latvian version of login page: &lt;a href="/lv/login?dst=$(link-orig-esc)"&gt;Latviski&lt;/a&gt; . And Latvian version would contain link to English version: &lt;a href="/login?dst=$(link-orig-esc)"&gt;English&lt;/a&gt;
+</p><p>Another way of referencing directories is to specify 'target' variable:
+</p>
+<pre>
+        &lt;a href="$(link-login-only)?dst=$(link-orig-esc)&amp;target=lv"&gt;Latviski&lt;/a&gt;
+        &lt;a href="$(link-login-only)?dst=$(link-orig-esc)&amp;target=%2F"&gt;English&lt;/a&gt;
+</pre>
+<p>After preferred directory has been selected (for example, "lv"), all links to local HotSpot pages will contain that path (for example, $(link-status) = "<a rel="nofollow" class="external free" href="http://hotspot.mt.lv/lv/status">http://hotspot.mt.lv/lv/status</a>"). So, if all HotSpot pages reference links using "$(link-xxx)" variables, then no more changes are to be made - each client will stay within the selected directory all the time.
+</p><p><br />
+</p>
+<h3><span class="mw-headline" id="Misc">Misc</span></h3>
+<p>If you want to use HTTP-CHAP authentication method it is supposed that you include the <b>doLogin()</b> function (which references to the <b>md5.js</b> which must be already loaded) before the <b>Submit</b> action of the login form. Otherwise, CHAP login will fail.
+</p><p>The resulting password to be sent to the HotSpot gateway in case of HTTP-CHAP method, is formed MD5-hashing the concatenation of the following: chap-id, the password of the user and chap-challenge (in the given order)
+</p><p>In case variables are to be used in link directly, then they must be escaped accordingly. For example, in login page, <b>&lt;a href="https://login.example.com/login?mac=$(mac)&amp;user=$(username)"&gt;link&lt;/a&gt;</b> will not work as intended, if username will be "123&amp;456=1 2". In this case instead of $(user), its escaped version must be used: $(user-esc): <b>&lt;a href="https://login.server.serv/login?mac=$(mac-esc)&amp;user=$(user-esc)"&gt;link&lt;/a&gt;</b>. Now the same username will be converted to "123%26456%3D1+2", which is the valid representation of "123&amp;456=1 2" in URL. This trick may be used with any variables, not only with $(username).
+</p><p>There is a boolean parameter "erase-cookie" to the logout page, which may be either "on" or "true" to delete user cookie on logout (so that the user would not be automatically logged on when he/she opens a browser next time.
+</p>
+<h3><span class="mw-headline" id="Examples">Examples</span></h3>
+<p>With basic HTML language knowledge and the examples below it should be easy to implement the ideas described above.
+</p>
+<ul><li>To provide predefined value as username, in login.html change:</li></ul>
+<pre>
+&lt;type="text" value="$(username)&gt;
+</pre>
+<p>to this line:
+</p>
+<pre>
+&lt;input type="hidden" name="username" value="hsuser"&gt;
+</pre>
+<p>(where hsuser is the username you are providing)
+</p>
+<ul><li>To provide predefined value as password, in login.html change:</li></ul>
+<pre>
+&lt;input type="password"&gt;
+</pre>
+<p>to this line:
+</p>
+<pre>
+&lt;input type="hidden" name="password" value="hspass"&gt;
+</pre>
+<p>(where hspass is the password you are providing)
+</p>
+<ul><li>To send client's MAC address to a registration server in form of:</li></ul>
+<p>https://www.example.com/register.html?mac=XX:XX:XX:XX:XX:XX
+</p><p>change the Login button link in login.html to:
+</p>
+<pre>
+https://www.example.com/register.html?mac=$(mac)
+</pre>
+<p>(you should correct the link to point to your server)
+</p>
+<ul><li> To show a banner after user login, in alogin.html after</li></ul>
+<p>$(if popup == 'true')
+add the following line:
+</p>
+<pre>
+open('http://www.example.com/your-banner-page.html', 'my-banner-name','');
+</pre>
+<p>(you should correct the link to point to the page you want to show)
+</p>
+<ul><li>To choose different page shown after login, in login.html change:</li></ul>
+<pre>
+&lt;input type="hidden" name="dst" value="$(link-orig)"&gt;
+</pre>
+<p>to this line:
+</p>
+<pre>
+&lt;input type="hidden" name="dst" value="http://www.example.com"&gt;
+</pre>
+<p>(you should correct the link to point to your server)
+</p>
+<ul><li>To erase the cookie on logoff, in the page containing link to the logout (for example, in status.html) change:</li></ul>
+<pre>
+open('$(link-logout)', 'hotspot_logout', ...
+</pre>
+<p>to this:
+</p>
+<pre>
+open('$(link-logout)?erase-cookie=on', 'hotspot_logout', ...
+</pre>
+<p>or alternatively add this line:
+</p>
+<pre>
+&lt;input type="hidden" name="erase-cookie" value="on"&gt;
+</pre>
+<p>before this one:
+</p>
+<pre>
+&lt;input type="submit" value="log off"&gt;
+</pre>
+<h4><span class="mw-headline" id="External_authentication">External authentication</span></h4>
+<p>Another example is making HotSpot to authenticate on a remote server (which may, for example, perform creditcard charging):
+</p>
+<ul><li>Allow direct access to the external server in walled-garden (either HTTP-based, or IP-based)</li>
+<li>Modify login page of the HotSpot servlet to redirect to the external authentication server. The external server should modify RADIUS database as needed</li></ul>
+<dl><dd></dd>
+<dd>Here is an example of such a login page to put on the HotSpot router (it is redirecting to <a rel="nofollow" class="external free" href="https://auth.example.com/login.php">https://auth.example.com/login.php</a>, replace with the actual address of an external authentication server):</dd></dl>
+<pre>
+
+&lt;html&gt;
+&lt;title&gt;...&lt;/title&gt;
+&lt;body&gt;
+&lt;form name="redirect" action="https://auth.example.com/login.php" method="post"&gt;
+&lt;input type="hidden" name="mac" value="$(mac)"&gt;
+&lt;input type="hidden" name="ip" value="$(ip)"&gt;
+&lt;input type="hidden" name="username" value="$(username)"&gt;
+&lt;input type="hidden" name="link-login" value="$(link-login)"&gt;
+&lt;input type="hidden" name="link-orig" value="$(link-orig)"&gt;
+&lt;input type="hidden" name="error" value="$(error)"&gt;
+&lt;/form&gt;
+&lt;script language="JavaScript"&gt;
+&lt;!--
+	document.redirect.submit();
+//--&gt;
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+          
+</pre>
+<ul><li>The external server can log in a HotSpot client by redirecting it back to the original HotSpot servlet login page, specifying the correct username and password</li></ul>
+<dl><dd>Here is an example of such a page (it is redirecting to <a rel="nofollow" class="external free" href="https://hotspot.example.com/login">https://hotspot.example.com/login</a>, replace with the actual address of a HotSpot router; also, it is displaying www.mikrotik.com after successful login, replace with what needed):</dd></dl>
+<pre>
+
+&lt;html&gt;
+&lt;title&gt;Hotspot login page&lt;/title&gt;
+&lt;body&gt;
+&lt;form name="login" action="https://hotspot.example.com/login" method="post"&gt;
+&lt;input type="text" name="username" value="demo"&gt;
+&lt;input type="password" name="password" value="none"&gt;
+&lt;input type="hidden" name="domain" value=""&gt;
+&lt;input type="hidden" name="dst" value="http://www.mikrotik.com/"&gt;
+&lt;input type="submit" name="login" value="log in"&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+          
+</pre>
+<ul><li>Hotspot will ask RADIUS server whether to allow the login or not. If allowed, alogin.html page will be displayed (it can be modified to do anything). If not allowed, flogin.html (or login.html) page will be displayed, which will redirect client back to the external authentication server.</li></ul>
+<div id="shbox" style="border-width:1px; border-color:lightgrey; padding: 2px 5px 2px 10px; min-height:56px; border-style:solid; font-size: 0.9em; width=500px; display: block; margin-top:20px">
+<div class="floatleft"><a href="/wiki/File:Icon-note.png" class="image"><img alt="Icon-note.png" src="/images/thumb/e/ee/Icon-note.png/56px-Icon-note.png" width="56" height="56" srcset="/images/thumb/e/ee/Icon-note.png/84px-Icon-note.png 1.5x, /images/thumb/e/ee/Icon-note.png/112px-Icon-note.png 2x" /></a></div>
+<p style="margin-top:10px; margin-left: 56px;"><b>Note:</b>  as shown in these examples, HTTPS protocol and POST method can be used to secure communications.</p></div>
+<p><br style="clear:both" />
+</p>
+<h4><span class="mw-headline" id="HTTP_header_detection">HTTP header detection</span></h4>
+<p>The Hotspot login pages have access to HTTP headers by using <b>$(http-header-name);</b>
+</p><p>For example, there exists an ability to check the user agent (or browser), and will return any other content instead of the regular login page, if so desired. This can be used to disable automatic popups in phones, for example. 
+</p><p>For example, to output "SUCCESS" for users of a specific Firefox mobile version, instead of the login page, you can these lines on the top of the <b>rlogin.html</b> page in your hotspot directory:
+</p>
+<pre>$(if user-agent == "Mozilla/5.0 (Android; Mobile; rv:40.0) Gecko/40.0 Firefox/40.0" ) 
+&lt;HTML&gt;&lt;HEAD&gt;&lt;TITLE&gt;Success&lt;/TITLE&gt;&lt;/HEAD&gt;&lt;BODY&gt;Success&lt;/BODY&gt;&lt;/HTML&gt; 
+$(else)
+---- regular content of rlogin.html page  ----
+$(endif)
+</pre>
+<p>This will DISABLE the login popup for Android Firefox 40 users.
+</p>
+<h4><span class="mw-headline" id="One_click_login">One click login</span></h4>
+<p>It is possible to create modified captive portal for quick one click login for scenarios where no user or password is required. 
+</p><p>What you need to do is:
+</p>
+<ul><li> Create user for this purpose. In example it is "notsosecretuser" with password "notsosecretpass"</li>
+<li> Assign this user to user profile that allows specific/unlimited amount of simultaneous active users.</li>
+<li> Copy original hotspot directory that is already generated in routers file menu on root level.</li>
+<li> Modify contents of this copy directory contents.
+<ul><li> Only one file requires modifications for this to work, the "login.html".</li></ul></li></ul>
+<p>Original:
+</p>
+<pre>
+&lt;table width="100" style="background-color: #ffffff"&gt;
+  &lt;tr&gt;&lt;td align="right"&gt;login&lt;/td&gt;
+      &lt;td&gt;&lt;input style="width: 80px" name="username" type="text" value="$(username)"/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;&lt;td align="right"&gt;password&lt;/td&gt;
+      &lt;td&gt;&lt;input style="width: 80px" name="password" type="password"/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;&#160;&lt;/td&gt;
+      &lt;td&gt;&lt;input type="submit" value="OK" /&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</pre>
+<p>Modified:
+</p>
+<pre>
+&lt;table width="100" style="background-color: #ffffff"&gt;
+  &lt;tr style="display:none;"&gt;&lt;td align="right"&gt;login&lt;/td&gt;
+    &lt;td&gt;&lt;input style="width: 80px" name="username" type="text" value="notsosecretuser"/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr style="display:none;"&gt;&lt;td align="right"&gt;password&lt;/td&gt;
+    &lt;td&gt;&lt;input style="width: 80px" name="password" type="password" value="notsosecretpass"/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;&#160;&lt;/td&gt;
+    &lt;td&gt;&lt;input type="submit" value="Proceed to Internet!" /&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</pre>
+<p>What changed:
+</p>
+<ul><li><ul><li><ul><li> User and Password "&lt;tr&gt;" fields are hidden. </li>
+<li> Both User and Password field values contain predefined values.</li>
+<li> Changed "OK" button value(name) to something more fitting.</li></ul></li></ul></li></ul>
+<ul><li> Now upload this new hotspot folder back to router, preferably with different name. </li>
+<li> Change settings in hotspot server profile to use this new html directory.</li></ul>
+<pre>
+/ip hotspot profile set (profile number or name) html-directory-override=(dir path/name)
+</pre>
+<h2><span class="mw-headline" id="Firewall_customizations">Firewall customizations</span></h2>
+<h3><span class="mw-headline" id="Summary_2">Summary</span></h3>
+<p>Apart from the obvious dynamic entries in the /ip hotspot submenu itself (like hosts and active users), some additional rules are added in the firewall tables when activating a HotSpot service. Unlike RouterOS version 2.8, there are relatively few firewall rules added in the firewall as the main job is made by the one-to-one NAT algorithm.
+</p>
+<h3><span class="mw-headline" id="NAT">NAT</span></h3>
+<p>From <b>/ip firewall nat print dynamic</b> command, you can get something like this (comments follow after each of the rules):
+</p>
+<pre>
+ 0 D chain=dstnat action=jump jump-target=hotspot hotspot=from-client
+</pre>        
+<p>Putting all HotSpot-related tasks for packets from all HotSpot clients into a separate chain.
+</p>
+<pre>
+ 1 I chain=hotspot action=jump jump-target=pre-hotspot
+</pre>        
+<p>Any actions that should be done before HotSpot rules apply, should be put in the pre-hotspot chain. This chain is under full administrator control and does not contain any rules set by the system, hence the invalid jump rule (as the chain does not have any rules by default).
+</p>
+<pre>
+ 2 D chain=hotspot action=redirect to-ports=64872 dst-port=53 protocol=udp 
+ 3 D chain=hotspot action=redirect to-ports=64872 dst-port=53 protocol=tcp 
+</pre>        
+<p>Redirect all DNS requests to the HotSpot service. The 64872 port provides DNS service for all HotSpot users. If you want HotSpot server to listen also to another port, add rules here the same way, changing dst-port property.
+</p>
+<pre>
+ 4 D chain=hotspot action=redirect to-ports=64873 hotspot=local-dst dst-port=80
+     protocol=tcp
+</pre>        
+<p>Redirect all HTTP login requests to the HTTP login servlet. The 64873 is HotSpot HTTP servlet port.
+</p>
+<pre>
+ 5 D chain=hotspot action=redirect to-ports=64875 hotspot=local-dst dst-port=443
+     protocol=tcp
+</pre>        
+<p>Redirect all HTTPS login requests to the HTTPS login servlet. The 64875 is HotSpot HTTPS servlet port.
+</p>
+<pre>
+ 6 D chain=hotspot action=jump jump-target=hs-unauth hotspot=!auth protocol=tcp
+</pre>        
+<p>All other packets except DNS and login requests from unauthorized clients should pass through the hs-unauth chain.
+</p>
+<pre>
+ 7 D chain=hotspot action=jump jump-target=hs-auth hotspot=auth protocol=tcp
+</pre>        
+<p>And packets from the authorized clients - through the hs-auth chain.
+</p>
+<pre>
+ 8 D&#160;;;; www.mikrotik.com
+     chain=hs-unauth action=return dst-address=66.228.113.26 dst-port=80 protocol=tcp
+</pre>        
+<p>First in the <b>hs-unauth</b> chain is put everything that affects TCP protocol in the <code>/ip hotspot walled-garden ip </code>submenu (i.e., everything where either protocol is not set, or set to TCP). Here we are excluding www.mikrotik.com from being redirected to the login page.
+</p>
+<pre>
+ 9 D chain=hs-unauth action=redirect to-ports=64874 dst-port=80 protocol=tcp
+</pre>        
+<p>All other HTTP requests are redirected to the Walled Garden proxy server which listens the 64874 port. If there is an allow entry in the <code>/ip hotspot walled-garden</code> menu for an HTTP request, it is being forwarded to the destination. Otherwise, the request will be automatically redirected to the HotSpot login servlet (port 64873).
+</p>
+<pre>
+10 D chain=hs-unauth action=redirect to-ports=64874 dst-port=3128 protocol=tcp 
+11 D chain=hs-unauth action=redirect to-ports=64874 dst-port=8080 protocol=tcp 
+</pre>        
+<p>HotSpot by default assumes that only these ports may be used for HTTP proxy requests. These two entries are used to "catch" client requests to unknown proxies (you can add more rules here for other ports). I.e., to make it possible for the clients with unknown proxy settings to work with the HotSpot system. This feature is called "Universal Proxy". If it is detected that a client is using some proxy server, the system will automatically mark that packets with the http hotspot mark to work around the unknown proxy problem, as we will see later on. Note that the port used (64874) is the same as for HTTP requests in the rule #9 (so both HTTP and HTTP proxy requests are processed by the same code).
+</p>
+<pre>
+12 D chain=hs-unauth action=redirect to-ports=64875 dst-port=443 protocol=tcp
+</pre>        
+<p>HTTPS proxy is listening on the 64875 port.
+</p>
+<pre>
+13 I chain=hs-unauth action=jump jump-target=hs-smtp dst-port=25 protocol=tcp
+</pre>        
+<p>Redirect for SMTP protocol may also be defined in the HotSpot configuration. In case it is, a redirect rule will be put in the hs-smtp chain. This is done so that users with unknown SMTP configuration would be able to send their mail through the service provider's (your) SMTP server instead of going to the [possibly unavailable outside their network of origin] SMTP server users have configured on their computers. The chain is empty by default, hence the invalid jump rule.
+</p>
+<pre>
+14 D chain=hs-auth action=redirect to-ports=64874 hotspot=http protocol=tcp
+</pre>        
+<p>Providing HTTP proxy service for authorized users. Authenticated user requests may need to be subject to transparent proxying (the "Universal Proxy" technique and advertisement feature). This http mark is put automatically on the HTTP proxy requests to the servers detected by the HotSpot HTTP proxy (the one that is listening on the 64874 port) as HTTP proxy requests for unknown proxy servers. This is done so that users that have some proxy settings would use the HotSpot gateway instead of the [possibly unavailable outside their network of origin] proxy server users have configured in their computers. This mark is also applied when advertisement is due to be shown to the user, as well as on any HTTP requests done form the users whose profile is configured to transparently proxy their requests.
+</p>
+<pre>
+15 I chain=hs-auth action=jump jump-target=hs-smtp dst-port=25 protocol=tcp
+</pre>        
+<p>Providing SMTP proxy for authorized users (the same as in rule #13).
+</p><p><br />
+</p>
+<h3><span class="mw-headline" id="Packet_Filtering">Packet  Filtering</span></h3>
+<p>From <b>/ip firewall filter print dynamic</b> command, you can get something like this (comments follow after each of the rules):
+</p>
+<pre>
+ 0 D chain=forward action=jump jump-target=hs-unauth hotspot=from-client,!auth
+</pre>        
+<p>Any packet that traverse the router from an unauthorized client will be sent to the <b>hs-unauth</b> chain. The hs-unauth implements the IP-based Walled Garden filter.
+</p>
+<pre>
+ 1 D chain=forward action=jump jump-target=hs-unauth-to hotspot=to-client,!auth
+</pre>        
+<p>Everything that comes to clients through the router, gets redirected to another chain, called <b>hs-unauth-to</b>. This chain should reject unauthorized requests to the clients.
+</p>
+<pre>
+ 2 D chain=input action=jump jump-target=hs-input hotspot=from-client
+</pre>        
+<p>Everything that comes from clients to the router itself, gets to yet another chain, called <b>hs-input</b>.
+</p>
+<pre>
+ 3 I chain=hs-input action=jump jump-target=pre-hs-input
+</pre>        
+<p>Before proceeding with [predefined] dynamic rules, the packet gets to the administratively controlled <b>pre-hs-input</b> chain, which is empty by default, hence the invalid state of the jump rule.
+</p>
+<pre>
+ 4 D chain=hs-input action=accept dst-port=64872 protocol=udp 
+ 5 D chain=hs-input action=accept dst-port=64872-64875 protocol=tcp 
+</pre>        
+<p>Allow client access to the local authentication and proxy services (as described earlier).
+</p>
+<pre>
+ 6 D chain=hs-input action=jump jump-target=hs-unauth hotspot=!auth
+</pre>        
+<p>All other traffic from unauthorized clients to the router itself will be treated the same way as the traffic traversing the routers.
+</p>
+<pre>
+ 7 D chain=hs-unauth action=return protocol=icmp
+ 8 D&#160;;;; www.mikrotik.com
+     chain=hs-unauth action=return dst-address=66.228.113.26 dst-port=80 protocol=tcp
+</pre>        
+<p>Unlike NAT table where only TCP-protocol related Walled Garden entries were added, in the packet filter <b>hs-unauth</b> chain is added everything you have set in the <b>/ip hotspot walled-garden ip</b> menu. That is why although you have seen only one entry in the NAT table, there are two rules here.
+</p>
+<pre>
+ 9 D chain=hs-unauth action=reject reject-with=tcp-reset protocol=tcp
+10 D chain=hs-unauth action=reject reject-with=icmp-net-prohibited
+</pre>        
+<p>Everything else that has not been while-listed by the Walled Garden will be rejected. Note usage of TCP Reset for rejecting TCP connections.
+</p>
+<pre>
+11 D chain=hs-unauth-to action=return protocol=icmp
+12 D&#160;;;; www.mikrotik.com
+     chain=hs-unauth-to action=return src-address=66.228.113.26 src-port=80 protocol=tcp
+</pre>        
+<p>Same action as in rules #7 and #8 is performed for the packets destined to the clients (chain <b>hs-unauth-to</b>) as well.
+</p>
+<pre>
+13 D chain=hs-unauth-to action=reject reject-with=icmp-host-prohibited
+</pre>        
+<p>Reject all packets to the clients with ICMP reject message.
+</p><p><br />
+</p><p><b>[</b> <a href="#content">Top</a> | <a href="/wiki/Manual:TOC" title="Manual:TOC">Back to Content</a> <b>]</b>
+</p>
+<!-- 
+NewPP limit report
+Cached time: 20200813055029
+Cache expiry: 86400
+Dynamic content: false
+CPU time usage: 0.043 seconds
+Real time usage: 0.059 seconds
+Preprocessor visited node count: 554/1000000
+Preprocessor generated node count: 1337/1000000
+Post‐expand include size: 2837/2097152 bytes
+Template argument size: 872/2097152 bytes
+Highest expansion depth: 2/40
+Expensive parser function count: 0/100
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   14.148      1 -total
+ 25.33%    3.584      5 Template:Note
+ 25.07%    3.547      1 Template:Versions
+ 24.84%    3.515      1 Template:Cont
+-->
+
+<!-- Saved in parser cache with key wiki_mikrotik_com:pcache:idhash:5085-0!*!0!!en!5!* and timestamp 20200813055029 and revision id 34170
+ -->
+</div>					<div class="printfooter">
+						Retrieved from "<a dir="ltr" href="https://wiki.mikrotik.com/index.php?title=Manual:Customizing_Hotspot&amp;oldid=34170">https://wiki.mikrotik.com/index.php?title=Manual:Customizing_Hotspot&amp;oldid=34170</a>"					</div>
+				<div id="catlinks" class="catlinks" data-mw="interface"><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="/wiki/Special:Categories" title="Special:Categories">Categories</a>: <ul><li><a href="/wiki/Category:Manual" title="Category:Manual">Manual</a></li><li><a href="/index.php?title=Category:Hotspot&amp;action=edit&amp;redlink=1" class="new" title="Category:Hotspot (page does not exist)">Hotspot</a></li><li><a href="/wiki/Category:IP" title="Category:IP">IP</a></li><li><a href="/wiki/Category:Examples" title="Category:Examples">Examples</a></li></ul></div></div>				<div class="visualClear"></div>
+							</div>
+		</div>
+		<div id="mw-navigation">
+			<h2>Navigation menu</h2>
+
+			<div id="mw-head">
+									<div id="p-personal" role="navigation" class="" aria-labelledby="p-personal-label">
+						<h3 id="p-personal-label">Personal tools</h3>
+						<ul>
+							<li id="pt-login"><a href="/index.php?title=Special:UserLogin&amp;returnto=Manual%3ACustomizing+Hotspot&amp;returntoquery=printable%3Dyes" title="You are encouraged to log in; however, it is not mandatory [o]" accesskey="o">Log in</a></li>						</ul>
+					</div>
+									<div id="left-navigation">
+										<div id="p-namespaces" role="navigation" class="vectorTabs" aria-labelledby="p-namespaces-label">
+						<h3 id="p-namespaces-label">Namespaces</h3>
+						<ul>
+															<li  id="ca-nstab-manual" class="selected"><span><a href="/wiki/Manual:Customizing_Hotspot" >Manual</a></span></li>
+															<li  id="ca-talk" class="new"><span><a href="/index.php?title=Manual_talk:Customizing_Hotspot&amp;action=edit&amp;redlink=1"  title="Discussion about the content page [t]" accesskey="t" rel="discussion">Discussion</a></span></li>
+													</ul>
+					</div>
+										<div id="p-variants" role="navigation" class="vectorMenu emptyPortlet" aria-labelledby="p-variants-label">
+												<h3 id="p-variants-label">
+							<span>Variants</span><a href="#"></a>
+						</h3>
+
+						<div class="menu">
+							<ul>
+															</ul>
+						</div>
+					</div>
+									</div>
+				<div id="right-navigation">
+										<div id="p-views" role="navigation" class="vectorTabs" aria-labelledby="p-views-label">
+						<h3 id="p-views-label">Views</h3>
+						<ul>
+															<li id="ca-view" class="selected"><span><a href="/wiki/Manual:Customizing_Hotspot" >Read</a></span></li>
+															<li id="ca-viewsource"><span><a href="/index.php?title=Manual:Customizing_Hotspot&amp;action=edit"  title="This page is protected.&#10;You can view its source [e]" accesskey="e">View source</a></span></li>
+															<li id="ca-history" class="collapsible"><span><a href="/index.php?title=Manual:Customizing_Hotspot&amp;action=history"  title="Past revisions of this page [h]" accesskey="h">View history</a></span></li>
+													</ul>
+					</div>
+										<div id="p-cactions" role="navigation" class="vectorMenu emptyPortlet" aria-labelledby="p-cactions-label">
+						<h3 id="p-cactions-label"><span>More</span><a href="#"></a></h3>
+
+						<div class="menu">
+							<ul>
+															</ul>
+						</div>
+					</div>
+										<div id="p-search" role="search">
+						<h3>
+							<label for="searchInput">Search</label>
+						</h3>
+
+						<form action="/index.php" id="searchform">
+							<div id="simpleSearch">
+							<input type="search" name="search" placeholder="Search MikroTik Wiki" title="Search MikroTik Wiki [f]" accesskey="f" id="searchInput"/><input type="hidden" value="Special:Search" name="title"/><input type="submit" name="fulltext" value="Search" title="Search the pages for this text" id="mw-searchButton" class="searchButton mw-fallbackSearchButton"/><input type="submit" name="go" value="Go" title="Go to a page with this exact name if it exists" id="searchButton" class="searchButton"/>							</div>
+						</form>
+					</div>
+									</div>
+			</div>
+			<div id="mw-panel">
+				<div id="p-logo" role="banner"><a class="mw-wiki-logo" href="/wiki/Main_Page"  title="Visit the main page"></a></div>
+						<div class="portal" role="navigation" id='p-navigation' aria-labelledby='p-navigation-label'>
+			<h3 id='p-navigation-label'>Navigation</h3>
+
+			<div class="body">
+									<ul>
+						<li id="n-mainpage"><a href="/wiki/Main_Page" title="Visit the main page [z]" accesskey="z">Main Page</a></li><li id="n-recentchanges"><a href="/wiki/Special:RecentChanges" title="A list of recent changes in the wiki [r]" accesskey="r">Recent changes</a></li>					</ul>
+							</div>
+		</div>
+			<div class="portal" role="navigation" id='p-tb' aria-labelledby='p-tb-label'>
+			<h3 id='p-tb-label'>Tools</h3>
+
+			<div class="body">
+									<ul>
+						<li id="t-whatlinkshere"><a href="/wiki/Special:WhatLinksHere/Manual:Customizing_Hotspot" title="A list of all wiki pages that link here [j]" accesskey="j">What links here</a></li><li id="t-recentchangeslinked"><a href="/wiki/Special:RecentChangesLinked/Manual:Customizing_Hotspot" rel="nofollow" title="Recent changes in pages linked from this page [k]" accesskey="k">Related changes</a></li><li id="t-specialpages"><a href="/wiki/Special:SpecialPages" title="A list of all special pages [q]" accesskey="q">Special pages</a></li><li id="t-permalink"><a href="/index.php?title=Manual:Customizing_Hotspot&amp;oldid=34170" title="Permanent link to this revision of the page">Permanent link</a></li><li id="t-info"><a href="/index.php?title=Manual:Customizing_Hotspot&amp;action=info" title="More information about this page">Page information</a></li>					</ul>
+							</div>
+		</div>
+				</div>
+		</div>
+		<div id="footer" role="contentinfo">
+							<ul id="footer-info">
+											<li id="footer-info-lastmod"> This page was last edited on 13 August 2020, at 08:50.</li>
+									</ul>
+							<ul id="footer-places">
+											<li id="footer-places-privacy"><a href="/wiki/MikroTik_Wiki:Privacy_policy" title="MikroTik Wiki:Privacy policy">Privacy policy</a></li>
+											<li id="footer-places-about"><a href="/wiki/MikroTik_Wiki:About" title="MikroTik Wiki:About">About MikroTik Wiki</a></li>
+											<li id="footer-places-disclaimer"><a href="/wiki/MikroTik_Wiki:General_disclaimer" title="MikroTik Wiki:General disclaimer">Disclaimers</a></li>
+									</ul>
+										<ul id="footer-icons" class="noprint">
+											<li id="footer-poweredbyico">
+							<a href="//www.mediawiki.org/"><img src="/resources/assets/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" srcset="/resources/assets/poweredby_mediawiki_132x47.png 1.5x, /resources/assets/poweredby_mediawiki_176x62.png 2x" width="88" height="31"/></a>						</li>
+									</ul>
+						<div style="clear:both"></div>
+		</div>
+		<script>(window.RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgPageParseReport":{"limitreport":{"cputime":"0.043","walltime":"0.059","ppvisitednodes":{"value":554,"limit":1000000},"ppgeneratednodes":{"value":1337,"limit":1000000},"postexpandincludesize":{"value":2837,"limit":2097152},"templateargumentsize":{"value":872,"limit":2097152},"expansiondepth":{"value":2,"limit":40},"expensivefunctioncount":{"value":0,"limit":100},"timingprofile":["100.00%   14.148      1 -total"," 25.33%    3.584      5 Template:Note"," 25.07%    3.547      1 Template:Versions"," 24.84%    3.515      1 Template:Cont"]},"cachereport":{"timestamp":"20200813055029","ttl":86400,"transientcontent":false}}});});</script><script>(window.RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgBackendResponseTime":130});});</script>
+	</body>
+</html>

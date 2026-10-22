@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RADIUS — MikroTik (ترجمة عربية)</title>
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --paper: #fffdf9;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --accent: #0b6e4f;
+      --border: #ddd4c6;
+      --code-bg: #f0ebe3;
+      --note-bg: #fff6e5;
+      --note-border: #e0b65a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 10% 0%, #efe6d6 0%, transparent 45%),
+        radial-gradient(ellipse at 90% 10%, #dfece6 0%, transparent 40%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Noto Naskh Arabic", "Noto Sans Arabic", "Amiri", "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.85;
+      font-size: 17px;
+    }
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    article {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+      box-shadow: 0 10px 30px rgba(40, 30, 10, 0.06);
+    }
+    h1, h2, h3, h4 {
+      color: var(--accent);
+      line-height: 1.4;
+      margin: 1.6rem 0 0.7rem;
+      font-weight: 700;
+    }
+    h1 { font-size: 1.7rem; margin-top: 0; }
+    h2 { font-size: 1.35rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; }
+    h3 { font-size: 1.15rem; }
+    h4 { font-size: 1.05rem; color: #155e47; }
+    p { margin: 0.7rem 0; }
+    ul, ol { margin: 0.6rem 0 0.9rem; padding-inline-start: 1.4rem; }
+    li { margin: 0.35rem 0; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.85rem 1rem;
+      background: #eef7f3;
+      border-inline-start: 4px solid var(--accent);
+      color: var(--muted);
+      border-radius: 0 8px 8px 0;
+    }
+    .note {
+      background: var(--note-bg);
+      border: 1px solid var(--note-border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+    code {
+      font-family: "Noto Sans Mono", "DejaVu Sans Mono", Consolas, monospace;
+      font-size: 0.92em;
+      background: var(--code-bg);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      direction: ltr;
+      unicode-bidi: isolate;
+      display: inline-block;
+    }
+    pre {
+      direction: ltr;
+      text-align: left;
+      background: #1e2430;
+      color: #e8edf5;
+      padding: 1rem 1.1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      line-height: 1.5;
+      font-size: 0.88rem;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      display: block;
+      white-space: pre;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .toc-hint {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      direction: ltr;
+      text-align: left;
+      min-width: 480px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.6rem;
+      vertical-align: top;
+    }
+    th {
+      background: var(--code-bg);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    td.desc {
+      direction: rtl;
+      text-align: right;
+      font-family: "Noto Naskh Arabic", "Noto Sans Arabic", "Amiri", "Segoe UI", Tahoma, Arial, sans-serif;
+    }
+    @media (max-width: 640px) {
+      article { padding: 1.25rem 1rem; }
+      body { font-size: 16px; }
+    }
+    @media print {
+      body { background: #fff; }
+      article { box-shadow: none; border: none; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <article>
+      <p class="meta">ترجمة الشرح فقط · المصطلحات التقنية والكود كما في وثائق MikroTik</p>
+      <h1>RADIUS — RouterOS — وثائق MikroTik</h1>
+      <blockquote>ترجمة الشرح فقط إلى العربية. المصطلحات التقنية، أسماء الخصائص، المتغيرات، الأوامر، وأمثلة الكود تُبقى كما في الأصل.</blockquote>
+      <p class="toc-hint">المصدر: <a href="https://help.mikrotik.com/docs/spaces/ROS/pages/328097/RADIUS" dir="ltr">help.mikrotik.com — RADIUS</a></p>
+
+      <h1>RADIUS</h1>
+
+      <h2>ملخص (Summary)</h2>
+      <p>RADIUS، اختصارًا لـ Remote Authentication Dial-In User Service، هو خادم بعيد يوفّر خدمات authentication و accounting لأجهزة الشبكة المختلفة. يتيح RADIUS authentication و accounting لمزوّد الخدمة أو مسؤول الشبكة إدارة وصول مستخدمي PPP ومحاسبتهم من خادم واحد عبر شبكة واسعة. يحتوي MikroTik RouterOS على RADIUS client يمكنه مصادقة مستخدمي الراوتر المحليين، وHotSpot، وPPP، وPPPoE، وPPTP، وL2TP، وOVPN، وSSTP، وIPsec، واتصالات ISDN. السمات المستلمة من RADIUS server تتجاوز تلك المضبوطة في default profile، أما إن لم تُستلم بعض المعاملات فتُؤخذ من الـ default profile المناسب.</p>
+      <p>لا يُستشار قاعدة بيانات RADIUS server إلا إذا لم يُعثر على سجل وصول مطابق في قاعدة البيانات المحلية للموجّه.</p>
+      <p>إذا كان RADIUS accounting مفعّلًا، تُرسل معلومات المحاسبة أيضًا إلى RADIUS server الافتراضي لتلك الخدمة.</p>
+
+      <h2>عميل RADIUS (RADIUS Client)</h2>
+      <p><strong>Sub-menu:</strong> <code>/radius</code></p>
+      <p>تتيح هذه القائمة الفرعية إضافة وإزالة RADIUS clients.</p>
+      <p class="note">ترتيب العناصر المضافة في هذه القائمة مهم.</p>
+
+      <h3>الخصائص (Properties)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Property</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>accounting-backup</code> (yes | no; Default: no)</td>
+              <td class="desc">هل الإعداد مخصّص لـ RADIUS server احتياطي (backup)</td>
+            </tr>
+            <tr>
+              <td><code>accounting-port</code> (integer [1..65535]; Default: 1813)</td>
+              <td class="desc">منفذ RADIUS server المستخدم لـ accounting</td>
+            </tr>
+            <tr>
+              <td><code>address</code> (IPv4/IPv6 address; Default: 0.0.0.0)</td>
+              <td class="desc">عنوان IPv4 أو IPv6 لـ RADIUS server. الصيغ المقبولة: ipv4 — ipv4<code>@</code>vrf — ipv6 — ipv6<code>@</code>vrf</td>
+            </tr>
+            <tr>
+              <td><code>authentication-port</code> (integer [1..65535]; Default: 1812)</td>
+              <td class="desc">منفذ RADIUS server المستخدم لـ authentication</td>
+            </tr>
+            <tr>
+              <td><code>called-id</code> (string; Default: )</td>
+              <td class="desc">القيمة تعتمد على بروتوكول Point-to-Point: PPPoE — service name؛ PPTP — عنوان IP للخادم؛ L2TP — عنوان IP للخادم</td>
+            </tr>
+            <tr>
+              <td><code>certificate</code> (string; Default: )</td>
+              <td class="desc">ملف الشهادة المستخدم للتواصل مع RADIUS Server عند تفعيل RadSec</td>
+            </tr>
+            <tr>
+              <td><code>comment</code> (string; Default: )</td>
+              <td class="desc">تعليق</td>
+            </tr>
+            <tr>
+              <td><code>disabled</code> (yes | no; Default: no)</td>
+              <td class="desc">تعطيل العنصر</td>
+            </tr>
+            <tr>
+              <td><code>domain</code> (string; Default: )</td>
+              <td class="desc">نطاق Microsoft Windows للعميل، يُمرَّر إلى خوادم RADIUS التي تتطلب التحقق من الـ domain</td>
+            </tr>
+            <tr>
+              <td><code>protocol</code> (radsec | udp; Default: udp)</td>
+              <td class="desc">البروتوكول المستخدم للتواصل مع RADIUS Server</td>
+            </tr>
+            <tr>
+              <td><code>radsec-timeout</code> (time; Default: 3300ms)</td>
+              <td class="desc">المهلة التي بعدها يُعاد إرسال الطلب عبر بروتوكول RadSec</td>
+            </tr>
+            <tr>
+              <td><code>require-message-auth</code> (no | yes-for-request-resp; Default: yes-for-request-resp)</td>
+              <td class="desc">هل سمات Message-Authenticator مطلوبة</td>
+            </tr>
+            <tr>
+              <td><code>realm</code> (string; Default: )</td>
+              <td class="desc">نطاق (user domain) مُصرَّح به صراحةً، حتى لا يضطر المستخدمون لإدخال اسم نطاق مزوّد الخدمة ضمن اسم المستخدم</td>
+            </tr>
+            <tr>
+              <td><code>secret</code> (string; Default: ) sensitive</td>
+              <td class="desc">السر المشترك المستخدم للوصول إلى RADIUS server</td>
+            </tr>
+            <tr>
+              <td><code>service</code> (ppp|login|hotspot|wireless|dhcp|ipsec|dot1x; Default: )</td>
+              <td class="desc">خدمات الراوتر التي ستستخدم هذا RADIUS server:<br>
+                <code>hotspot</code> — خدمة مصادقة HotSpot<br>
+                <code>login</code> — مصادقة مستخدمي الراوتر المحليين<br>
+                <code>ppp</code> — مصادقة عملاء Point-to-Point<br>
+                <code>wireless</code> — مصادقة عملاء wireless<br>
+                <code>dhcp</code> — مصادقة عميل بروتوكول DHCP (يُرسل MAC address العميل كـ User-Name)<br>
+                <code>ipsec</code> — مصادقة عميل ipsec<br>
+                <code>dot1x</code> — مصادقة dot1x
+              </td>
+            </tr>
+            <tr>
+              <td><code>src-address</code> (ipv4/ipv6 address; Default: 0.0.0.0)</td>
+              <td class="desc">عنوان IP/IPv6 المصدر للحزم المرسلة إلى RADIUS server</td>
+            </tr>
+            <tr>
+              <td><code>timeout</code> (time; Default: 1100ms)</td>
+              <td class="desc">المهلة التي بعدها يُعاد إرسال الطلب</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>عندما يصادق RADIUS server المستخدم بـ CHAP أو MS-CHAPv1 أو MS-CHAPv2، فإنه لا يستخدم الـ shared secret في الطلب؛ يُستخدم السر فقط في رد المصادقة، ويتحقّق منه الراوتر (RADIUS client). لذلك إن كان الـ shared secret خاطئًا، سيقبل RADIUS server الطلب، لكن الراوتر لن يقبل الرد. يمكنك ملاحظة ذلك بأمر <code>/radius monitor</code>؛ يجب أن يزداد رقم <code>bad-replies</code> كلما حاول أحد الاتصال.</p>
+      <p>إذا كان RadSec مفعّلًا، تأكد أن RADIUS Server يستخدم <code>radsec</code> كـ shared secret، وإلا فلن يتمكّن من فك تشفير البيانات بشكل صحيح (محارف غير قابلة للطباعة). مع RadSec، يفرض RouterOS أن يكون الـ shared secret هو <code>radsec</code> بغض النظر عمّا ضُبط يدويًا. لمزيد من التفاصيل انظر RFC6614.</p>
+
+      <h3>مثال (Example)</h3>
+      <p>لإعداد RADIUS Client لخدمتي HotSpot و PPP يصادقان عبر RADIUS Server على العنوان <code>10.0.0.3</code>:</p>
+<pre dir="ltr"><code>[admin@MikroTik] &gt; /radius add service=hotspot,ppp address=10.0.0.3 secret=ex
+[admin@MikroTik] &gt; /radius print
+Flags: X - disabled
+# SERVICE CALLED-ID DOMAIN ADDRESS SECRET
+0 ppp,hotspot
+</code></pre>
+      <p>لإعداد RADIUS Client مع RadSec:</p>
+<pre dir="ltr"><code>[admin@MikroTik] &gt; /radius add service=hotspot,ppp address=10.0.0.3 secret=radsec protocol=radsec certificate=client.crt
+[admin@MikroTik] &gt; /radius print
+Flags: X - disabled
+# SERVICE CALLED-ID DOMAIN ADDRESS SECRET
+0 ppp,hotspot 10.0.0.3 radsec
+</code></pre>
+      <p>تأكد أن الشهادة المحددة موثوقة وأن التحقق من common-name يعمل بشكل صحيح على الطرفين.</p>
+      <p>مثال بسيط للشهادات التي يمكن استخدامها لإعداد RADIUS RadSec:</p>
+<pre dir="ltr"><code>On server:
+
+#CN should be RADIUS server IP
+/certificate/add name=radsec_server common-name=10.155.114.91
+/certificate/sign radsec_server
+
+#CN should be RADIUS client IP
+/certificate/add name=radsec_client1 common-name=10.155.114.92
+/certificate/sign radsec_client1
+user-manager/set radsec-certificate=radsec_server
+
+#Export certificates on the server in order to apply them on client
+/certificate/export-certificate type=pkcs12 export-passphrase=verystrongpassword radsec_client1
+/certificate/export-certificate type=pkcs12 radsec_server
+
+On client:
+
+#Download both files and upload them to the client
+/certificate import file-name=cert_export_radsec_client1.p12 passphrase=verystrongpassword
+/certificate import file-name=cert_export_radsec_server.p12
+/radius/set &lt;radius_client_id_in_list&gt; certificate=cert_export_radsec_client1.p12_0
+
+#After that when RADIUS client tries to connect to the server you should see on status fileld: status="TLS connected".
+</code></pre>
+      <p>لعرض إحصاءات RADIUS Client:</p>
+<pre dir="ltr"><code>[admin@MikroTik] &gt; /radius monitor 0
+pending: 0
+requests: 10
+accepts: 4
+rejects: 1
+resends: 15
+timeouts: 5
+bad-replies: 0
+last-request-rtt: 0s
+</code></pre>
+      <p>وتأكد من تفعيل RADIUS authentication للخدمات المطلوبة:</p>
+<pre dir="ltr"><code>/ppp aaa set use-radius=yes
+/ip hotspot profile set default use-radius=yes
+</code></pre>
+
+      <h2>إنهاء الاتصال من RADIUS (Connection Terminating from RADIUS)</h2>
+      <p><strong>Sub-menu:</strong> <code>/radius incoming</code></p>
+      <p>تدعم هذه الميزة الرسائل غير المطلوبة (unsolicited) المرسلة من RADIUS server. توسّع هذه الرسائل أوامر بروتوكول RADIUS بما يسمح بإنهاء جلسة متصلة أصلًا من جانب RADIUS server. لهذا الغرض تُستخدم رسائل DM (Disconnect-Messages). تسبب رسائل Disconnect إنهاء جلسة المستخدم فورًا.</p>
+      <p class="note">RouterOS لا يدعم POD (Packet of Disconnect)، وهي حزمة RADIUS access request أخرى تؤدي وظيفة مشابهة لـ Disconnect Messages.</p>
+
+      <h3>الخصائص (Properties)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Property</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>accept</code> (yes | no; Default: no)</td>
+              <td class="desc">هل تُقبل الرسائل غير المطلوبة (unsolicited)</td>
+            </tr>
+            <tr>
+              <td><code>port</code> (integer; Default: 1700)</td>
+              <td class="desc">رقم المنفذ للاستماع إلى الطلبات</td>
+            </tr>
+            <tr>
+              <td><code>vrf</code> (VRF name; default value: main)</td>
+              <td class="desc">تعيين VRF الذي تستمع عليه الخدمة للاتصالات الواردة</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>سمات RADIUS المدعومة (Supported RADIUS Attributes)</h2>
+      <p>من هنا يمكنك تنزيل قاموس مرجع RADIUS الذي يتضمن كل سمات RADIUS التي يدعمها جهاز MikroTik. الملف مصمَّم لـ FreeRADIUS، لكن يمكن استخدامه مع خوادم RADIUS أخرى. لاحظ أنه قد يتعارض مع ملف الإعداد الافتراضي لخادم RADIUS لديك؛ صحّح الإعداد وليس القاموس، إذ لا تُدعم سمات أخرى بواسطة MikroTik RouterOS. يوجد أيضًا قاموس MikroTik الخاص بـ RADIUS يمكن تضمينه في قاموس موجود لدعم سمات MikroTik الخاصة بالمورّد (vendor-specific).</p>
+      <p>فيما يلي وصف للسمات وكيفية استخدامها على أجهزة MikroTik أثناء التواصل مع RADIUS.</p>
+
+      <h3>تعريفات (Definitions)</h3>
+      <ul>
+        <li><strong>PPPs</strong> — PPP، PPTP، PPPoE</li>
+        <li><strong>default configuration</strong> — الإعدادات في default profile (لـ PPPs) أو إعدادات HotSpot server (لـ HotSpot)</li>
+      </ul>
+
+      <h3>حزمة Access-Request</h3>
+      <ul>
+        <li><code>Service-Type</code> — دائمًا <code>Framed</code> (لـ PPPs فقط)</li>
+        <li><code>Framed-Protocol</code> — دائمًا <code>PPP</code> (لـ PPPs فقط)</li>
+        <li><code>NAS-Identifier</code> — اسم هوية الراوتر (identity)</li>
+        <li><code>NAS-IP-Address</code> — عنوان IP للراوتر نفسه</li>
+        <li><code>NAS-Port</code> — تشير هذه السمة إلى رقم المنفذ الفيزيائي لـ NAS الذي يصادق المستخدم</li>
+        <li><code>Acct-Session-Id</code> — معرّف جلسة فريد. الرمزان الأولان يمثّلان الخدمة (PPP، Hotspot، إلخ). الرمز التالي يزداد مع كل إعادة تشغيل. المجموعة الأخيرة تزداد مع كل جلسة جديدة. هذا يعني أنه لا يمكن الحصول على نفس المعرّف لمليون إعادة اتصال على نفس الإقلاع لنفس نوع خدمة RADIUS. إذا فُقدت رسالة إيقاف الجلسة وبقي RADIUS server يعتبر الجلسة مفتوحة ثم استقبل رسالة بدء جلسة جديدة، فيجب أن يدرك أن رسالة الإيقاف ضاعت، ويغلق الجلسة القديمة ويبدأ جلسة جديدة</li>
+        <li><code>NAS-Port-Type</code> — async PPP: <code>Async</code>؛ PPTP و L2TP: <code>Virtual</code>؛ PPPoE: <code>Ethernet</code>؛ ISDN: <code>ISDN Sync</code>؛ HotSpot: <code>Ethernet | Cable | Wireless-802.11</code> (حسب قيمة معامل <code>nas-port-type</code> في <code>/ip hotspot profile</code>)</li>
+        <li><code>Calling-Station-Id</code> — PPPoE و HotSpot: عنوان MAC للعميل بأحرف كبيرة؛ PPTP و L2TP: عنوان IP العام للعميل</li>
+        <li><code>Called-Station-Id</code> — PPPoE: اسم الخدمة؛ PPTP و L2TP: عنوان IP للخادم؛ HotSpot: اسم HotSpot server</li>
+        <li><code>NAS-Port-Id</code> — async PPP: اسم المنفذ التسلسلي؛ PPPoE: اسم واجهة ethernet التي يعمل عليها الخادم؛ HotSpot: اسم واجهة HotSpot الفيزيائية (إن كانت bridged يُعرض اسم منفذ الـ bridge)؛ غير موجودة لـ ISDN و PPTP و L2TP</li>
+        <li><code>Framed-IP-Address</code> — عنوان IP لعميل HotSpot بعد ترجمة Universal Client</li>
+        <li><code>Mikrotik-Host-IP</code> — عنوان IP لعميل HotSpot قبل ترجمة Universal Client (العنوان الأصلي للعميل)</li>
+        <li><code>User-Name</code> — اسم دخول العميل</li>
+        <li><code>MS-CHAP-Domain</code> — نطاق المستخدم إن وُجد</li>
+        <li><code>Mikrotik-Realm</code> — إن ضُبط في قائمة <code>/radius</code> يُضمَّن في كل طلب RADIUS كسمة <code>Mikrotik-Realm</code>. وإن لم يُضبط، تُرسل نفس قيمة <code>MS-CHAP-Domain</code> (وإن غابت <code>MS-CHAP-Domain</code> فلا تُضمَّن Realm أصلًا)</li>
+        <li><code>WISPr-Location-ID</code> — نص مضبوط في خاصية <code>radius-location-id</code> لـ HotSpot server</li>
+        <li><code>WISPr-Location-Name</code> — نص مضبوط في خاصية <code>radius-location-name</code> لـ HotSpot server</li>
+        <li><code>WISPr-Logoff-URL</code> — رابط كامل لصفحة تسجيل الخروج (مثلًا <code>http://10.48.0.1/lv/logout</code>)</li>
+      </ul>
+      <p>حسب طرق المصادقة (ملاحظة: HotSpot يستخدم CHAP افتراضيًا وقد يستخدم PAP أيضًا إن كانت كلمات المرور غير المشفّرة مفعّلة؛ ولا يمكنه استخدام MSCHAP):</p>
+      <ul>
+        <li><code>User-Password</code> — كلمة مرور مشفّرة (مع PAP authentication)</li>
+        <li><code>CHAP-Password</code>، <code>CHAP-Challenge</code> — كلمة مرور مشفّرة وchallenge (مع CHAP authentication)</li>
+        <li><code>MS-CHAP-Response</code>، <code>MS-CHAP-Challenge</code> — كلمة مرور مشفّرة وchallenge (مع MS-CHAPv1 authentication)</li>
+        <li><code>MS-CHAP2-Response</code>، <code>MS-CHAP-Challenge</code> — كلمة مرور مشفّرة وchallenge (مع MS-CHAPv2 authentication)</li>
+      </ul>
+
+      <h3>حزمة Access-Accept</h3>
+      <ul>
+        <li><code>Framed-IP-Address</code> — عنوان IP يُعطى للعميل. إذا كان العنوان ينتمي إلى شبكات <code>127.0.0.0/8</code> أو <code>224.0.0.0/3</code>، يُستخدم IP pool من default profile لتخصيص عنوان للعميل. إذا حُدِّدت <code>Framed-IP-Address</code> تُتجاهل <code>Framed-Pool</code></li>
+        <li><code>Framed-IP-Netmask</code> — قناع شبكة العميل. PPPs: إن حُدِّدت، تُنشأ route إلى الشبكة التي ينتمي إليها <code>Framed-IP-Address</code> عبر بوابة <code>Framed-IP-Address</code>؛ HotSpot: تُتجاهل بواسطة HotSpot</li>
+        <li><code>Framed-Pool</code> — اسم IP pool (على الراوتر) الذي منه يُؤخذ عنوان IP للعميل. إذا حُدِّدت <code>Framed-IP-Address</code> تُتجاهل هذه السمة</li>
+        <li><code>Framed-IPv6-Prefix</code> — بادئة IPv6 المخصّصة للعميل</li>
+        <li><code>Mikrotik-Delegated-IPv6-Pool</code> — مجمع IPv6 المستخدم لـ Prefix Delegation</li>
+        <li><code>Delegated-IPv6-Prefix</code> — بادئة IPv6</li>
+        <li><code>Delegated-IPv6-Prefix-Pool</code> — مجمع بادئات IPv6 لـ Prefix Delegation</li>
+      </ul>
+      <p class="note">ملاحظة: إذا حُدِّدت <code>Framed-IP-Address</code> أو <code>Framed-Pool</code> فإنها تتجاوز <code>remote-address</code> في default configuration.</p>
+      <ul>
+        <li><code>Idle-Timeout</code> — يتجاوز idle-timeout في default configuration</li>
+        <li><code>Session-Timeout</code> — يتجاوز session-timeout في default configuration</li>
+        <li><code>Port-Limit</code> — العدد الأقصى للاتصالات المتزامنة بنفس اسم المستخدم (يتجاوز خاصية <code>shared-users</code> في بروفايل مستخدم HotSpot)</li>
+        <li><code>Class</code> — cookie؛ تُعاد ضمن Accounting-Request دون تغيير</li>
+        <li><code>Framed-Route</code> — مسارات تُضاف على الخادم. الصيغة محدّدة في RFC 2865 (الفصل 5.22)، ويمكن تحديدها مرات متعددة حسب الحاجة</li>
+        <li><code>Filter-Id</code> — اسم سلسلة firewall filter. تُستخدم لإنشاء قاعدة جدار ناري ديناميكية. يمكن أن يكون لاسم السلسلة لاحقة <code>.in</code> أو <code>.out</code> لتثبيت القاعدة للوارد أو الصادر فقط. يمكن تقديم عدة Filter-id، لكن تُستخدم آخر واحدة للوارد وآخر واحدة للصادر. لـ PPPs: قواعد filter في سلسلة <code>ppp</code> تقفز إلى السلسلة المحددة إذا جاءت الحزمة من/إلى العميل (أي يجب أولًا إنشاء سلسلة ppp وقواعد jump تضع الحركة الفعلية فيها). ينطبق الأمر نفسه على HotSpot لكن القواعد تُنشأ في سلسلة <code>hotspot</code></li>
+        <li><code>Mikrotik-Mark-Id</code> — اسم سلسلة firewall mangle (HotSpot فقط). عند استلام هذه السمة ينشئ RADIUS client في MikroTik قاعدة mangle ديناميكية بـ <code>action=jump</code> و<code>chain=hotspot</code> و<code>jump-target</code> يساوي قيمة السمة. يمكن أن يكون لاسم سلسلة mangle لاحقة <code>.in</code> أو <code>.out</code>. يمكن تقديم عدة Mark-id وتُستخدم آخر واحدة للوارد وآخر واحدة للصادر</li>
+        <li><code>Acct-Interim-Interval</code> — interim-update لـ RADIUS client. PPP: إن كانت 0 تُستخدم القيمة المضبوطة في RADIUS client؛ HotSpot: تُحترم فقط إذا كان <code>radius-interim-update=received</code> في HotSpot server profile</li>
+        <li><code>MS-MPPE-Encryption-Policy</code> — خاصية require-encryption (PPPs فقط)</li>
+        <li><code>MS-MPPE-Encryption-Types</code> — خاصية use-encryption؛ قيمة غير صفرية تعني استخدام التشفير (PPPs فقط)</li>
+        <li><code>Ascend-Data-Rate</code> — حد معدل بيانات tx/rx؛ إن قُدِّمت سمات متعددة فالأولى تحدّ tx والثانية rx. إن استُخدمت مع <code>Ascend-Xmit-Rate</code> فتحدد معدل rx. 0 يعني بلا حد. تُتجاهل إن وُجدت سمة Rate-Limit</li>
+        <li><code>Ascend-Xmit-Rate</code> — حد معدل بيانات tx. يمكن استخدامها لتحديد حد الإرسال فقط بدل إرسال سمتين Ascend-Data-Rate متتاليتين (عندها Ascend-Data-Rate تحدد معدل الاستقبال). 0 بلا حد. تُتجاهل إن وُجدت سمة Rate-Limit</li>
+        <li><code>MS-CHAP2-Success</code> — رد المصادقة عند استخدام MS-CHAPv2 (PPPs فقط)</li>
+        <li><code>MS-MPPE-Send-Key</code>، <code>MS-MPPE-Recv-Key</code> — مفاتيح تشفير لـ PPPs المشفّرة يوفّرها RADIUS server فقط عند استخدام MS-CHAPv2 للمصادقة (PPPs فقط)</li>
+        <li><code>Ascend-Client-Gateway</code> — بوابة العميل لطريقة دخول HotSpot من نوع DHCP-pool (HotSpot فقط)</li>
+        <li><code>Mikrotik-Recv-Limit</code> — حد الاستقبال الإجمالي بالبايت للعميل</li>
+        <li><code>Mikrotik-Recv-Limit-Gigawords</code> — 4G (2^32) بايت من حد الاستقبال الإجمالي (البتات 32..63 عندما تُسلَّم البتات 0..31 في Mikrotik-Recv-Limit)</li>
+        <li><code>Mikrotik-Xmit-Limit</code> — حد الإرسال الإجمالي بالبايت للعميل</li>
+        <li><code>Mikrotik-Xmit-Limit-Gigawords</code> — 4G (2^32) بايت من حد الإرسال الإجمالي (البتات 32..63 عندما تُسلَّم البتات 0..31 في Mikrotik-Xmit-Limit)</li>
+        <li><code>Mikrotik-Wireless-Forward</code> — عدم إعادة توجيه إطارات العميل إلى البنية اللاسلكية إذا كانت القيمة <code>0</code> (Wireless فقط)</li>
+        <li><code>Mikrotik-Wireless-Skip-Dot1x</code> — تعطيل مصادقة 802.1x لهذا العميل اللاسلكي إن كانت القيمة غير صفرية (Wireless فقط)</li>
+        <li><code>Mikrotik-Wireless-Enc-Algo</code> — خوارزمية تشفير WEP: 0 بلا تشفير، 1 WEP بـ 40 بت، 2 WEP بـ 104 بت (Wireless فقط)</li>
+        <li><code>Mikrotik-Wireless-Enc-Key</code> — مفتاح تشفير WEP للعميل (Wireless فقط)</li>
+        <li><code>Mikrotik-Wireless-VLANID</code> — معرّف VLAN للعميل (Wireless فقط)</li>
+        <li><code>Mikrotik-Wireless-VLANID-type</code> — نوع معرّف VLAN للعميل. 0 وسم 802.1q و 1 وسم 802.1ad (Wireless فقط)</li>
+        <li><code>Mikrotik-Switching-Filter</code> — يسمح بإنشاء قواعد switch ديناميكية عند مصادقة العملاء عبر dot1x server</li>
+        <li><code>Mikrotik-Rate-Limit</code> — حد معدل البيانات للعملاء. الصيغة: <code>rx-rate[/tx-rate] [rx-burst-rate[/tx-burst-rate] [rx-burst-threshold[/tx-burst-threshold] [rx-burst-time[/tx-burst-time] [priority] [rx-rate-min[/tx-rate-min]]]]</code> من وجهة نظر الراوتر (إذن <code>rx</code> هو رفع العميل، و<code>tx</code> هو تنزيله). يجب أن تكون المعدلات أرقامًا مع لاحقة اختيارية <code>k</code> (آلاف) أو <code>M</code> (ملايين). إن لم يُحدد tx-rate يُستخدم rx-rate كـ tx-rate أيضًا. ونفس المنطق لـ tx-burst-rate و tx-burst-threshold و tx-burst-time. إن لم يُحدد كل من rx-burst-threshold و tx-burst-threshold (مع وجود burst-rate) يُستخدم rx-rate و tx-rate كعتبات burst. إن لم يُحدد كل من rx-burst-time و tx-burst-time فالقيمة الافتراضية 1s. تأخذ priority قيمًا 1..8 حيث 1 أعلى أولوية و 8 أدناها. إن لم يُحدد rx-rate-min و tx-rate-min تُستخدم قيم rx-rate و tx-rate. ولا يمكن أن تتجاوز قيم rx-rate-min و tx-rate-min قيم rx-rate و tx-rate</li>
+        <li><code>Mikrotik-Group</code> — اسم مجموعة المستخدمين المحليين على الراوتر (معرّفة في <code>/user group</code>) للمستخدمين المحليين؛ default profile لـ HotSpot لمستخدمي HotSpot؛ اسم default profile لـ PPP لمستخدمي PPP</li>
+        <li><code>Mikrotik-Advertise-URL</code> — رابط صفحة الإعلانات التي يجب عرضها للعملاء. إن حُدِّدت هذه السمة تُفعَّل الإعلانات تلقائيًا بما في ذلك transparent proxy حتى لو عُطِّلت صراحةً في بروفايل المستخدم. قد يرسل RADIUS server عدة نُسخ من السمة لتحديد روابط إضافية تُختار بأسلوب round robin</li>
+        <li><code>Mikrotik-Advertise-Interval</code> — الفاصل الزمني بين إعلانين متجاورين. قد تُرسل عدة نُسخ؛ تُعامل كل القيم كقائمة وتُؤخذ واحدة تلو الأخرى لكل إعلان ناجح. عند الوصول لنهاية القائمة تُستمر آخر قيمة</li>
+        <li><code>WISPr-Redirection-URL</code> — رابط يُوجَّه إليه العملاء بعد نجاح تسجيل الدخول</li>
+        <li><code>WISPr-Bandwidth-Min-Up</code> — الحد الأدنى لمعدل البيانات (CIR) لرفع العميل</li>
+        <li><code>WISPr-Bandwidth-Min-Down</code> — الحد الأدنى لمعدل البيانات (CIR) لتنزيل العميل</li>
+        <li><code>WISPr-Bandwidth-Max-Up</code> — الحد الأقصى لمعدل البيانات (MIR) لرفع العميل</li>
+        <li><code>WISPr-Bandwidth-Max-Down</code> — الحد الأقصى لمعدل البيانات (MIR) لتنزيل العميل</li>
+        <li><code>WISPr-Session-Terminate-Time</code> — الوقت الذي يجب عنده قطع المستخدم؛ بالصيغة <code>YYYY-MM-DDThh:mm:ssTZD</code> حيث Y السنة؛ M الشهر؛ D اليوم؛ T فاصل بين التاريخ والوقت؛ h الساعة (24 ساعة)؛ m الدقيقة؛ s الثانية؛ TZD المنطقة الزمنية بإحدى الصيغ: <code>+hh:mm</code>، <code>+hhmm</code>، <code>-hh:mm</code>، <code>-hhmm</code></li>
+      </ul>
+      <p>السمات المستلمة تتجاوز الافتراضية (المضبوطة في default profile)، لكن إن لم تُستلم سمة من RADIUS server تُستخدم القيمة الافتراضية. تأخذ Rate-Limit الأولوية على كل الطرق الأخرى لتحديد معدل بيانات العميل. سمات Ascend للمعدل تأتي ثانيًا؛ وسمات WISPr لها آخر أولوية.</p>
+      <p>أمثلة على Rate-Limit:</p>
+      <ul>
+        <li><code>128k</code> — rx-rate=128000، tx-rate=128000 (بدون bursts)</li>
+        <li><code>64k/128M</code> — rx-rate=64000، tx-rate=128000000</li>
+        <li><code>64k 256k</code> — rx/tx-rate=64000، rx/tx-burst-rate=256000، rx/tx-burst-threshold=64000، rx/tx-burst-time=1s</li>
+        <li><code>64k/64k 256k/256k 128k/128k 10/10</code> — rx/tx-rate=64000، rx/tx-burst-rate=256000، rx/tx-burst-threshold=128000، rx/tx-burst-time=10s</li>
+      </ul>
+
+      <h3>حزمة Accounting-Request</h3>
+      <p>يحمل طلب المحاسبة نفس سمات Access Request، بالإضافة إلى:</p>
+      <ul>
+        <li><code>Acct-Status-Type</code> — Start أو Stop أو Interim-Update</li>
+        <li><code>Acct-Authentic</code> — إما مصادق عبر RADIUS أو سلطة محلية (PPPs فقط)</li>
+        <li><code>Class</code> — cookie من RADIUS server كما استُلمت في Access-Accept</li>
+        <li><code>Acct-Delay-Time</code> — كم حاول الراوتر إرسال حزمة Accounting-Request هذه</li>
+      </ul>
+
+      <h3>حزم Stop و Interim-Update من Accounting-Request</h3>
+      <p>إضافةً إلى طلب بدء المحاسبة، تحتوي الرسائل التالية على السمات الآتية:</p>
+      <ul>
+        <li><code>Acct-Session-Time</code> — مدة الاتصال بالثواني</li>
+        <li><code>Acct-Input-Octets</code> — البايتات المستلمة من العميل</li>
+        <li><code>Acct-Input-Gigawords</code> — 4G (2^32) بايت مستلمة من العميل (البتات 32..63 عندما تُسلَّم 0..31 في Acct-Input-Octets)</li>
+        <li><code>Acct-Input-Packets</code> — عدد الحزم المستلمة من العميل</li>
+        <li><code>Acct-Output-Octets</code> — البايتات المرسلة إلى العميل</li>
+        <li><code>Acct-Output-Gigawords</code> — 4G (2^32) بايت مرسلة إلى العميل (البتات 32..63 عندما تُسلَّم 0..31 في Acct-Output-Octets)</li>
+        <li><code>Acct-Output-Packets</code> — عدد الحزم المرسلة إلى العميل</li>
+      </ul>
+      <p>تمثل رسائل RADIUS accounting في RouterOS الـ output كحركة من وجهة نظر العميل؛ مثلًا لمستخدم VPN اسمه <code>test</code> يكون الـ output هو رفع المستخدم.</p>
+
+      <h3>حزمة Stop Accounting-Request</h3>
+      <p>هذه الحزم، إضافةً إلى حزم Interim Update، تحتوي على:</p>
+      <ul>
+        <li><code>Acct-Terminate-Cause</code> — سبب إنهاء الجلسة (انظر RFC 2866 الفصل 5.10)</li>
+      </ul>
+
+      <h3>Change of Authorization</h3>
+      <p>يُدعم أيضًا قطع الاتصال عبر RADIUS و Change of Authorization (وفق RFC3576). يمكن تغيير السمات التالية بطلب CoA من RADIUS server:</p>
+      <ul>
+        <li><code>Mikrotik-Group</code></li>
+        <li><code>Mikrotik-Recv-Limit</code></li>
+        <li><code>Mikrotik-Xmit-Limit</code></li>
+        <li><code>Mikrotik-Rate-Limit</code></li>
+        <li><code>Ascend-Data-Rate</code> (فقط إن لم تكن Mikrotik-Rate-Limit موجودة)</li>
+        <li><code>Ascend-XMit-Rate</code> (فقط إن لم تكن Mikrotik-Rate-Limit موجودة)</li>
+        <li><code>Mikrotik-Mark-Id</code></li>
+        <li><code>Filter-Id</code></li>
+        <li><code>Mikrotik-Advertise-Url</code></li>
+        <li><code>Mikrotik-Advertise-Interval</code></li>
+        <li><code>Session-Timeout</code></li>
+        <li><code>Idle-Timeout</code></li>
+        <li><code>Port-Limit</code></li>
+      </ul>
+      <p class="note">لاحظ أنه لا يمكن تغيير عنوان IP أو الـ pool أو المسارات بهذه الطريقة — لمثل هذه التغييرات يجب قطع اتصال المستخدم أولًا.</p>
+
+      <h2>القيم الرقمية لسمات MikroTik الخاصة بـ RADIUS</h2>
+      <h3>MikroTik Vendor-Specific (VendorID 14988)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>VendorID</th><th>Value</th><th>RFC</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>MIKROTIK_RECV_LIMIT</td><td>14988</td><td>1</td><td></td></tr>
+            <tr><td>MIKROTIK_XMIT_LIMIT</td><td>14988</td><td>2</td><td></td></tr>
+            <tr><td>MIKROTIK_GROUP</td><td>14988</td><td>3</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_FORWARD</td><td>14988</td><td>4</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_SKIPDOT1X</td><td>14988</td><td>5</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_ENCALGO</td><td>14988</td><td>6</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_ENCKEY</td><td>14988</td><td>7</td><td></td></tr>
+            <tr><td>MIKROTIK_RATE_LIMIT</td><td>14988</td><td>8</td><td></td></tr>
+            <tr><td>MIKROTIK_REALM</td><td>14988</td><td>9</td><td></td></tr>
+            <tr><td>MIKROTIK_HOST_IP</td><td>14988</td><td>10</td><td></td></tr>
+            <tr><td>MIKROTIK_MARK_ID</td><td>14988</td><td>11</td><td></td></tr>
+            <tr><td>MIKROTIK_ADVERTISE_URL</td><td>14988</td><td>12</td><td></td></tr>
+            <tr><td>MIKROTIK_ADVERTISE_INTERVAL</td><td>14988</td><td>13</td><td></td></tr>
+            <tr><td>MIKROTIK_RECV_LIMIT_GIGAWORDS</td><td>14988</td><td>14</td><td></td></tr>
+            <tr><td>MIKROTIK_XMIT_LIMIT_GIGAWORDS</td><td>14988</td><td>15</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_PSK</td><td>14988</td><td>16</td><td></td></tr>
+            <tr><td>MIKROTIK_TOTAL_LIMIT</td><td>14988</td><td>17</td><td></td></tr>
+            <tr><td>MIKROTIK_TOTAL_LIMIT_GIGAWORDS</td><td>14988</td><td>18</td><td></td></tr>
+            <tr><td>MIKROTIK_ADDRESS_LIST</td><td>14988</td><td>19</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_MPKEY</td><td>14988</td><td>20</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_COMMENT</td><td>14988</td><td>21</td><td></td></tr>
+            <tr><td>MIKROTIK_DELEGATED_IPV6_POOL</td><td>14988</td><td>22</td><td></td></tr>
+            <tr><td>MIKROTIK_DHCP_OPTION_SET</td><td>14988</td><td>23</td><td></td></tr>
+            <tr><td>MIKROTIK_DHCP_OPTION_PARAM_STR1</td><td>14988</td><td>24</td><td></td></tr>
+            <tr><td>MIKROTIK_DHCP_OPTION_PARAM_STR2</td><td>14988</td><td>25</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_VLANID</td><td>14988</td><td>26</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_VLANIDTYPE</td><td>14988</td><td>27</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_MINSIGNAL</td><td>14988</td><td>28</td><td></td></tr>
+            <tr><td>MIKROTIK_WIRELESS_MAXSIGNAL</td><td>14988</td><td>29</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>سمات قياسية وVendor أخرى</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>VendorID</th><th>Value</th><th>RFC</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Acct-Authentic</td><td></td><td>45</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Delay-Time</td><td></td><td>41</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Input-Gigawords</td><td></td><td>52</td><td>RFC 2869</td></tr>
+            <tr><td>Acct-Input-Octets</td><td></td><td>42</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Input-Packets</td><td></td><td>47</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Interim-Interval</td><td></td><td>85</td><td>RFC 2869</td></tr>
+            <tr><td>Acct-Output-Gigawords</td><td></td><td>53</td><td>RFC 2869</td></tr>
+            <tr><td>Acct-Output-Octets</td><td></td><td>43</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Output-Packets</td><td></td><td>48</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Session-Id</td><td></td><td>44</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Session-Time</td><td></td><td>46</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Status-Type</td><td></td><td>40</td><td>RFC 2866</td></tr>
+            <tr><td>Acct-Terminate-Cause</td><td></td><td>49</td><td>RFC 2866</td></tr>
+            <tr><td>Ascend-Client-Gateway</td><td>529</td><td>132</td><td></td></tr>
+            <tr><td>Ascend-Data-Rate</td><td>529</td><td>197</td><td></td></tr>
+            <tr><td>Ascend-Xmit-Rate</td><td>529</td><td>255</td><td></td></tr>
+            <tr><td>Called-Station-Id</td><td></td><td>30</td><td>RFC 2865</td></tr>
+            <tr><td>Calling-Station-Id</td><td></td><td>31</td><td>RFC 2865</td></tr>
+            <tr><td>CHAP-Challenge</td><td></td><td>60</td><td>RFC 2866</td></tr>
+            <tr><td>CHAP-Password</td><td></td><td>3</td><td>RFC 2865</td></tr>
+            <tr><td>Class</td><td></td><td>25</td><td>RFC 2865</td></tr>
+            <tr><td>Filter-Id</td><td></td><td>11</td><td>RFC 2865</td></tr>
+            <tr><td>Framed-Compression</td><td></td><td>53</td><td>RFC 2865</td></tr>
+            <tr><td>Framed-IP-Address</td><td></td><td>8</td><td>RFC 2865</td></tr>
+            <tr><td>Framed-IP-Netmask</td><td></td><td>9</td><td>RFC 2865</td></tr>
+            <tr><td>Framed-IPv6-Prefix</td><td></td><td>97</td><td>RFC 3162</td></tr>
+            <tr><td>Framed-Mtu</td><td></td><td>52</td><td>RFC 2869</td></tr>
+            <tr><td>Framed-Pool</td><td></td><td>88</td><td>RFC 2869</td></tr>
+            <tr><td>Framed-Protocol</td><td></td><td>7</td><td>RFC 2865</td></tr>
+            <tr><td>Framed-Route</td><td></td><td>22</td><td>RFC 2865</td></tr>
+            <tr><td>Framed-Routing</td><td></td><td>50</td><td>RFC 2865</td></tr>
+            <tr><td>Idle-Timeout</td><td></td><td>28</td><td>RFC 2865</td></tr>
+            <tr><td>MS-CHAP-Challenge</td><td>311</td><td>11</td><td>RFC 2548</td></tr>
+            <tr><td>MS-CHAP-Domain</td><td>311</td><td>10</td><td>RFC 2548</td></tr>
+            <tr><td>MS-CHAP-Response</td><td>311</td><td>1</td><td>RFC 2548</td></tr>
+            <tr><td>MS-CHAP2-Response</td><td>311</td><td>25</td><td>RFC 2548</td></tr>
+            <tr><td>MS-CHAP2-Success</td><td>311</td><td>26</td><td>RFC 2548</td></tr>
+            <tr><td>MS-MPPE-Encryption-Policy</td><td>311</td><td>7</td><td>RFC 2548</td></tr>
+            <tr><td>MS-MPPE-Encryption-Types</td><td>311</td><td>8</td><td>RFC 2548</td></tr>
+            <tr><td>MS-MPPE-Recv-Key</td><td>311</td><td>17</td><td>RFC 2548</td></tr>
+            <tr><td>MS-MPPE-Send-Key</td><td>311</td><td>16</td><td>RFC 2548</td></tr>
+            <tr><td>NAS-Identifier</td><td></td><td>32</td><td>RFC 2865</td></tr>
+            <tr><td>NAS-Port</td><td></td><td>5</td><td>RFC 2865</td></tr>
+            <tr><td>NAS-IP-Address</td><td></td><td>4</td><td>RFC 2865</td></tr>
+            <tr><td>NAS-Port-Id</td><td></td><td>87</td><td>RFC 2869</td></tr>
+            <tr><td>NAS-Port-Type</td><td></td><td>61</td><td>RFC 2865</td></tr>
+            <tr><td>Port-Limit</td><td></td><td>62</td><td>RFC 2865</td></tr>
+            <tr><td>Redback-Agent-Remote-Id</td><td>2352</td><td>96</td><td></td></tr>
+            <tr><td>Redback-Agent-Circuit-Id</td><td>2352</td><td>97</td><td></td></tr>
+            <tr><td>Service-Type</td><td></td><td>6</td><td>RFC 2865</td></tr>
+            <tr><td>Session-Timeout</td><td></td><td>27</td><td>RFC 2865</td></tr>
+            <tr><td>User-Name</td><td></td><td>1</td><td>RFC 2865</td></tr>
+            <tr><td>User-Password</td><td></td><td>2</td><td>RFC 2865</td></tr>
+            <tr><td>WISPr-Bandwidth-Max-Down</td><td>14122</td><td>8</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Bandwidth-Max-Up</td><td>14122</td><td>7</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Bandwidth-Min-Down</td><td>14122</td><td>6</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Bandwidth-Min-Up</td><td>14122</td><td>5</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Location-Id</td><td>14122</td><td>1</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Location-Name</td><td>14122</td><td>2</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Logoff-URL</td><td>14122</td><td>3</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Redirection-URL</td><td>14122</td><td>4</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Session-Terminate-Time</td><td>14122</td><td>9</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Session-Terminate-End-Of-Day</td><td>14122</td><td>10</td><td>wi-fi.org</td></tr>
+            <tr><td>WISPr-Billing-Class-Of-Service</td><td>14122</td><td>11</td><td>wi-fi.org</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</body>
+</html>

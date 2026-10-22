@@ -13,7 +13,7 @@ node_modules
 uploads
 var/
 old/
-downloads/
+
 hotspotyy/
 infra/asterisk/keys/*.key
 infra/asterisk/keys/*.pem

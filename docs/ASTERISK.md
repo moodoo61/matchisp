@@ -105,7 +105,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ### تحميل تطبيق الأندرويد
 
-- البناء: `bash infra/scripts/build-android-call-test.sh` → `var/comms/android/match-call-test.apk`
+- البناء: `bash infra/scripts/build-android-call-test.sh` → `downloads/match-call-test.apk`
 - التحميل العام: `GET /api/public/comms/android-app/download`
 - معلومات الزر: `GET /api/public/comms/android-app` (`showDownloadButton` من تبويب **ضبط**، الافتراضي: عرض)
 - يظهر زر التحميل في قسم الاتصال وصفحة `/call` عندما يكون الإظهار مفعّلاً والملف موجوداً.

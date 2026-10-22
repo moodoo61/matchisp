@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP_DIR="${ROOT}/apps/android-call-test"
-OUT_DIR="${ROOT}/var/comms/android"
+OUT_DIR="${ROOT}/downloads"
 SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/opt/android-sdk}}"
 
 export ANDROID_HOME="${SDK_ROOT}"

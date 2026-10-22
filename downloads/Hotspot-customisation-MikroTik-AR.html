@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تخصيص HotSpot — MikroTik (ترجمة عربية)</title>
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --paper: #fffdf9;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --accent: #0b6e4f;
+      --border: #ddd4c6;
+      --code-bg: #f0ebe3;
+      --note-bg: #fff6e5;
+      --note-border: #e0b65a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 10% 0%, #efe6d6 0%, transparent 45%),
+        radial-gradient(ellipse at 90% 10%, #dfece6 0%, transparent 40%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Noto Naskh Arabic", "Noto Sans Arabic", "Amiri", "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.85;
+      font-size: 17px;
+    }
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    article {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+      box-shadow: 0 10px 30px rgba(40, 30, 10, 0.06);
+    }
+    h1, h2, h3, h4 {
+      color: var(--accent);
+      line-height: 1.4;
+      margin: 1.6rem 0 0.7rem;
+      font-weight: 700;
+    }
+    h1 { font-size: 1.7rem; margin-top: 0; }
+    h2 { font-size: 1.35rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; }
+    h3 { font-size: 1.15rem; }
+    h4 { font-size: 1.05rem; color: #155e47; }
+    p { margin: 0.7rem 0; }
+    ul, ol { margin: 0.6rem 0 0.9rem; padding-inline-start: 1.4rem; }
+    li { margin: 0.35rem 0; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.85rem 1rem;
+      background: #eef7f3;
+      border-inline-start: 4px solid var(--accent);
+      color: var(--muted);
+      border-radius: 0 8px 8px 0;
+    }
+    .note {
+      background: var(--note-bg);
+      border: 1px solid var(--note-border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+    code {
+      font-family: "Noto Sans Mono", "DejaVu Sans Mono", Consolas, monospace;
+      font-size: 0.92em;
+      background: var(--code-bg);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      direction: ltr;
+      unicode-bidi: isolate;
+      display: inline-block;
+    }
+    pre {
+      direction: ltr;
+      text-align: left;
+      background: #1e2430;
+      color: #e8edf5;
+      padding: 1rem 1.1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      line-height: 1.5;
+      font-size: 0.88rem;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      display: block;
+      white-space: pre;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .toc-hint {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 640px) {
+      article { padding: 1.25rem 1rem; }
+      body { font-size: 16px; }
+    }
+    @media print {
+      body { background: #fff; }
+      article { box-shadow: none; border: none; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <article>
+      <p class="meta">ترجمة الشرح فقط · المصطلحات التقنية والكود كما في وثائق MikroTik</p>
+<h1>تخصيص HotSpot — RouterOS — وثائق MikroTik</h1>
+<blockquote>ترجمة الشرح فقط إلى العربية. المصطلحات التقنية، أسماء الملفات، المتغيرات، الأوامر، وأمثلة الكود تُبقى كما في الأصل.</blockquote>
+<h1>ملاحظة الموقع</h1>
+<p>هذا الموقع التوثيقي مجمّد، ولن تُجرى عليه تعديلات إضافية.</p>
+<h1>تخصيص HotSpot (Hotspot customisation)</h1>
+<ul>
+<li>أنشأه Normunds R.، آخر تحديث بواسطة GG في 08 Mar 2024 — قراءة تقارب 19 دقيقة</li>
+</ul>
+<h3>المتطلبات (Requirements)</h3>
+<ul>
+<li>HotSpot captive portal</li>
+</ul>
+<h3>مقدمة (Introduction)</h3>
+<p>يمكنك إنشاء مجموعة مختلفة تمامًا من صفحات servlet لكل HotSpot server لديك، وذلك بتحديد المجلد عبر الخاصية <code>&quot;html-override-directory&quot;</code> في HotSpot server profile ضمن <code>/ip hotspot profile</code>. تُنسَخ صفحات servlet الافتراضية إلى المجلد <code>&quot;hotspot&quot;</code> مباشرة بعد إنشاء server profile. يمكن الوصول إلى هذا المجلد بالاتصال بالموجّه عبر FTP client. يمكنك نسخ هذا المجلد وتعديل الصفحات كما تشاء مستفيدًا من معلومات هذا القسم من الدليل. يُفضَّل تحرير الملفات يدويًا؛ لأن أدوات تحرير HTML الآلية قد تُفسد الصفحات بحذف المتغيرات أو أجزاء حيوية أخرى. بعد الانتهاء من تعديل المحتوى، ارفع المحتوى المعدَّل إلى مجلد مخصص على hotspot router، ثم عيّن قيمة الخاصية <code>&quot;html-override-directory&quot;</code> كمسار إلى مجلد HTML المخصص الجديد.</p>
+<p class="note">ملاحظة: إذا كان مسار <code>&quot;html-override-directory&quot;</code> مفقودًا أو فارغًا، فسيعود hotspot server إلى ملفات HTML الافتراضية.</p>
+<h3>الصفحات المتاحة (Available Pages)</h3>
+<p>صفحات HTML servlet الرئيسية التي تُعرض للمستخدم:</p>
+<ul>
+<li><code>redirect.html</code> — تعيد توجيه المستخدم إلى URL آخر (مثلًا إلى صفحة login)</li>
+<li><code>login.html</code> — صفحة تسجيل الدخول التي تطلب username و password. قد تقبل المعاملات التالية:</li>
+</ul>
+<ul>
+<li><code>username</code> — اسم المستخدم</li>
+<li><code>password</code> — إما كلمة مرور plain-text (في حالة PAP authentication) أو MD5 hash لـ متغير <code>chap-id</code> وكلمة المرور و CHAP challenge (في حالة CHAP authentication). تُستخدم هذه القيمة كـ e-mail address لمستخدمي trial</li>
+<li><code>dst</code> — الـ URL الأصلي المطلوب قبل الـ redirect. يُفتح بعد نجاح login</li>
+<li><code>popup</code> — هل تُفتح نافذة status عند نجاح login</li>
+<li><code>radius &lt;id&gt;</code> — إرسال الـ attribute المحدد كـ text string إلى RADIUS server (عند استخدام RADIUS authentication؛ وإلا يُهمَل)</li>
+<li><code>radius &lt;id&gt; u</code> — إرسال الـ attribute المحدد كـ unsigned integer إلى RADIUS server (عند استخدام RADIUS authentication؛ وإلا يُهمَل)</li>
+<li><code>radius &lt;id&gt;-&lt;vendor&gt; </code> — إرسال الـ attribute المحدد مع vendor ID كـ text string إلى RADIUS server (عند استخدام RADIUS authentication؛ وإلا يُهمَل)</li>
+<li><code>radius &lt;id&gt;-&lt;vendor&gt; u</code> — إرسال الـ attribute المحدد مع vendor ID كـ unsigned integer إلى RADIUS server (عند استخدام RADIUS authentication؛ وإلا يُهمَل)</li>
+<li><code>md5.js</code> — JavaScript لتجزئة كلمة المرور بـ MD5. يُستخدم مع طريقة login من نوع <code>http-chap</code></li>
+<li><code>alogin.html</code> — الصفحة المعروضة بعد أن يسجّل client دخوله. تفتح صفحة status وتعيد توجيه المتصفح إلى الصفحة المطلوبة أصلًا (قبل إعادة التوجيه إلى HotSpot login page)</li>
+<li><code>status.html</code> — صفحة الحالة؛ تعرض إحصاءات الـ client. ويمكنها أيضًا عرض advertisements تلقائيًا</li>
+<li><code>logout.html</code> — صفحة تسجيل الخروج؛ تُعرض بعد logout. تعرض الإحصاءات النهائية للجلسة المنتهية. قد تقبل المعاملات الإضافية التالية:</li>
+</ul>
+<ul>
+<li><code>erase-cookie</code> — هل تُمسح cookies من HotSpot server عند logout (يمنع login تلقائيًا عبر cookie في المرة التالية من نفس المتصفح؛ مفيد في بيئات multiuser)</li>
+<li><code>error.html</code> — صفحة الأخطاء؛ تُعرض عند الأخطاء القاتلة فقط</li>
+</ul>
+<p>وهناك صفحات أخرى عند الحاجة لمزيد من التحكم:</p>
+<ul>
+<li><code>rlogin.html</code> — تعيد توجيه الـ client من URL آخر إلى login page إذا كانت authorization مطلوبة للوصول إلى ذلك الـ URL</li>
+<li><code>rstatus.html</code> — مشابهة لـ <code>rlogin.html</code>، لكن عندما يكون الـ client مسجّل الدخول أصلًا والـ URL الأصلي غير معروف</li>
+<li><code>radvert.html</code> — تعيد توجيه الـ client إلى رابط advertisement المجدول</li>
+<li><code>flogin.html</code> — تُعرض بدلًا من <code>login.html</code> عند حدوث خطأ (مثل username أو password غير صالح)</li>
+<li><code>fstatus.html</code> — تُعرض بدلًا من redirect عند طلب status page بينما الـ client غير مسجّل الدخول</li>
+<li><code>flogout.html</code> — تُعرض بدلًا من redirect عند طلب logout page بينما الـ client غير مسجّل الدخول</li>
+</ul>
+<h3>خدمة صفحات Servlet (Serving Servlet Pages)</h3>
+<p>يتعرّف HotSpot servlet على 5 أنواع طلبات مختلفة:</p>
+<ol>
+<li>طلب لمضيف بعيد (remote host)</li>
+</ol>
+<ul>
+<li>إذا كان المستخدم مسجّل الدخول وحان موعد عرض advertisement، تُعرض <code>radvert.html</code>. هذه الصفحة تعيد التوجيه إلى صفحة advertisement المجدولة</li>
+<li>إذا كان المستخدم مسجّل الدخول ولا يوجد advertisement مجدول لهذا المستخدم، تُخدَّم الصفحة المطلوبة</li>
+<li>إذا لم يكن المستخدم مسجّل الدخول، لكن الوجهة مسموحة عبر walled garden، فيُخدَّم الطلب أيضًا</li>
+<li>إذا لم يكن المستخدم مسجّل الدخول، والوجهة ممنوعة عبر walled garden، تُعرض <code>rlogin.html</code>؛ وإن لم تُوجَد، تُستخدم <code>redirect.html</code> لإعادة التوجيه إلى login page</li>
+</ul>
+<ol>
+<li>طلب لـ <code>&quot;/&quot;</code> على مضيف HotSpot</li>
+</ol>
+<ul>
+<li>إذا كان المستخدم مسجّل الدخول، تُعرض <code>rstatus.html</code>؛ وإن لم تُوجَد، تُستخدم <code>redirect.html</code> لإعادة التوجيه إلى status page</li>
+<li>إذا لم يكن المستخدم مسجّل الدخول، تُعرض <code>rlogin.html</code>؛ وإن لم تُوجَد، تُستخدم <code>redirect.html</code> لإعادة التوجيه إلى login page</li>
+</ul>
+<ol>
+<li>طلب لصفحة <code>&quot;/login&quot;</code></li>
+</ol>
+<ul>
+<li>إذا نجح login (أو كان المستخدم مسجّلًا مسبقًا)، تُعرض <code>alogin.html</code>؛ وإن لم تُوجَد، تُستخدم <code>redirect.html</code> لإعادة التوجيه إلى الصفحة المطلوبة أصلًا أو إلى status page (إن لم تُعطَ الوجهة الأصلية)</li>
+<li>إذا لم يكن المستخدم مسجّل الدخول (لم يُرسَل username ولم تظهر رسالة خطأ)، تُعرض <code>login.html</code></li>
+<li>إذا فشلت عملية login (وُجدت رسالة خطأ)، تُعرض <code>flogin.html</code>؛ وإن لم تُوجَد، تُستخدم <code>login.html</code></li>
+<li>في حالة الأخطاء القاتلة، تُعرض <code>error.html</code></li>
+</ul>
+<ol>
+<li>طلب لصفحة <code>&quot;/status&quot;</code></li>
+</ol>
+<ul>
+<li>إذا كان المستخدم مسجّل الدخول، تُعرض <code>status.html</code></li>
+<li>إذا لم يكن مسجّل الدخول، تُعرض <code>fstatus.html</code>؛ وإن لم تُوجَد، تُستخدم <code>redirect.html</code> لإعادة التوجيه إلى login page</li>
+</ul>
+<ol>
+<li>طلب لصفحة <code>&#x27;/logout&#x27;</code></li>
+</ol>
+<ul>
+<li>إذا كان المستخدم مسجّل الدخول، تُعرض <code>logout.html</code></li>
+<li>إذا لم يكن مسجّل الدخول، تُعرض <code>flogout.html</code>؛ وإن لم تُوجَد، تُستخدم <code>redirect.html</code> لإعادة التوجيه إلى login page</li>
+</ul>
+<p class="note">ملاحظة: إذا تعذّر تلبية الطلب باستخدام الصفحات المخزَّنة على FTP server الخاص بالموجّه، تُعرض Error 404</p>
+<p>هناك طرق عديدة لتخصيص مظهر صفحات HotSpot authentication:</p>
+<ul>
+<li>الصفحات قابلة للتعديل بسهولة. تُخزَّن على FTP server الخاص بالموجّه في المجلد الذي تختاره لـ HotSpot server profile المعني.</li>
+<li>بتغيير المتغيرات التي يرسلها الـ client إلى HotSpot servlet، يمكن تقليل عدد الحقول المطلوبة إلى واحد (username أو password؛ مثلًا يمكن استخدام MAC address للـ client كقيمة أخرى) أو حتى إلى صفر (مثل License Agreement؛ يمكن استخدام قيم جاهزة عامة لجميع المستخدمين أو MAC address كـ username و password)</li>
+<li>قد تتم registration على خادم مختلف (مثلًا خادم يقبل Credit Cards). يمكن تمرير MAC address للـ client إليه حتى لا يُدخَل يدويًا. بعد التسجيل، يجب أن يعدّل الخادم قاعدة بيانات RADIUS لتمكين الـ client من login لمدة معيّنة.</li>
+</ul>
+<p>لإدراج متغير في مكان ما داخل ملف HTML، تُستخدم الصيغة <code>$(var_name)</code> حيث <code>&quot;var_name&quot;</code> هو اسم المتغير (بدون علامات اقتباس). يمكن استخدام هذا التركيب في أي ملف HotSpot HTML يُوصَل إليه كـ <code>&#x27;/&#x27;</code> أو <code>&#x27;/login&#x27;</code> أو <code>&#x27;/status&#x27;</code> أو <code>&#x27;/logout&#x27;</code>، وكذلك أي ملف نصي أو HTML (<code>.txt</code> أو <code>.htm</code> أو <code>.html</code>) مخزَّن على HotSpot server (باستثناء traffic counters المتاحة في status page فقط، ومتغيرات <code>error</code> و <code>error-orig</code> و <code>chap-id</code> و <code>chap-challenge</code> و <code>popup</code> المتاحة في login page فقط). مثال لإظهار رابط إلى login page:</p>
+<pre dir="ltr"><code>&lt;a href=&quot;$(link-login)&quot;&gt;login&lt;/a&gt;
+</code></pre>
+<h3>المتغيرات (Variables)</h3>
+<p>تستخدم جميع صفحات Servlet HTML متغيراتًا لعرض قيم خاصة بالمستخدم. تظهر أسماء المتغيرات فقط في مصدر HTML لصفحات servlet — ويستبدلها HotSpot Servlet تلقائيًا بالقيم المناسبة. لمعظم المتغيرات يوجد مثال لقيمة محتملة بين أقواس. جميع المتغيرات الموصوفة صالحة في كل صفحات servlet، لكن بعضها قد يكون فارغًا وقت الوصول إليه (مثلًا لا يوجد uptime قبل أن يسجّل المستخدم دخوله).</p>
+<h4>قائمة المتغيرات المتاحة (List of available variables)</h4>
+<p class="note">ملاحظة: بعض المتغيرات تستخدم http URL مضمّنًا بشكل ثابت؛ إذا كنت تستخدم https يمكنك بناء الرابط بطريقة أخرى، مثلًا لـ <code>$link-status</code> استخدم: <code>https://$(hostname)/$(target-dir)status</code></p>
+<p>متغيرات الخادم العامة (Common server variables):</p>
+<ul>
+<li><code>hostname</code> — DNS name أو IP address (إن لم يُعطَ DNS name) لـ HotSpot Servlet (<code>&quot;hotspot.example.net&quot;</code>)</li>
+<li><code>identity</code> — اسم الهوية في RouterOS (<code>&quot;MikroTik&quot;</code>)</li>
+<li><code>login-by</code> — طريقة authentication التي استخدمها المستخدم</li>
+<li><code>plain-passwd</code> — تمثيل <code>&quot;yes/no&quot;</code> لما إذا كانت طريقة HTTP-PAP login مسموحة (<code>&quot;no&quot;</code>)</li>
+<li><code>server-address</code> — عنوان HotSpot server (<code>&quot;10.5.50.1:80&quot;</code>)</li>
+<li><code>ssl-login</code> — تمثيل <code>&quot;yes/no&quot;</code> لما إذا استُخدم HTTPS للوصول إلى صفحة servlet هذه (<code>&quot;no&quot;</code>)</li>
+<li><code>server-name</code> — اسم HotSpot server (يُضبط في قائمة <code>/ip hotspot</code> عبر الخاصية <code>name</code>)</li>
+</ul>
+<p>الروابط (Links):</p>
+<ul>
+<li><code>link-login</code> — رابط إلى login page يتضمن الـ URL الأصلي المطلوب (<code>&quot;http://10.5.50.1/login?dst=http://www.example.com/&quot;</code>)</li>
+<li><code>link-login-only</code> — رابط إلى login page دون الـ URL الأصلي (<code>&quot;http://10.5.50.1/login&quot;</code>)</li>
+<li><code>link-logout</code> — رابط إلى logout page (<code>&quot;http://10.5.50.1/logout&quot;</code>)</li>
+<li><code>link-status</code> — رابط إلى status page (<code>&quot;http://10.5.50.1/status&quot;</code>)</li>
+<li><code>link-orig</code> — الـ URL الأصلي المطلوب (<code>&quot;http://www.example.com/&quot;</code>)</li>
+</ul>
+<p>معلومات عامة عن الـ client:</p>
+<ul>
+<li><code>domain</code> — domain name للمستخدم (<code>&quot;example.com&quot;</code>)</li>
+<li><code>interface-name</code> — اسم واجهة HotSpot الفعلية (في حالة bridged interfaces يُرجع اسم bridge port الفعلي)</li>
+<li><code>ip</code> — عنوان IP للـ client (<code>&quot;10.5.50.2&quot;</code>)</li>
+<li><code>logged-in</code> — <code>&quot;yes&quot;</code> إذا كان المستخدم مسجّل الدخول، وإلا <code>&quot;no&quot;</code> (<code>&quot;yes&quot;</code>)</li>
+<li><code>mac</code> — عنوان MAC للمستخدم (<code>&quot;01:23:45:67:89:AB&quot;</code>)</li>
+<li><code>trial</code> — تمثيل <code>&quot;yes/no&quot;</code> لما إذا كان للمستخدم وصول إلى trial time. إذا انتهت مدة trial يصبح القيمة <code>&quot;no&quot;</code></li>
+<li><code>username</code> — اسم المستخدم (<code>&quot;John&quot;</code>)</li>
+<li><code>host-ip</code> — عنوان IP للـ client من جدول <code>/ip hotspot host</code></li>
+<li><code>vlan-id</code> — يمثل ID لواجهة VLAN التي يتصل منها الـ client</li>
+</ul>
+<p>معلومات حالة المستخدم (User status information):</p>
+<ul>
+<li><code>idle-timeout</code> — مهلة الخمول (<code>&quot;20m&quot;</code> أو <code>&quot;&quot;</code> إن لم توجد)</li>
+<li><code>idle-timeout-secs</code> — مهلة الخمول بالثواني (<code>&quot;88&quot;</code> أو <code>&quot;0&quot;</code> إن لم توجد)</li>
+<li><code>limit-bytes-in</code> — حد البايتات للإرسال (<code>&quot;1000000&quot;</code> أو <code>&quot;---&quot;</code> إن لم يوجد حد)</li>
+<li><code>limit-bytes-out</code> — حد البايتات للاستقبال (<code>&quot;1000000&quot;</code> أو <code>&quot;---&quot;</code> إن لم يوجد حد)</li>
+<li><code>refresh-timeout</code> — مهلة تحديث status page (<code>&quot;1m30s&quot;</code> أو <code>&quot;&quot;</code> إن لم توجد)</li>
+<li><code>refresh-timeout-secs</code> — مهلة تحديث status page بالثواني (<code>&quot;90s&quot;</code> أو <code>&quot;0&quot;</code> إن لم توجد)</li>
+<li><code>session-timeout</code> — الوقت المتبقي للجلسة (<code>&quot;5h&quot;</code> أو <code>&quot;&quot;</code> إن لم يوجد)</li>
+<li><code>session-timeout-secs</code> — الوقت المتبقي للجلسة بالثواني (<code>&quot;3475&quot;</code> أو <code>&quot;0&quot;</code> إن لم يوجد)</li>
+<li><code>session-time-left</code> — الوقت المتبقي للجلسة (<code>&quot;5h&quot;</code> أو <code>&quot;&quot;</code> إن لم يوجد)</li>
+<li><code>session-time-left-secs</code> — الوقت المتبقي للجلسة بالثواني (<code>&quot;3475&quot;</code> أو <code>&quot;0&quot;</code> إن لم يوجد)</li>
+<li><code>uptime</code> — مدة الجلسة الحالية (<code>&quot;10h2m33s&quot;</code>)</li>
+<li><code>uptime-secs</code> — مدة الجلسة الحالية بالثواني (<code>&quot;125&quot;</code>)</li>
+</ul>
+<p>عدّادات الحركة (Traffic counters) — متاحة في status page فقط:</p>
+<ul>
+<li><code>bytes-in</code> — عدد البايتات المستلمة من المستخدم (<code>&quot;15423&quot;</code>)</li>
+<li><code>bytes-in-nice</code> — عرض مقروء لعدد البايتات المستلمة من المستخدم (<code>&quot;15423&quot;</code>)</li>
+<li><code>bytes-out</code> — عدد البايتات المرسلة إلى المستخدم (<code>&quot;11352&quot;</code>)</li>
+<li><code>bytes-out-nice</code> — عرض مقروء لعدد البايتات المرسلة إلى المستخدم (<code>&quot;11352&quot;</code>)</li>
+<li><code>packets-in</code> — عدد الحزم المستلمة من المستخدم (<code>&quot;251&quot;</code>)</li>
+<li><code>packets-out</code> — عدد الحزم المرسلة إلى المستخدم (<code>&quot;211&quot;</code>)</li>
+<li><code>remain-bytes-in</code> — البايتات المتبقية حتى بلوغ <code>limit-bytes-in</code> (<code>&quot;337465&quot;</code> أو <code>&quot;---&quot;</code> إن لم يوجد حد)</li>
+<li><code>remain-bytes-out</code> — البايتات المتبقية حتى بلوغ <code>limit-bytes-out</code> (<code>&quot;124455&quot;</code> أو <code>&quot;---&quot;</code> إن لم يوجد حد)</li>
+</ul>
+<p>متغيرات متنوعة (Miscellaneous variables):</p>
+<ul>
+<li><code>session-id</code> — قيمة معامل <code>&#x27;session-id&#x27;</code> في آخر طلب</li>
+<li><code>var</code> — قيمة معامل <code>&#x27;var&#x27;</code> في آخر طلب</li>
+<li><code>error</code> — رسالة الخطأ عند الفشل (<code>&quot;invalid username or password&quot;</code>)</li>
+<li><code>error-orig</code> — رسالة الخطأ الأصلية (بدون الترجمات من <code>errors.txt</code>) عند الفشل (<code>&quot;invalid username or password&quot;</code>)</li>
+<li><code>chap-id</code> — قيمة chap ID (<code>&quot;\371&quot;</code>)</li>
+<li><code>chap-challenge</code> — قيمة chap challenge (<code>&quot;\357\015\330\013\021\234\145\245\303\253\142\246\133\175\375\316&quot;</code>)</li>
+<li><code>popup</code> — هل مربع اختيار الـ pop-up مفعّل (<code>&quot;true&quot;</code> أو <code>&quot;false&quot;</code>)</li>
+<li><code>advert-pending</code> — هل هناك advertisement بانتظار العرض (<code>&quot;yes&quot;</code> أو <code>&quot;no&quot;</code>)</li>
+<li><code>http-status</code> — يسمح بتعيين http status code والرسالة</li>
+<li><code>http-header</code> — يسمح بتعيين http header</li>
+</ul>
+<p>متغيرات مرتبطة بـ RADIUS:</p>
+<ul>
+<li><code>radius &lt;id&gt;</code> — عرض الـ attribute المحدد كـ text string (عند استخدام RADIUS authentication؛ وإلا <code>&quot;&quot;</code>)</li>
+<li><code>radius &lt;id&gt; u</code> — عرض الـ attribute المحدد كـ unsigned integer (عند استخدام RADIUS authentication؛ وإلا <code>&quot;0&quot;</code>)</li>
+<li><code>radius &lt;id&gt;-&lt;vendor&gt;</code> — عرض الـ attribute المحدد مع vendor ID كـ text string (عند استخدام RADIUS authentication؛ وإلا <code>&quot;&quot;</code>)</li>
+<li><code>radius &lt;id&gt;-&lt;vendor&gt; u</code> — عرض الـ attribute المحدد مع vendor ID كـ unsigned integer (عند استخدام RADIUS authentication؛ وإلا <code>&quot;0&quot;</code>)</li>
+</ul>
+<h4>العمل مع المتغيرات (Working with variables)</h4>
+<p>يمكن استخدام عبارات <code>$(if &lt;var_name&gt;)</code> في هذه الصفحات. يُدرَج المحتوى التالي إذا لم تكن قيمة <code>&lt;var_name&gt;</code> سلسلة فارغة. وهذا يكافئ <code>$(if &lt;var_name&gt; != &quot;&quot;)</code>. ويمكن أيضًا المقارنة بالمساواة: <code>$(if &lt;var_name&gt; == &lt;value&gt;)</code>. يمتد أثر هذه العبارات حتى <code>$(elif &lt;var_name&gt;)</code> أو <code>$(else)</code> أو <code>$(endif)</code>. الشكل العام:</p>
+<pre dir="ltr"><code>some content, which will always be displayed
+$(if username == john)
+Hey, your username is john
+$(elif username == dizzy)
+Hello, Dizzy! How are you? Your administrator.
+$(elif ip == 10.1.2.3)
+You are sitting at that old computer, which is so slow...
+$(elif mac == 00:01:02:03:04:05)
+This is an ethernet card, which was stolen few months ago...
+$(else)
+I don&#x27;t know who you are, so lets live in peace.
+$(endif)
+other content, which will always be displayed
+</code></pre>
+<p>سيُعرض تعبير واحد فقط من هذه التعبيرات. أيّها يُعرض يعتمد على قيم تلك المتغيرات لكل client.</p>
+<h4>إعادة التوجيه والـ Headers المخصصة (Redirects and custom Headers)</h4>
+<pre dir="ltr"><code>	$(if http-status == 302)Hotspot login required$(endif)
+	$(if http-header == &quot;Location&quot;)$(link-redirect)$(endif)
+</code></pre>
+<p class="note">ملاحظة: رغم أن المثال أعلاه يبدو كأنه يستخدم تعبير الشرط <code>if</code>، فهو في الواقع *يعيّن* قيمة <code>&#x27;http-status&#x27;</code> إلى <code>&#x27;302&#x27;</code> وليس يختبرها. والأمر نفسه لمتغير <code>&#x27;http-header&#x27;</code>: رغم استخدام <code>if</code>، فهو يعيّن المتغير إلى <code>&#x27;Location&#x27;</code> متبوعًا بالـ URL من متغير <code>&#x27;link-redirect&#x27;</code>.</p>
+<p>مثلًا، إذا قُيِّم <code>$(link-redirect)</code> إلى <code>&quot;http://192.168.88.1/login&quot;</code>، فستتغير استجابة HTTP المعادة للـ client إلى:</p>
+<pre dir="ltr"><code>HTTP/1.0 302 Hotspot login required
+&lt;regular HTTP headers&gt;
+Location: http://192.168.88.1/login
+</code></pre>
+<p>صيغة <code>http-status</code>:</p>
+<pre dir="ltr"><code>	$(if http-status == XYZ)HTTP_STATUS_MESSAGE$(endif)
+</code></pre>
+<ul>
+<li><code>XYZ</code> — رمز الحالة الذي تريد إرجاعه. يجب أن يكون 3 أرقام عشرية، والأول يجب ألا يكون 0</li>
+<li><code>HTTP_STATUS_MESSAGE</code> — أي نص تريد إرجاعه للـ client بعد رمز الحالة في رد HTTP</li>
+</ul>
+<p>في أي استجابة HTTP سيكون ذلك في السطر الأول كالتالي:</p>
+<pre dir="ltr"><code>HTTP/1.0 XYZ HTTP_STATUS_MESSAGE
+</code></pre>
+<p>صيغة <code>http-header</code>:</p>
+<pre dir="ltr"><code>$(if http-header == HTTP_HEADER_NAME)HTTP_HEADER_VALUE$(endif)
+</code></pre>
+<ul>
+<li><code>HTTP_HEADER_NAME</code> — اسم الـ HTTP header المرسل في الاستجابة</li>
+<li><code>HTTP_HEADER_VALUE</code> — قيمة الـ HTTP header ذي الاسم <code>HTTP_HEADER_NAME</code> المرسلة في الاستجابة</li>
+</ul>
+<p>ستظهر استجابة HTTP كالتالي:</p>
+<pre dir="ltr"><code>HTTP_HEADER_NAME: HTTP_HEADER_VALUE
+</code></pre>
+<p>تُعالَج جميع المتغيرات والتعابير الشرطية داخل <code>HTTP_HEADER_VALUE</code> و <code>HTTP_STATUS_MESSAGE</code> بالطريقة المعتادة.</p>
+<p>إذا أُضيفت عدة headers بنفس الاسم، تُستخدم الأخيرة فقط (وتُهمَل السابقة). هذا يسمح بتجاوز HTTP headers العادية (مثل <code>Content-Type</code> و <code>Cache-Control</code>).</p>
+<h3>تخصيص رسائل الخطأ (Customizing Error Messages)</h3>
+<p>تُخزَّن جميع رسائل الخطأ في الملف <code>errors.txt</code> داخل مجلد HotSpot servlet المعني. يمكنك تغييرها وترجمتها إلى لغتك. للقيام بذلك حرّر <code>errors.txt</code>. ويمكنك أيضًا استخدام المتغيرات داخل الرسائل. جميع التعليمات موجودة داخل ذلك الملف.</p>
+<h3>إصدارات متعددة لصفحات HotSpot (Multiple Versions of HotSpot Pages)</h3>
+<p>يُدعم وجود مجموعات صفحات HotSpot متعددة لنفس HotSpot server. يمكن للمستخدم اختيارها (لاختيار اللغة) أو اختيارها تلقائيًا عبر JavaScript (لاختيار نسخة PDA مقابل النسخة العادية من صفحات HTML).</p>
+<p>لاستخدام هذه الميزة، أنشئ مجلدات فرعية داخل مجلد HotSpot HTML، وضع فيها ملفات HTML المختلفة فقط. مثلًا للترجمة إلى اللاتفية، يمكن إنشاء المجلد الفرعي <code>&quot;lv&quot;</code> وبداخله <code>login.html</code> و <code>logout.html</code> و <code>status.html</code> و <code>alogin.html</code> و <code>radvert.html</code> و <code>errors.txt</code> مترجمة إلى اللاتفية. إذا لم تُوجَد صفحة HTML المطلوبة في المجلد الفرعي المطلوب، يُستخدم الملف المقابل من المجلد الرئيسي. عندئذٍ يحتوي <code>login.html</code> الرئيسي على رابط إلى <code>&quot;/lv/login?dst=$(link-orig-esc)&quot;</code> لعرض النسخة اللاتفية: Latviski. والنسخة اللاتفية تحتوي رابطًا إلى النسخة الإنجليزية: English.</p>
+<p>طريقة أخرى للإشارة إلى المجلدات هي تحديد متغير <code>&#x27;target&#x27;</code>:</p>
+<pre dir="ltr"><code>        &lt;a href=&quot;$(link-login-only)?dst=$(link-orig-esc)&amp;target=lv&quot;&gt;Latviski&lt;/a&gt;
+        &lt;a href=&quot;$(link-login-only)?dst=$(link-orig-esc)&amp;target=%2F&quot;&gt;English&lt;/a&gt;
+</code></pre>
+<p>بعد اختيار المجلد المفضّل (مثل <code>&quot;lv&quot;</code>)، ستتضمن كل الروابط إلى صفحات HotSpot المحلية ذلك المسار (مثلًا <code>$(link-status)</code> = <code>&quot;http://hotspot.mt.lv/lv/status&quot;</code>). لذا إذا أشارت كل صفحات HotSpot إلى الروابط عبر متغيرات <code>&quot;$(link-xxx)&quot;</code>، فلا حاجة لتعديلات إضافية — سيبقى كل client داخل المجلد المختار طوال الوقت.</p>
+<h3>متفرقات (Misc)</h3>
+<p>إذا أردت استخدام طريقة HTTP-CHAP authentication، يجب تضمين الدالة <code>doLogin()</code> (التي تعتمد على <code>md5.js</code> الذي يجب أن يكون محمّلًا مسبقًا) قبل إجراء Submit لنموذج login. وإلا سيفشل CHAP login.</p>
+<p>كلمة المرور الناتجة التي تُرسَل إلى HotSpot gateway في حالة HTTP-CHAP تتكوّن من MD5-hash لسلسلة متتابعة من: <code>chap-id</code> ثم كلمة مرور المستخدم ثم <code>chap-challenge</code> (بهذا الترتيب).</p>
+<p>إذا أردت استخدام المتغيرات مباشرة داخل رابط، فيجب تهريبها (escape) بشكل صحيح. مثلًا في login page، لن يعمل الرابط كما يُفترض إذا كان username هو <code>&quot;123&amp;456=1 2&quot;</code>. في هذه الحالة بدلًا من <code>$(user)</code> استخدم النسخة المهرَّبة: <code>$(user-esc)</code>. عندئذٍ يتحول نفس الـ username إلى <code>&quot;123%26456%3D1+2&quot;</code> وهو التمثيل الصالح لـ <code>&quot;123&amp;456=1 2&quot;</code> داخل URL. يمكن تطبيق هذه الحيلة على أي متغير وليس فقط <code>$(username)</code>.</p>
+<p>يوجد معامل منطقي <code>&quot;erase-cookie&quot;</code> لصفحة logout، ويمكن أن يكون <code>&quot;on&quot;</code> أو <code>&quot;true&quot;</code> لحذف cookie المستخدم عند logout (حتى لا يُسجَّل دخوله تلقائيًا عند فتح المتصفح في المرة التالية).</p>
+<h3>أمثلة (Examples)</h3>
+<p>بمعرفة أساسية بلغة HTML والأمثلة أدناه يفترض أن يسهل تطبيق الأفكار السابقة.</p>
+<ul>
+<li>لتوفير قيمة جاهزة كـ username، في <code>login.html</code> غيّر:</li>
+</ul>
+<pre dir="ltr"><code>&lt;type=&quot;text&quot; value=&quot;$(username)&gt;
+</code></pre>
+<p>إلى هذا السطر:</p>
+<pre dir="ltr"><code>&lt;input type=&quot;hidden&quot; name=&quot;username&quot; value=&quot;hsuser&quot;&gt;
+</code></pre>
+<p>(حيث <code>hsuser</code> هو الـ username الذي توفّره)</p>
+<ul>
+<li>لتوفير قيمة جاهزة كـ password، في <code>login.html</code> غيّر:</li>
+</ul>
+<pre dir="ltr"><code>&lt;input type=&quot;password&quot;&gt;
+</code></pre>
+<p>إلى هذا السطر:</p>
+<pre dir="ltr"><code>&lt;input type=&quot;hidden&quot; name=&quot;password&quot; value=&quot;hspass&quot;&gt;
+</code></pre>
+<p>(حيث <code>hspass</code> هو الـ password الذي توفّره)</p>
+<ul>
+<li>لإرسال MAC address للـ client إلى خادم تسجيل بالشكل:</li>
+</ul>
+<p><code>https://www.example.com/register.html?mac=XX:XX:XX:XX:XX:XX</code></p>
+<p>غيّر رابط زر Login في <code>login.html</code> إلى:</p>
+<pre dir="ltr"><code>https://www.example.com/register.html?mac=$(mac)
+</code></pre>
+<p>(صحّح الرابط ليشير إلى خادمك)</p>
+<ul>
+<li>لإظهار banner بعد login، في <code>alogin.html</code> بعد</li>
+</ul>
+<p><code>$(if popup == &#x27;true&#x27;)</code> أضف السطر التالي:</p>
+<pre dir="ltr"><code>open(&#x27;http://www.example.com/your-banner-page.html&#x27;, &#x27;my-banner-name&#x27;,&#x27;&#x27;);
+</code></pre>
+<p>(صحّح الرابط ليشير إلى الصفحة التي تريد عرضها)</p>
+<ul>
+<li>لاختيار صفحة مختلفة بعد login، في <code>login.html</code> غيّر:</li>
+</ul>
+<pre dir="ltr"><code>&lt;input type=&quot;hidden&quot; name=&quot;dst&quot; value=&quot;$(link-orig)&quot;&gt;
+</code></pre>
+<p>إلى هذا السطر:</p>
+<pre dir="ltr"><code>&lt;input type=&quot;hidden&quot; name=&quot;dst&quot; value=&quot;http://www.example.com&quot;&gt;
+</code></pre>
+<p>(صحّح الرابط ليشير إلى خادمك)</p>
+<ul>
+<li>لمسح cookie عند تسجيل الخروج، في الصفحة التي تحتوي رابطًا إلى logout (مثلًا في <code>status.html</code>) غيّر:</li>
+</ul>
+<pre dir="ltr"><code>open(&#x27;$(link-logout)&#x27;, &#x27;hotspot_logout&#x27;, ...
+</code></pre>
+<p>إلى:</p>
+<pre dir="ltr"><code>open(&#x27;$(link-logout)?erase-cookie=on&#x27;, &#x27;hotspot_logout&#x27;, ...
+</code></pre>
+<p>أو بدلًا من ذلك أضف هذا السطر:</p>
+<pre dir="ltr"><code>&lt;input type=&quot;hidden&quot; name=&quot;erase-cookie&quot; value=&quot;on&quot;&gt;
+</code></pre>
+<p>قبل هذا السطر:</p>
+<pre dir="ltr"><code>&lt;input type=&quot;submit&quot; value=&quot;log off&quot;&gt;
+</code></pre>
+<h4>مصادقة خارجية (External authentication)</h4>
+<p>مثال آخر: جعل HotSpot يُجري authentication عبر خادم بعيد (قد ينفّذ مثلًا charge لبطاقات ائتمان):</p>
+<ul>
+<li>اسمح بالوصول المباشر إلى الخادم الخارجي في walled-garden (سواء القائم على HTTP أو على IP)</li>
+<li>عدّل صفحة login لـ HotSpot servlet لتعيد التوجيه إلى خادم authentication الخارجي. يجب أن يعدّل الخادم الخارجي قاعدة بيانات RADIUS حسب الحاجة</li>
+</ul>
+<p>مثال لصفحة login كهذه تُوضع على HotSpot router (تعيد التوجيه إلى <code>https://auth.example.com/login.php</code>؛ استبدلها بعنوان خادم authentication الخارجي الفعلي):</p>
+<pre dir="ltr"><code>&lt;html&gt;
+&lt;title&gt;...&lt;/title&gt;
+&lt;body&gt;
+&lt;form name=&quot;redirect&quot; action=&quot;https://auth.example.com/login.php&quot; method=&quot;post&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;mac&quot; value=&quot;$(mac)&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;ip&quot; value=&quot;$(ip)&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;username&quot; value=&quot;$(username)&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;link-login&quot; value=&quot;$(link-login)&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;link-orig&quot; value=&quot;$(link-orig)&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;error&quot; value=&quot;$(error)&quot;&gt;
+&lt;/form&gt;
+&lt;script language=&quot;JavaScript&quot;&gt;
+&lt;!--
+	document.redirect.submit();
+//--&gt;
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+          
+</code></pre>
+<ul>
+<li>يمكن للخادم الخارجي تسجيل دخول HotSpot client بإعادته إلى صفحة login الأصلية لـ HotSpot servlet مع تحديد username و password الصحيحين</li>
+</ul>
+<p>مثال لصفحة كهذه (تعيد التوجيه إلى <code>https://hotspot.example.com/login</code>؛ استبدلها بعنوان HotSpot router الفعلي؛ وتعرض <code>www.mikrotik.com</code> بعد نجاح login، فاستبدلها بما تحتاج):</p>
+<pre dir="ltr"><code>&lt;html&gt;
+&lt;title&gt;Hotspot login page&lt;/title&gt;
+&lt;body&gt;
+&lt;form name=&quot;login&quot; action=&quot;https://hotspot.example.com/login&quot; method=&quot;post&quot;&gt;
+&lt;input type=&quot;text&quot; name=&quot;username&quot; value=&quot;demo&quot;&gt;
+&lt;input type=&quot;password&quot; name=&quot;password&quot; value=&quot;none&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;domain&quot; value=&quot;&quot;&gt;
+&lt;input type=&quot;hidden&quot; name=&quot;dst&quot; value=&quot;http://www.mikrotik.com/&quot;&gt;
+&lt;input type=&quot;submit&quot; name=&quot;login&quot; value=&quot;log in&quot;&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+          
+</code></pre>
+<ul>
+<li>سيسأل HotSpot خادم RADIUS هل يُسمح بالـ login أم لا. إن سُمح، تُعرض صفحة <code>alogin.html</code> (ويمكن تعديلها لفعل أي شيء). وإن لم يُسمَح، تُعرض <code>flogin.html</code> (أو <code>login.html</code>) التي ستعيد توجيه الـ client إلى خادم authentication الخارجي.</li>
+</ul>
+<p class="note">ملاحظة: كما في هذه الأمثلة، يمكن استخدام بروتوكول HTTPS وطريقة POST لتأمين الاتصالات.</p>
+<h4>اكتشاف HTTP header (HTTP header detection)</h4>
+<p>صفحات HotSpot login يمكنها الوصول إلى HTTP headers عبر <code>$(http-header-name)</code>.</p>
+<p>مثلًا، يمكن فحص user agent (أو المتصفح) وإرجاع محتوى مختلف بدل صفحة login العادية إن رغبت. يمكن استخدام ذلك لتعطيل النوافذ المنبثقة التلقائية على الهواتف مثلًا.</p>
+<p>مثال: لإخراج <code>&quot;SUCCESS&quot;</code> لمستخدمي نسخة معيّنة من Firefox mobile بدل صفحة login، ضع هذه الأسطر في أعلى صفحة <code>rlogin.html</code> داخل مجلد hotspot:</p>
+<pre dir="ltr"><code>$(if user-agent == &quot;Mozilla/5.0 (Android; Mobile; rv:40.0) Gecko/40.0 Firefox/40.0&quot; ) 
+&lt;HTML&gt;&lt;HEAD&gt;&lt;TITLE&gt;Success&lt;/TITLE&gt;&lt;/HEAD&gt;&lt;BODY&gt;Success&lt;/BODY&gt;&lt;/HTML&gt; 
+$(else)
+---- regular content of rlogin.html page  ----
+$(endif)
+</code></pre>
+<p>هذا سيعطّل login popup لمستخدمي Android Firefox 40.</p>
+<h4>تسجيل دخول بنقرة واحدة (One-click login)</h4>
+<p>يمكن إنشاء captive portal معدَّل لتسجيل دخول سريع بنقرة واحدة في السيناريوهات التي لا تتطلب user أو password.</p>
+<p>ما تحتاج فعله:</p>
+<ul>
+<li>أنشئ مستخدمًا لهذا الغرض. في المثال: <code>&quot;notsosecretuser&quot;</code> بكلمة مرور <code>&quot;notsosecretpass&quot;</code></li>
+<li>اربط هذا المستخدم بـ user profile يسمح بعدد محدد/غير محدود من المستخدمين النشطين المتزامنين.</li>
+<li>انسخ مجلد hotspot الأصلي المُولَّد مسبقًا في قائمة ملفات الموجّه على المستوى الجذري.</li>
+<li>عدّل محتويات نسخة هذا المجلد.</li>
+</ul>
+<ul>
+<li>ملف واحد فقط يحتاج تعديلًا ليعمل هذا: <code>&quot;login.html&quot;</code>.</li>
+</ul>
+<p>الأصلي:</p>
+<pre dir="ltr"><code>&lt;table width=&quot;100&quot; style=&quot;background-color: #ffffff&quot;&gt;
+  &lt;tr&gt;&lt;td align=&quot;right&quot;&gt;login&lt;/td&gt;
+      &lt;td&gt;&lt;input style=&quot;width: 80px&quot; name=&quot;username&quot; type=&quot;text&quot; value=&quot;$(username)&quot;/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;&lt;td align=&quot;right&quot;&gt;password&lt;/td&gt;
+      &lt;td&gt;&lt;input style=&quot;width: 80px&quot; name=&quot;password&quot; type=&quot;password&quot;/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt; &lt;/td&gt;
+      &lt;td&gt;&lt;input type=&quot;submit&quot; value=&quot;OK&quot; /&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</code></pre>
+<p>بعد التعديل:</p>
+<pre dir="ltr"><code>&lt;table width=&quot;100&quot; style=&quot;background-color: #ffffff&quot;&gt;
+  &lt;tr style=&quot;display:none;&quot;&gt;&lt;td align=&quot;right&quot;&gt;login&lt;/td&gt;
+    &lt;td&gt;&lt;input style=&quot;width: 80px&quot; name=&quot;username&quot; type=&quot;text&quot; value=&quot;notsosecretuser&quot;/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr style=&quot;display:none;&quot;&gt;&lt;td align=&quot;right&quot;&gt;password&lt;/td&gt;
+    &lt;td&gt;&lt;input style=&quot;width: 80px&quot; name=&quot;password&quot; type=&quot;password&quot; value=&quot;notsosecretpass&quot;/&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt; &lt;/td&gt;
+    &lt;td&gt;&lt;input type=&quot;submit&quot; value=&quot;Proceed to Internet!&quot; /&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</code></pre>
+<p>ما الذي تغيّر:</p>
+<ul>
+<li>حقول User و Password أصبحت مخفية.</li>
+<li>قيمتا حقلي User و Password تحتويان قيمًا جاهزة مسبقًا.</li>
+<li>تغيّرت قيمة (اسم) زر <code>&quot;OK&quot;</code> إلى نص أنسب.</li>
+</ul>
+<ul>
+<li>ارفع مجلد hotspot الجديد هذا إلى الموجّه، يُفضَّل باسم مختلف.</li>
+<li>غيّر الإعدادات في hotspot server profile لاستخدام مجلد html الجديد.</li>
+</ul>
+<pre dir="ltr"><code>/ip hotspot profile set (profile number or name) html-directory-override=(dir path/name)
+</code></pre>
+<h3>ملخص (Summary)</h3>
+<p>إلى جانب العناصر الديناميكية الواضحة في القائمة الفرعية <code>/ip hotspot</code> نفسها (مثل hosts والمستخدمين النشطين)، تُضاف بعض القواعد الإضافية في جداول firewall عند تفعيل خدمة HotSpot.</p>
+<h3>NAT</h3>
+<p>من أمر <code>/ip firewall nat print dynamic</code> قد ترى شيئًا مثل التالي (التعليقات بعد كل قاعدة):</p>
+<pre dir="ltr"><code> 0 D chain=dstnat action=jump jump-target=hotspot hotspot=from-client
+</code></pre>
+<p>وضع كل مهام HotSpot المتعلقة بالحزم القادمة من جميع HotSpot clients في chain منفصلة.</p>
+<pre dir="ltr"><code> 1 I chain=hotspot action=jump jump-target=pre-hotspot
+</code></pre>
+<p>أي إجراءات يجب تنفيذها قبل تطبيق قواعد HotSpot تُوضَع في chain <code>pre-hotspot</code>. هذه الـ chain تحت سيطرة المسؤول بالكامل ولا تحتوي قواعد يضعها النظام؛ لذا تظهر قاعدة jump غير صالحة (لأن الـ chain فارغة افتراضيًا).</p>
+<pre dir="ltr"><code> 2 D chain=hotspot action=redirect to-ports=64872 dst-port=53 protocol=udp 
+ 3 D chain=hotspot action=redirect to-ports=64872 dst-port=53 protocol=tcp 
+</code></pre>
+<p>إعادة توجيه كل طلبات DNS إلى خدمة HotSpot. المنفذ 64872 يوفّر خدمة DNS لجميع مستخدمي HotSpot. إذا أردت أن يستمع HotSpot server إلى منفذ آخر، أضف قواعد هنا بنفس الأسلوب مع تغيير الخاصية <code>dst-port</code>.</p>
+<pre dir="ltr"><code> 4 D chain=hotspot action=redirect to-ports=64873 hotspot=local-dst dst-port=80
+     protocol=tcp
+</code></pre>
+<p>إعادة توجيه كل طلبات HTTP login إلى HTTP login servlet. المنفذ 64873 هو منفذ HotSpot HTTP servlet.</p>
+<pre dir="ltr"><code> 5 D chain=hotspot action=redirect to-ports=64875 hotspot=local-dst dst-port=443
+     protocol=tcp
+</code></pre>
+<p>إعادة توجيه كل طلبات HTTPS login إلى HTTPS login servlet. المنفذ 64875 هو منفذ HotSpot HTTPS servlet.</p>
+<pre dir="ltr"><code> 6 D chain=hotspot action=jump jump-target=hs-unauth hotspot=!auth protocol=tcp
+</code></pre>
+<p>كل الحزم الأخرى باستثناء طلبات DNS و login من clients غير مصرّح لهم يجب أن تمر عبر chain <code>hs-unauth</code>.</p>
+<pre dir="ltr"><code> 7 D chain=hotspot action=jump jump-target=hs-auth hotspot=auth protocol=tcp
+</code></pre>
+<p>وحزم clients المصرّح لهم — عبر chain <code>hs-auth</code>.</p>
+<pre dir="ltr"><code> 8 D ;;; www.mikrotik.com
+     chain=hs-unauth action=return dst-address=66.228.113.26 dst-port=80 protocol=tcp
+</code></pre>
+<p>أول ما يُوضَع في chain <code>hs-unauth</code> هو كل ما يؤثر على بروتوكول TCP في القائمة الفرعية <code>/ip hotspot walled-garden ip</code> (أي كل ما لم يُضبط فيه protocol أو ضُبط على TCP). هنا نستثني <code>www.mikrotik.com</code> من إعادة التوجيه إلى login page.</p>
+<pre dir="ltr"><code> 9 D chain=hs-unauth action=redirect to-ports=64874 dst-port=80 protocol=tcp
+</code></pre>
+<p>كل طلبات HTTP الأخرى تُعاد توجيهها إلى خادم Walled Garden proxy الذي يستمع على المنفذ 64874. إذا وُجد إدخال <code>&quot;allow&quot;</code> في قائمة <code>/ip hotspot walled-garden</code> لطلب HTTP، يُمرَّر إلى الوجهة. وإلا يُعاد توجيه الطلب تلقائيًا إلى HotSpot login servlet (المنفذ 64873).</p>
+<pre dir="ltr"><code>10 D chain=hs-unauth action=redirect to-ports=64874 dst-port=3128 protocol=tcp 
+11 D chain=hs-unauth action=redirect to-ports=64874 dst-port=8080 protocol=tcp 
+</code></pre>
+<p>يفترض HotSpot افتراضيًا أن هذه المنافذ فقط قد تُستخدم لطلبات HTTP proxy. هذان الإدخالان يستخدمان &quot;التقاط&quot; طلبات الـ client إلى proxies غير معروفة (يمكنك إضافة قواعد أخرى هنا لمنافذ إضافية). أي لتمكين العملاء ذوي إعدادات proxy غير معروفة من العمل مع نظام HotSpot. تُسمّى هذه الميزة <code>&quot;Universal Proxy&quot;</code>. إذا اكتُشف أن الـ client يستخدم proxy server معيّنًا، سيضع النظام تلقائيًا علامة HTTP hotspot mark على تلك الحزم لتجاوز مشكلة الـ proxy غير المعروف، كما سنرى لاحقًا. لاحظ أن المنفذ المستخدم (64874) هو نفسه المستخدم لطلبات HTTP في القاعدة #9 (لذا تُعالَج طلبات HTTP و HTTP proxy بنفس الكود).</p>
+<pre dir="ltr"><code>12 D chain=hs-unauth action=redirect to-ports=64875 dst-port=443 protocol=tcp
+</code></pre>
+<p>HTTPS proxy يستمع على المنفذ 64875.</p>
+<pre dir="ltr"><code>13 I chain=hs-unauth action=jump jump-target=hs-smtp dst-port=25 protocol=tcp
+</code></pre>
+<p>يمكن أيضًا تعريف إعادة توجيه لبروتوكول SMTP في إعدادات HotSpot. إن وُجدت، تُوضَع قاعدة redirect في chain <code>hs-smtp</code>. الهدف تمكين المستخدمين ذوي إعدادات SMTP غير معروفة من إرسال بريدهم عبر SMTP server لمزوّد الخدمة (خاصتك) بدلًا من الذهاب إلى SMTP server الذي ضبطوه على أجهزتهم [والذي قد يكون غير متاح خارج شبكة أصلهم]. الـ chain فارغة افتراضيًا؛ لذا تظهر قاعدة jump غير صالحة.</p>
+<pre dir="ltr"><code>14 D chain=hs-auth action=redirect to-ports=64874 hotspot=http protocol=tcp
+</code></pre>
+<p>توفير خدمة HTTP proxy للمستخدمين المصرّح لهم. قد تحتاج طلبات المستخدمين المصادَق عليهم إلى transparent proxying (تقنية <code>&quot;Universal Proxy&quot;</code> وميزة advertisement). تُوضَع علامة HTTP هذه تلقائيًا على طلبات HTTP proxy إلى الخوادم التي يكتشفها HotSpot HTTP proxy (المستمع على المنفذ 64874) كطلبات HTTP proxy لخوادم proxy غير معروفة. الهدف أن يستخدم المستخدمون الذين لديهم إعدادات proxy معيّنة بوابة HotSpot بدلًا من خادم الـ proxy المضبوط على أجهزتهم [والذي قد يكون غير متاح خارج شبكة أصلهم]. تُطبَّق هذه العلامة أيضًا عندما يحين عرض advertisement للمستخدم، وكذلك على أي طلبات HTTP من مستخدمين ملفهم الشخصي مضبوط لعمل transparent proxy لطلباتهم.</p>
+<pre dir="ltr"><code>15 I chain=hs-auth action=jump jump-target=hs-smtp dst-port=25 protocol=tcp
+</code></pre>
+<p>توفير SMTP proxy للمستخدمين المصرّح لهم (نفس فكرة القاعدة #13).</p>
+<h3>تصفية الحزم (Packet Filtering)</h3>
+<p>من أمر <code>/ip firewall filter print dynamic</code> قد ترى شيئًا مثل التالي (التعليقات بعد كل قاعدة):</p>
+<pre dir="ltr"><code> 0 D chain=forward action=jump jump-target=hs-unauth hotspot=from-client,!auth
+</code></pre>
+<p>أي حزمة تعبر الموجّه من client غير مصرّح له تُرسَل إلى chain <code>hs-unauth</code>. وتنفّذ <code>hs-unauth</code> مرشّح Walled Garden القائم على IP.</p>
+<pre dir="ltr"><code> 1 D chain=forward action=jump jump-target=hs-unauth-to hotspot=to-client,!auth
+</code></pre>
+<p>كل ما يصل إلى العملاء عبر الموجّه يُعاد توجيهه إلى chain أخرى اسمها <code>hs-unauth-to</code>. يجب أن ترفض هذه الـ chain الطلبات غير المصرّح بها نحو العملاء.</p>
+<pre dir="ltr"><code> 2 D chain=input action=jump jump-target=hs-input hotspot=from-client
+</code></pre>
+<p>كل ما يأتي من العملاء إلى الموجّه نفسه يصل إلى chain أخرى اسمها <code>hs-input</code>.</p>
+<pre dir="ltr"><code> 3 I chain=hs-input action=jump jump-target=pre-hs-input
+</code></pre>
+<p>قبل المتابعة مع القواعد الديناميكية [المعرّفة مسبقًا]، تصل الحزمة إلى chain خاضعة لإدارة المسؤول اسمها <code>pre-hs-input</code>، وهي فارغة افتراضيًا؛ لذا تكون قاعدة jump في حالة غير صالحة.</p>
+<pre dir="ltr"><code> 4 D chain=hs-input action=accept dst-port=64872 protocol=udp 
+ 5 D chain=hs-input action=accept dst-port=64872-64875 protocol=tcp 
+</code></pre>
+<p>السماح للـ client بالوصول إلى خدمات authentication و proxy المحلية (كما وُصف سابقًا).</p>
+<pre dir="ltr"><code> 6 D chain=hs-input action=jump jump-target=hs-unauth hotspot=!auth
+</code></pre>
+<p>كل حركة المرور الأخرى من clients غير مصرّح لهم إلى الموجّه نفسه تُعامَل بنفس طريقة الحركة العابرة للموجّهات.</p>
+<pre dir="ltr"><code> 7 D chain=hs-unauth action=return protocol=icmp
+ 8 D ;;; www.mikrotik.com
+     chain=hs-unauth action=return dst-address=66.228.113.26 dst-port=80 protocol=tcp
+</code></pre>
+<p>بخلاف جدول NAT حيث أُضيفت فقط إدخالات Walled Garden المتعلقة ببروتوكول TCP، في مرشّح الحزم تُضاف إلى chain <code>hs-unauth</code> كل ما ضبطته في قائمة <code>/ip hotspot walled-garden ip</code>. لذلك رغم أنك رأيت إدخالًا واحدًا فقط في جدول NAT، توجد هنا قاعدتان.</p>
+<pre dir="ltr"><code> 9 D chain=hs-unauth action=reject reject-with=tcp-reset protocol=tcp
+10 D chain=hs-unauth action=reject reject-with=icmp-net-prohibited
+</code></pre>
+<p>كل ما لم يُدرَج في القائمة البيضاء عبر Walled Garden سيُرفَض. لاحظ استخدام TCP Reset لرفض اتصالات TCP.</p>
+<pre dir="ltr"><code>11 D chain=hs-unauth-to action=return protocol=icmp
+12 D ;;; www.mikrotik.com
+     chain=hs-unauth-to action=return src-address=66.228.113.26 src-port=80 protocol=tcp
+</code></pre>
+<p>نفس الإجراء كما في القاعدتين #7 و #8 يُنفَّذ أيضًا للحزم المتجهة إلى العملاء (chain <code>hs-unauth-to</code>).</p>
+<pre dir="ltr"><code>13 D chain=hs-unauth-to action=reject reject-with=icmp-host-prohibited
+</code></pre>
+<p>رفض كل الحزم المتجهة إلى العملاء برسالة ICMP reject.</p>
+    </article>
+  </div>
+</body>
+</html>

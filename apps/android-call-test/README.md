@@ -12,7 +12,7 @@
 ## البناء (جاهز للتحميل من الخادم)
 
 ```bash
-# من جذر المستودع — ينسخ APK إلى var/comms/android/match-call-test.apk
+# من جذر المستودع — ينسخ APK إلى downloads/match-call-test.apk
 bash infra/scripts/build-android-call-test.sh
 ```
 

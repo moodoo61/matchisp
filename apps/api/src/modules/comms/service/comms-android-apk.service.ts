@@ -9,17 +9,24 @@ import {
 @Injectable()
 export class CommsAndroidApkService {
   resolveApkPath(): string {
-    return join(process.cwd(), COMMS_ANDROID_APK_RELATIVE);
+    const candidates = [
+      process.env.COMMS_ANDROID_APK_PATH?.trim(),
+      join(process.cwd(), COMMS_ANDROID_APK_RELATIVE),
+      // عند تشغيل Nest من apps/api
+      join(process.cwd(), '..', '..', COMMS_ANDROID_APK_RELATIVE),
+      join(process.cwd(), '..', COMMS_ANDROID_APK_RELATIVE),
+    ].filter((p): p is string => Boolean(p));
+
+    for (const path of candidates) {
+      if (existsSync(path) && isNonEmptyFile(path)) return path;
+    }
+    // المسار الافتراضي المتوقع حتى لو الملف غير موجود بعد
+    return join(process.cwd(), '..', '..', COMMS_ANDROID_APK_RELATIVE);
   }
 
   isAvailable(): boolean {
     const path = this.resolveApkPath();
-    if (!existsSync(path)) return false;
-    try {
-      return statSync(path).isFile() && statSync(path).size > 0;
-    } catch {
-      return false;
-    }
+    return isNonEmptyFile(path);
   }
 
   publicDownloadPath(): string {
@@ -28,5 +35,15 @@ export class CommsAndroidApkService {
 
   fileName(): string {
     return 'match-call-test.apk';
+  }
+}
+
+function isNonEmptyFile(path: string): boolean {
+  try {
+    if (!existsSync(path)) return false;
+    const st = statSync(path);
+    return st.isFile() && st.size > 0;
+  } catch {
+    return false;
   }
 }

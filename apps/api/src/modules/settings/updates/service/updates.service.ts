@@ -7,7 +7,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { spawn, execFile } from 'child_process';
-import { existsSync } from 'fs';
+import { appendFileSync, existsSync } from 'fs';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname, join } from 'path';
 import { promisify } from 'util';
@@ -96,7 +96,6 @@ const ACTIVE_JOB_PHASES = new Set<UpdateJobPhase>([
 ]);
 
 const GIT_TIMEOUT_MS = 120_000;
-const POST_UPDATE_DELAY_MS = 3000;
 const LOG_TAIL_BYTES = 8_000;
 
 @Injectable()
@@ -215,13 +214,14 @@ export class UpdatesService {
         phase: 'queued',
         ok: true,
         message:
-          'تم التنزيل. جارٍ جدولة تثبيت الاعتماديات وترحيل القواعد وإعادة التشغيل…',
+          'تم التنزيل. جارٍ إطلاق تثبيت الاعتماديات وترحيل القواعد وإعادة التشغيل…',
         startedAt,
         updatedAt: queuedAt,
         finishedAt: null,
         error: null,
       });
-      this.schedulePostUpdate(before.repoRoot, startedAt);
+      // فوراً — لا setTimeout: nest --watch يُعاد بعد git pull ويلغي المؤقتات
+      await this.launchPostUpdate(before.repoRoot, startedAt);
 
       await this.audit.log({
         actorId,
@@ -263,35 +263,73 @@ export class UpdatesService {
     }
   }
 
-  private schedulePostUpdate(repoRoot: string, startedAt: string) {
+  /**
+   * يطلق سكربت ما بعد التحديث كعملية منفصلة فوراً.
+   * مهم: لا تؤجّل بـ setTimeout — بعد git pull يعيد nest --watch تشغيل
+   * العملية ويلغي أي مؤقت معلّق فيتنهي التحديث عند «queued».
+   */
+  private async launchPostUpdate(repoRoot: string, startedAt: string) {
     const script = join(repoRoot, 'scripts', 'apply-system-update.sh');
     if (!existsSync(script)) {
       this.logger.warn(`سكربت ما بعد التحديث غير موجود: ${script}`);
-      void this.failJob(repoRoot, startedAt, `سكربت ما بعد التحديث غير موجود: ${script}`);
+      await this.failJob(
+        repoRoot,
+        startedAt,
+        `سكربت ما بعد التحديث غير موجود: ${script}`,
+      );
       return;
     }
 
-    setTimeout(() => {
-      this.logger.warn(`تشغيل ما بعد التحديث: ${script}`);
-      try {
-        const child = spawn('bash', [script], {
+    const logPath = this.logFilePath(repoRoot);
+    await mkdir(dirname(logPath), { recursive: true });
+    const stamp = new Date().toISOString();
+    try {
+      appendFileSync(
+        logPath,
+        `\n==== ${stamp} إطلاق apply-system-update.sh من Nest ====\n`,
+        'utf8',
+      );
+    } catch {
+      /* غير حرج */
+    }
+
+    this.logger.warn(`إطلاق ما بعد التحديث فوراً: ${script}`);
+    try {
+      // nohup + detached حتى لا تُقتل العملية عند إعادة تشغيل nest --watch
+      const child = spawn(
+        'bash',
+        ['-c', `nohup bash "${script}" </dev/null >>"${logPath}" 2>&1 &`],
+        {
           cwd: repoRoot,
           detached: true,
           stdio: 'ignore',
           env: process.env,
-        });
-        child.on('error', (err) => {
-          this.logger.error(`فشل تشغيل سكربت التحديث: ${err.message}`);
-          void this.failJob(repoRoot, startedAt, `فشل تشغيل سكربت التحديث: ${err.message}`);
-        });
-        child.unref();
-      } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : String(err);
-        this.logger.error(`فشل إطلاق سكربت التحديث: ${msg}`);
-        void this.failJob(repoRoot, startedAt, `فشل إطلاق سكربت التحديث: ${msg}`);
-      }
-    }, POST_UPDATE_DELAY_MS);
+        },
+      );
+      child.on('error', (err) => {
+        this.logger.error(`فشل تشغيل سكربت التحديث: ${err.message}`);
+        void this.failJob(
+          repoRoot,
+          startedAt,
+          `فشل تشغيل سكربت التحديث: ${err.message}`,
+        );
+      });
+      child.unref();
+
+      await this.writeJobStatus(repoRoot, {
+        phase: 'install',
+        ok: true,
+        message: 'تم إطلاق سكربت التحديث — جارٍ تثبيت الاعتماديات…',
+        startedAt,
+        updatedAt: new Date().toISOString(),
+        finishedAt: null,
+        error: null,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`فشل إطلاق سكربت التحديث: ${msg}`);
+      await this.failJob(repoRoot, startedAt, `فشل إطلاق سكربت التحديث: ${msg}`);
+    }
   }
 
   private statusFilePath(repoRoot: string) {
