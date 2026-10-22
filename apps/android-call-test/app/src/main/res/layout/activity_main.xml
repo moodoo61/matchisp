@@ -5,6 +5,79 @@
     android:layout_height="match_parent"
     android:background="#0F172A">
 
+    <!-- 0) الصلاحيات -->
+    <ScrollView
+        android:id="@+id/screenPermissions"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="36dp"
+                android:text="الصلاحيات"
+                android:textColor="#F8FAFC"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="يلزم منح الصلاحيات التالية للمكالمات والسماعة والميكروفون"
+                android:textColor="#94A3B8"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:id="@+id/permissionsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/btnRequestPermissions"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:text="منح الصلاحيات"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btnBatteryPermission"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="السماح بالعمل في الخلفية" />
+
+            <Button
+                android:id="@+id/btnPermissionsContinue"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:text="متابعة"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/permissionsStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:textColor="#94A3B8"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </ScrollView>
+
     <!-- 1) عنوان الخادم -->
     <ScrollView
         android:id="@+id/screenServer"

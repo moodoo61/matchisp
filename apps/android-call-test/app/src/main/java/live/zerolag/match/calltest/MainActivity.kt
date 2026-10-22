@@ -1,18 +1,17 @@
 package live.zerolag.match.calltest
 
-import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import live.zerolag.match.calltest.audio.CallSounds
 import live.zerolag.match.calltest.databinding.ActivityMainBinding
@@ -31,8 +30,9 @@ class MainActivity : AppCompatActivity() {
     private var selectedServer: DiscoveredServer? = null
     private var muted = false
     private var dialBuffer = StringBuilder()
-    private var pendingAfterMic: (() -> Unit)? = null
+    private var pendingAfterPerms: (() -> Unit)? = null
     private var sessionListener: CallSession.Listener? = null
+    private var afterPermissionsScreen: Screen = Screen.Server
     private val ringbackHandler = Handler(Looper.getMainLooper())
     private var ringbackRunning = false
     private val ringbackTick = object : Runnable {
@@ -54,13 +54,31 @@ class MainActivity : AppCompatActivity() {
         binding.inputExtension.setText(prefs.extension)
         binding.inputPassword.setText(prefs.password)
 
+        setupPermissionsScreen()
         setupServerScreen()
         setupLoginScreen()
         setupDialerScreen()
         attachSessionListener()
         handleIncomingIntent(intent)
 
-        when {
+        afterPermissionsScreen = resolveStartScreen()
+        if (!AppPermissions.allCriticalGranted(this)) {
+            showScreen(Screen.Permissions)
+            refreshPermissionsUi()
+        } else {
+            showScreen(afterPermissionsScreen)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (binding.screenPermissions.visibility == View.VISIBLE) {
+            refreshPermissionsUi()
+        }
+    }
+
+    private fun resolveStartScreen(): Screen {
+        return when {
             CallSession.softphone != null && CallSession.lastReg == RegState.Registered -> {
                 selectedServer = ServerConfig.fromHost(
                     CallSession.host.ifBlank { prefs.lastHost },
@@ -70,9 +88,9 @@ class MainActivity : AppCompatActivity() {
                     sipDomain = CallSession.sipDomain.ifBlank { prefs.lastSipDomain },
                 )
                 binding.dialerExtension.text = CallSession.extension
-                showScreen(Screen.Dialer)
                 updateCallUi(CallSession.lastCall, CallSession.lastCallDetail)
                 CallSession.incomingFrom?.let { showIncoming(it) }
+                Screen.Dialer
             }
             prefs.lastWsUrl.isNotBlank() && prefs.extension.isNotBlank() && prefs.password.isNotBlank() -> {
                 selectedServer = ServerConfig.fromHost(
@@ -83,18 +101,16 @@ class MainActivity : AppCompatActivity() {
                     sipDomain = prefs.lastSipDomain.ifBlank { prefs.lastHost },
                 )
                 if (selectedServer != null) {
-                    showScreen(Screen.Login)
                     binding.loginServerLabel.text = selectedServer!!.host
-                } else {
-                    showScreen(Screen.Server)
-                }
+                    Screen.Login
+                } else Screen.Server
             }
             prefs.lastHost.isNotBlank() || prefs.lastWsUrl.isNotBlank() -> {
                 selectedServer = ServerConfig.fromHost(prefs.lastHost.ifBlank { prefs.lastSipDomain })
-                showScreen(if (selectedServer != null) Screen.Login else Screen.Server)
                 binding.loginServerLabel.text = selectedServer?.host.orEmpty()
+                if (selectedServer != null) Screen.Login else Screen.Server
             }
-            else -> showScreen(Screen.Server)
+            else -> Screen.Server
         }
     }
 
@@ -111,6 +127,52 @@ class MainActivity : AppCompatActivity() {
         showIncoming(from)
     }
 
+    private fun setupPermissionsScreen() {
+        binding.btnRequestPermissions.setOnClickListener {
+            AppPermissions.requestRuntime(this, REQ_ALL_PERMS)
+        }
+        binding.btnBatteryPermission.setOnClickListener {
+            AppPermissions.openBatterySettings(this)
+        }
+        binding.btnPermissionsContinue.setOnClickListener {
+            if (!AppPermissions.allCriticalGranted(this)) {
+                binding.permissionsStatus.text = "الميكروفون والإشعارات مطلوبان للمتابعة"
+                toast("امنح الصلاحيات المطلوبة أولاً")
+                return@setOnClickListener
+            }
+            showScreen(afterPermissionsScreen)
+        }
+    }
+
+    private fun refreshPermissionsUi() {
+        val list = binding.permissionsList
+        list.removeAllViews()
+        for (item in AppPermissions.status(this)) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 12, 0, 12)
+            }
+            val title = TextView(this).apply {
+                text = if (item.granted) "✓ ${item.title}" else "○ ${item.title}"
+                setTextColor(if (item.granted) Color.parseColor("#22C55E") else Color.parseColor("#F8FAFC"))
+                textSize = 16f
+            }
+            val detail = TextView(this).apply {
+                text = item.detail
+                setTextColor(Color.parseColor("#94A3B8"))
+                textSize = 13f
+            }
+            row.addView(title)
+            row.addView(detail)
+            list.addView(row)
+        }
+        val ok = AppPermissions.allCriticalGranted(this)
+        binding.btnPermissionsContinue.isEnabled = ok
+        binding.permissionsStatus.text =
+            if (ok) "جاهز — يمكنك المتابعة"
+            else "اضغط «منح الصلاحيات» ثم فعّل العمل في الخلفية إن طُلب"
+    }
+
     private fun attachSessionListener() {
         val listener = CallSession.Listener(
             onReg = { state, detail ->
@@ -120,9 +182,7 @@ class MainActivity : AppCompatActivity() {
                         RegState.Registered -> {
                             binding.btnLogin.isEnabled = true
                             binding.dialerExtension.text = CallSession.extension
-                            binding.dialerRegDot.setTextColor(
-                                ContextCompat.getColor(this, android.R.color.holo_green_light),
-                            )
+                            binding.dialerRegDot.setTextColor(Color.parseColor("#22C55E"))
                             showScreen(Screen.Dialer)
                             if (CallSession.lastCall == CallState.Idle) {
                                 updateCallUi(CallState.Idle, null)
@@ -131,18 +191,14 @@ class MainActivity : AppCompatActivity() {
                         RegState.Failed -> {
                             binding.btnLogin.isEnabled = true
                             binding.loginStatus.text = "فشل الدخول: ${detail ?: ""}"
-                            binding.dialerRegDot.setTextColor(
-                                ContextCompat.getColor(this, android.R.color.holo_red_light),
-                            )
+                            binding.dialerRegDot.setTextColor(Color.parseColor("#EF4444"))
                         }
                         RegState.Idle -> {
                             binding.btnLogin.isEnabled = true
                             if (binding.screenDialer.visibility != View.VISIBLE) {
                                 binding.loginStatus.text = "غير متصل"
                             }
-                            binding.dialerRegDot.setTextColor(
-                                ContextCompat.getColor(this, android.R.color.darker_gray),
-                            )
+                            binding.dialerRegDot.setTextColor(Color.parseColor("#64748B"))
                         }
                     }
                 }
@@ -215,7 +271,7 @@ class MainActivity : AppCompatActivity() {
                 toast("أدخل رقماً للاتصال")
                 return@setOnClickListener
             }
-            ensureMic { CallSession.softphone?.dial(dest) }
+            ensureAllPerms { CallSession.softphone?.dial(dest) }
         }
         binding.btnHangup.setOnClickListener {
             stopCallSounds()
@@ -223,7 +279,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnAnswer.setOnClickListener {
             stopCallSounds()
-            ensureMic { CallSession.softphone?.answer() }
+            ensureAllPerms { CallSession.softphone?.answer() }
         }
         binding.btnReject.setOnClickListener {
             stopCallSounds()
@@ -308,18 +364,16 @@ class MainActivity : AppCompatActivity() {
         binding.loginStatus.text = "جارٍ الاتصال…"
         binding.btnLogin.isEnabled = false
 
-        ensureMic {
-            ensureNotify {
-                CallSession.connect(
-                    context = this,
-                    host = server.host,
-                    wsUrl = server.wsUrl,
-                    sipDomain = server.sipDomain,
-                    extension = ext,
-                    password = pass,
-                )
-                CallForegroundService.start(this)
-            }
+        ensureAllPerms {
+            CallSession.connect(
+                context = this,
+                host = server.host,
+                wsUrl = server.wsUrl,
+                sipDomain = server.sipDomain,
+                extension = ext,
+                password = pass,
+            )
+            CallForegroundService.start(this)
         }
     }
 
@@ -405,9 +459,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showScreen(screen: Screen) {
+        binding.screenPermissions.visibility =
+            if (screen == Screen.Permissions) View.VISIBLE else View.GONE
         binding.screenServer.visibility = if (screen == Screen.Server) View.VISIBLE else View.GONE
         binding.screenLogin.visibility = if (screen == Screen.Login) View.VISIBLE else View.GONE
         binding.screenDialer.visibility = if (screen == Screen.Dialer) View.VISIBLE else View.GONE
+        if (screen == Screen.Permissions) refreshPermissionsUi()
         if (screen == Screen.Login) {
             binding.loginServerLabel.text = selectedServer?.host.orEmpty()
             binding.btnLogin.isEnabled = true
@@ -419,34 +476,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun ensureMic(then: () -> Unit) {
-        val ok = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
-            PackageManager.PERMISSION_GRANTED
-        if (ok) {
+    private fun ensureAllPerms(then: () -> Unit) {
+        if (AppPermissions.allCriticalGranted(this)) {
             then()
             return
         }
-        pendingAfterMic = then
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQ_MIC)
-    }
-
-    private fun ensureNotify(then: () -> Unit) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            then()
-            return
+        pendingAfterPerms = then
+        afterPermissionsScreen = when {
+            binding.screenDialer.visibility == View.VISIBLE -> Screen.Dialer
+            binding.screenLogin.visibility == View.VISIBLE -> Screen.Login
+            else -> Screen.Server
         }
-        val ok = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        if (ok) {
-            then()
-            return
-        }
-        pendingAfterMic = then
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-            REQ_NOTIFY,
-        )
+        showScreen(Screen.Permissions)
+        AppPermissions.requestRuntime(this, REQ_ALL_PERMS)
+        toast("يلزم منح الصلاحيات أولاً")
     }
 
     override fun onRequestPermissionsResult(
@@ -455,24 +498,24 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            REQ_MIC -> {
-                if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-                    val next = pendingAfterMic
-                    pendingAfterMic = null
-                    next?.invoke()
-                } else {
-                    pendingAfterMic = null
-                    toast("إذن الميكروفون مطلوب")
-                    binding.btnLogin.isEnabled = true
-                    binding.loginStatus.text = "يلزم إذن الميكروفون"
-                }
-            }
-            REQ_NOTIFY -> {
-                // نتابع حتى لو رُفض — الخدمة قد تعمل بدون إشعار كامل على بعض الأجهزة
-                val next = pendingAfterMic
-                pendingAfterMic = null
+        if (requestCode != REQ_ALL_PERMS) return
+        refreshPermissionsUi()
+        if (AppPermissions.allCriticalGranted(this)) {
+            val next = pendingAfterPerms
+            pendingAfterPerms = null
+            if (binding.screenPermissions.visibility == View.VISIBLE && next == null) {
+                // يبقى المستخدم ليضغط متابعة
+            } else {
                 next?.invoke()
+            }
+        } else {
+            pendingAfterPerms = null
+            binding.btnLogin.isEnabled = true
+            binding.loginStatus.text = "صلاحيات ناقصة — راجع شاشة الصلاحيات"
+            val denied = grantResults.none { it == PackageManager.PERMISSION_GRANTED }
+            if (denied) {
+                toast("بعض الصلاحيات رُفضت — يمكن فتح إعدادات التطبيق")
+                AppPermissions.openAppSettings(this)
             }
         }
     }
@@ -485,18 +528,16 @@ class MainActivity : AppCompatActivity() {
         sessionListener?.let { CallSession.removeListener(it) }
         sessionListener = null
         stopCallSounds()
-        // لا نُلغي Softphone هنا — الخدمة تبقيه حياً في الخلفية
         if (isFinishing) {
             sounds.release()
         }
         super.onDestroy()
     }
 
-    private enum class Screen { Server, Login, Dialer }
+    private enum class Screen { Permissions, Server, Login, Dialer }
 
     companion object {
-        private const val REQ_MIC = 1001
-        private const val REQ_NOTIFY = 1002
+        private const val REQ_ALL_PERMS = 1100
     }
 }
 
