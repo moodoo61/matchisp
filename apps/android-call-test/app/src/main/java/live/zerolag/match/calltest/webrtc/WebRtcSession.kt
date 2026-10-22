@@ -1,6 +1,7 @@
 package live.zerolag.match.calltest.webrtc
 
 import android.content.Context
+import android.util.Log
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
 import org.webrtc.DataChannel
@@ -20,38 +21,27 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 class WebRtcSession(context: Context) {
-    private val eglBase = EglBase.create()
-    private val factory: PeerConnectionFactory
+    private val appContext = context.applicationContext
     private var peer: PeerConnection? = null
     private var audioSource: AudioSource? = null
     private var audioTrack: AudioTrack? = null
     private var muted = false
-
-    init {
-        PeerConnectionFactory.initialize(
-            PeerConnectionFactory.InitializationOptions.builder(context.applicationContext)
-                .setEnableInternalTracer(false)
-                .createInitializationOptions(),
-        )
-        factory = PeerConnectionFactory.builder()
-            .setVideoEncoderFactory(
-                DefaultVideoEncoderFactory(eglBase.eglBaseContext, true, true),
-            )
-            .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglBase.eglBaseContext))
-            .createPeerConnectionFactory()
-    }
 
     fun createPeer(
         onIce: (IceCandidate) -> Unit = {},
         onConnectionChange: (PeerConnection.PeerConnectionState) -> Unit = {},
     ): PeerConnection {
         closePeer()
+        ensureFactory(appContext)
         val iceServers = listOf(
             PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
         )
         val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
             continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+            bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
+            rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
+            tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED
         }
         val observer = object : PeerConnection.Observer {
             override fun onSignalingChange(state: PeerConnection.SignalingState?) {}
@@ -71,12 +61,12 @@ class WebRtcSession(context: Context) {
                 if (newState != null) onConnectionChange(newState)
             }
         }
-        val pc = factory.createPeerConnection(rtcConfig, observer)
+        val pc = factory!!.createPeerConnection(rtcConfig, observer)
             ?: error("تعذر إنشاء PeerConnection")
         peer = pc
 
-        audioSource = factory.createAudioSource(MediaConstraints())
-        audioTrack = factory.createAudioTrack("AUDIO", audioSource)
+        audioSource = factory!!.createAudioSource(MediaConstraints())
+        audioTrack = factory!!.createAudioTrack("AUDIO0", audioSource)
         audioTrack?.setEnabled(true)
         pc.addTrack(audioTrack, listOf("stream0"))
         return pc
@@ -117,27 +107,34 @@ class WebRtcSession(context: Context) {
     fun isMuted(): Boolean = muted
 
     fun closePeer() {
-        audioTrack?.dispose()
+        try {
+            audioTrack?.dispose()
+        } catch (_: Exception) {
+        }
         audioTrack = null
-        audioSource?.dispose()
+        try {
+            audioSource?.dispose()
+        } catch (_: Exception) {
+        }
         audioSource = null
-        peer?.close()
-        peer?.dispose()
+        try {
+            peer?.close()
+            peer?.dispose()
+        } catch (_: Exception) {
+        }
         peer = null
     }
 
     fun dispose() {
         closePeer()
-        factory.dispose()
-        eglBase.release()
+        // لا نُغلق المصنع العام — يُعاد استخدامه طوال عمر العملية
     }
 
     private suspend fun waitForIceComplete(pc: PeerConnection): SessionDescription {
-        // انتظر قليلاً لتجميع المرشحين ثم أعد الوصف المحلي النهائي
         var attempts = 0
         while (
             pc.iceGatheringState() != PeerConnection.IceGatheringState.COMPLETE &&
-            attempts < 40
+            attempts < 25
         ) {
             kotlinx.coroutines.delay(100)
             attempts++
@@ -172,4 +169,34 @@ class WebRtcSession(context: Context) {
                 }
             })
         }
+
+    companion object {
+        private const val TAG = "WebRtcSession"
+        @Volatile private var initialized = false
+        @Volatile private var factory: PeerConnectionFactory? = null
+        private var eglBase: EglBase? = null
+
+        @Synchronized
+        fun ensureFactory(context: Context) {
+            if (initialized && factory != null) return
+            try {
+                PeerConnectionFactory.initialize(
+                    PeerConnectionFactory.InitializationOptions.builder(context.applicationContext)
+                        .setEnableInternalTracer(false)
+                        .createInitializationOptions(),
+                )
+                eglBase = EglBase.create()
+                factory = PeerConnectionFactory.builder()
+                    .setVideoEncoderFactory(
+                        DefaultVideoEncoderFactory(eglBase!!.eglBaseContext, true, true),
+                    )
+                    .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglBase!!.eglBaseContext))
+                    .createPeerConnectionFactory()
+                initialized = true
+            } catch (e: Exception) {
+                Log.e(TAG, "فشل تهيئة WebRTC", e)
+                throw e
+            }
+        }
+    }
 }

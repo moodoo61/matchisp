@@ -1,8 +1,12 @@
 package live.zerolag.match.calltest
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -10,30 +14,41 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import live.zerolag.match.calltest.audio.CallSounds
 import live.zerolag.match.calltest.databinding.ActivityMainBinding
 import live.zerolag.match.calltest.discovery.DiscoveredServer
 import live.zerolag.match.calltest.discovery.DiscoveryClient
 import live.zerolag.match.calltest.sip.CallState
 import live.zerolag.match.calltest.sip.RegState
-import live.zerolag.match.calltest.sip.Softphone
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: Prefs
+    private lateinit var sounds: CallSounds
     private val discovery = DiscoveryClient()
     private val servers = mutableListOf<DiscoveredServer>()
     private var selectedServer: DiscoveredServer? = null
-    private var softphone: Softphone? = null
     private var muted = false
     private var dialBuffer = StringBuilder()
     private var pendingAfterMic: (() -> Unit)? = null
+    private var sessionListener: CallSession.Listener? = null
+    private val ringbackHandler = Handler(Looper.getMainLooper())
+    private var ringbackRunning = false
+    private val ringbackTick = object : Runnable {
+        override fun run() {
+            if (!ringbackRunning) return
+            sounds.startRingback()
+            ringbackHandler.postDelayed(this, 4000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = Prefs(this)
+        sounds = CallSounds(this)
 
         binding.inputServerHost.setText(prefs.lastHost.ifBlank { "172.18.1.2" })
         binding.inputExtension.setText(prefs.extension)
@@ -42,8 +57,23 @@ class MainActivity : AppCompatActivity() {
         setupServerScreen()
         setupLoginScreen()
         setupDialerScreen()
+        attachSessionListener()
+        handleIncomingIntent(intent)
 
         when {
+            CallSession.softphone != null && CallSession.lastReg == RegState.Registered -> {
+                selectedServer = ServerConfig.fromHost(
+                    CallSession.host.ifBlank { prefs.lastHost },
+                    prefs.lastServerName.ifBlank { "Match" },
+                )?.copy(
+                    wsUrl = CallSession.wsUrl.ifBlank { prefs.lastWsUrl },
+                    sipDomain = CallSession.sipDomain.ifBlank { prefs.lastSipDomain },
+                )
+                binding.dialerExtension.text = CallSession.extension
+                showScreen(Screen.Dialer)
+                updateCallUi(CallSession.lastCall, CallSession.lastCallDetail)
+                CallSession.incomingFrom?.let { showIncoming(it) }
+            }
             prefs.lastWsUrl.isNotBlank() && prefs.extension.isNotBlank() && prefs.password.isNotBlank() -> {
                 selectedServer = ServerConfig.fromHost(
                     prefs.lastHost.ifBlank { prefs.lastSipDomain },
@@ -54,7 +84,6 @@ class MainActivity : AppCompatActivity() {
                 )
                 if (selectedServer != null) {
                     showScreen(Screen.Login)
-                    // محاولة دخول تلقائي بالبيانات المحفوظة اختيارية — نترك المستخدم يضغط دخول
                     binding.loginServerLabel.text = selectedServer!!.host
                 } else {
                     showScreen(Screen.Server)
@@ -67,6 +96,66 @@ class MainActivity : AppCompatActivity() {
             }
             else -> showScreen(Screen.Server)
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        val from = intent?.getStringExtra(CallForegroundService.EXTRA_INCOMING) ?: return
+        if (from.isBlank()) return
+        showScreen(Screen.Dialer)
+        showIncoming(from)
+    }
+
+    private fun attachSessionListener() {
+        val listener = CallSession.Listener(
+            onReg = { state, detail ->
+                runOnUiThread {
+                    when (state) {
+                        RegState.Connecting -> binding.loginStatus.text = "جارٍ التسجيل…"
+                        RegState.Registered -> {
+                            binding.btnLogin.isEnabled = true
+                            binding.dialerExtension.text = CallSession.extension
+                            binding.dialerRegDot.setTextColor(
+                                ContextCompat.getColor(this, android.R.color.holo_green_light),
+                            )
+                            showScreen(Screen.Dialer)
+                            if (CallSession.lastCall == CallState.Idle) {
+                                updateCallUi(CallState.Idle, null)
+                            }
+                        }
+                        RegState.Failed -> {
+                            binding.btnLogin.isEnabled = true
+                            binding.loginStatus.text = "فشل الدخول: ${detail ?: ""}"
+                            binding.dialerRegDot.setTextColor(
+                                ContextCompat.getColor(this, android.R.color.holo_red_light),
+                            )
+                        }
+                        RegState.Idle -> {
+                            binding.btnLogin.isEnabled = true
+                            if (binding.screenDialer.visibility != View.VISIBLE) {
+                                binding.loginStatus.text = "غير متصل"
+                            }
+                            binding.dialerRegDot.setTextColor(
+                                ContextCompat.getColor(this, android.R.color.darker_gray),
+                            )
+                        }
+                    }
+                }
+            },
+            onCall = { state, detail ->
+                runOnUiThread { updateCallUi(state, detail) }
+            },
+            onIncoming = { from ->
+                runOnUiThread { showIncoming(from) }
+            },
+        )
+        sessionListener = listener
+        CallSession.addListener(listener)
     }
 
     private fun setupServerScreen() {
@@ -90,21 +179,24 @@ class MainActivity : AppCompatActivity() {
     private fun setupLoginScreen() {
         binding.btnLogin.setOnClickListener { login() }
         binding.btnChangeServer.setOnClickListener {
-            softphone?.dispose()
-            softphone = null
+            CallForegroundService.stop(this)
+            CallSession.logout()
             showScreen(Screen.Server)
         }
     }
 
     private fun setupDialerScreen() {
         val keys = listOf(
-            binding.key1 to "1", binding.key2 to "2", binding.key3 to "3",
-            binding.key4 to "4", binding.key5 to "5", binding.key6 to "6",
-            binding.key7 to "7", binding.key8 to "8", binding.key9 to "9",
-            binding.keyStar to "*", binding.key0 to "0", binding.keyHash to "#",
+            binding.key1 to '1', binding.key2 to '2', binding.key3 to '3',
+            binding.key4 to '4', binding.key5 to '5', binding.key6 to '6',
+            binding.key7 to '7', binding.key8 to '8', binding.key9 to '9',
+            binding.keyStar to '*', binding.key0 to '0', binding.keyHash to '#',
         )
         for ((btn, digit) in keys) {
-            btn.setOnClickListener { appendDigit(digit) }
+            btn.setOnClickListener {
+                sounds.playKey(digit)
+                appendDigit(digit.toString())
+            }
         }
         binding.btnBackspace.setOnClickListener {
             if (dialBuffer.isNotEmpty()) {
@@ -123,20 +215,29 @@ class MainActivity : AppCompatActivity() {
                 toast("أدخل رقماً للاتصال")
                 return@setOnClickListener
             }
-            ensureMic { softphone?.dial(dest) }
+            ensureMic { CallSession.softphone?.dial(dest) }
         }
-        binding.btnHangup.setOnClickListener { softphone?.hangup() }
-        binding.btnAnswer.setOnClickListener { ensureMic { softphone?.answer() } }
-        binding.btnReject.setOnClickListener { softphone?.reject() }
+        binding.btnHangup.setOnClickListener {
+            stopCallSounds()
+            CallSession.softphone?.hangup()
+        }
+        binding.btnAnswer.setOnClickListener {
+            stopCallSounds()
+            ensureMic { CallSession.softphone?.answer() }
+        }
+        binding.btnReject.setOnClickListener {
+            stopCallSounds()
+            CallSession.softphone?.reject()
+        }
         binding.btnMute.setOnClickListener {
             muted = !muted
-            softphone?.setMuted(muted)
+            CallSession.softphone?.setMuted(muted)
             binding.btnMute.text = getString(if (muted) R.string.unmute else R.string.mute)
         }
         binding.btnLogout.setOnClickListener {
-            softphone?.unregister()
-            softphone?.dispose()
-            softphone = null
+            stopCallSounds()
+            CallForegroundService.stop(this)
+            CallSession.logout()
             prefs.clearSession()
             dialBuffer.clear()
             refreshDialDisplay()
@@ -207,85 +308,65 @@ class MainActivity : AppCompatActivity() {
         binding.loginStatus.text = "جارٍ الاتصال…"
         binding.btnLogin.isEnabled = false
 
-        softphone?.dispose()
-        softphone = Softphone(
-            context = this,
-            wsUrl = server.wsUrl,
-            sipDomain = server.sipDomain,
-            onLog = {},
-            onReg = { state, detail ->
-                runOnUiThread {
-                    when (state) {
-                        RegState.Connecting -> binding.loginStatus.text = "جارٍ التسجيل…"
-                        RegState.Registered -> {
-                            binding.btnLogin.isEnabled = true
-                            binding.dialerExtension.text = ext
-                            binding.dialerRegDot.setTextColor(
-                                ContextCompat.getColor(this, android.R.color.holo_green_light),
-                            )
-                            showScreen(Screen.Dialer)
-                            updateCallUi(CallState.Idle, null)
-                        }
-                        RegState.Failed -> {
-                            binding.btnLogin.isEnabled = true
-                            binding.loginStatus.text = "فشل الدخول: ${detail ?: ""}"
-                        }
-                        RegState.Idle -> {
-                            binding.btnLogin.isEnabled = true
-                            binding.loginStatus.text = "غير متصل"
-                        }
-                    }
-                }
-            },
-            onCall = { state, detail ->
-                runOnUiThread { updateCallUi(state, detail) }
-            },
-            onIncoming = { from ->
-                runOnUiThread {
-                    dialBuffer.clear()
-                    dialBuffer.append(from)
-                    refreshDialDisplay()
-                    binding.dialerStatus.text = "مكالمة واردة من $from"
-                    binding.rowIdleActions.visibility = View.GONE
-                    binding.rowInCallActions.visibility = View.GONE
-                    binding.rowIncomingActions.visibility = View.VISIBLE
-                }
-            },
-        )
         ensureMic {
-            softphone?.register(ext, pass)
+            ensureNotify {
+                CallSession.connect(
+                    context = this,
+                    host = server.host,
+                    wsUrl = server.wsUrl,
+                    sipDomain = server.sipDomain,
+                    extension = ext,
+                    password = pass,
+                )
+                CallForegroundService.start(this)
+            }
         }
+    }
+
+    private fun showIncoming(from: String) {
+        showScreen(Screen.Dialer)
+        dialBuffer.clear()
+        dialBuffer.append(from)
+        refreshDialDisplay()
+        binding.dialerStatus.text = "مكالمة واردة من $from"
+        binding.rowIdleActions.visibility = View.GONE
+        binding.rowInCallActions.visibility = View.GONE
+        binding.rowIncomingActions.visibility = View.VISIBLE
+        binding.dialPad.visibility = View.GONE
+        sounds.startIncomingRing()
+        stopRingbackLoop()
     }
 
     private fun updateCallUi(state: CallState, detail: String?) {
         when (state) {
             CallState.Idle, CallState.Ended -> {
-                binding.dialerStatus.text = if (state == CallState.Ended) "انتهت المكالمة" else "جاهز للاتصال"
+                stopCallSounds()
+                binding.dialerStatus.text =
+                    if (state == CallState.Ended) "انتهت المكالمة" else "جاهز للاتصال"
                 binding.rowIdleActions.visibility = View.VISIBLE
                 binding.rowInCallActions.visibility = View.GONE
                 binding.rowIncomingActions.visibility = View.GONE
                 binding.dialPad.visibility = View.VISIBLE
-                if (state == CallState.Ended) {
-                    // أبقِ الرقم للطلب مجدداً
-                }
+            }
+            CallState.Incoming -> {
+                showIncoming(detail ?: CallSession.incomingFrom ?: "?")
             }
             CallState.Dialing -> {
                 binding.dialerStatus.text = "جارٍ الطلب…"
                 binding.rowIdleActions.visibility = View.GONE
                 binding.rowInCallActions.visibility = View.VISIBLE
                 binding.rowIncomingActions.visibility = View.GONE
+                startRingbackLoop()
             }
             CallState.Ringing -> {
-                if (binding.rowIncomingActions.visibility == View.VISIBLE) {
-                    binding.dialerStatus.text = "وارد من ${detail ?: ""}"
-                } else {
-                    binding.dialerStatus.text = "يرن… ${detail ?: ""}"
-                    binding.rowIdleActions.visibility = View.GONE
-                    binding.rowInCallActions.visibility = View.VISIBLE
-                    binding.rowIncomingActions.visibility = View.GONE
-                }
+                binding.dialerStatus.text = "يرن… ${detail ?: ""}"
+                binding.rowIdleActions.visibility = View.GONE
+                binding.rowInCallActions.visibility = View.VISIBLE
+                binding.rowIncomingActions.visibility = View.GONE
+                startRingbackLoop()
             }
             CallState.Active -> {
+                stopCallSounds()
                 binding.dialerStatus.text = "مكالمة جارية${detail?.let { " — $it" } ?: ""}"
                 binding.rowIdleActions.visibility = View.GONE
                 binding.rowInCallActions.visibility = View.VISIBLE
@@ -293,6 +374,24 @@ class MainActivity : AppCompatActivity() {
                 binding.dialPad.visibility = View.VISIBLE
             }
         }
+    }
+
+    private fun startRingbackLoop() {
+        if (ringbackRunning) return
+        ringbackRunning = true
+        sounds.startRingback()
+        ringbackHandler.postDelayed(ringbackTick, 4000)
+    }
+
+    private fun stopRingbackLoop() {
+        ringbackRunning = false
+        ringbackHandler.removeCallbacks(ringbackTick)
+        sounds.stopRingback()
+    }
+
+    private fun stopCallSounds() {
+        stopRingbackLoop()
+        sounds.stopIncomingRing()
     }
 
     private fun appendDigit(digit: String) {
@@ -331,22 +430,51 @@ class MainActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQ_MIC)
     }
 
+    private fun ensureNotify(then: () -> Unit) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            then()
+            return
+        }
+        val ok = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (ok) {
+            then()
+            return
+        }
+        pendingAfterMic = then
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            REQ_NOTIFY,
+        )
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQ_MIC &&
-            grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
-        ) {
-            pendingAfterMic?.invoke()
-        } else if (requestCode == REQ_MIC) {
-            toast("إذن الميكروفون مطلوب")
-            binding.btnLogin.isEnabled = true
-            binding.loginStatus.text = "يلزم إذن الميكروفون"
+        when (requestCode) {
+            REQ_MIC -> {
+                if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                    val next = pendingAfterMic
+                    pendingAfterMic = null
+                    next?.invoke()
+                } else {
+                    pendingAfterMic = null
+                    toast("إذن الميكروفون مطلوب")
+                    binding.btnLogin.isEnabled = true
+                    binding.loginStatus.text = "يلزم إذن الميكروفون"
+                }
+            }
+            REQ_NOTIFY -> {
+                // نتابع حتى لو رُفض — الخدمة قد تعمل بدون إشعار كامل على بعض الأجهزة
+                val next = pendingAfterMic
+                pendingAfterMic = null
+                next?.invoke()
+            }
         }
-        pendingAfterMic = null
     }
 
     private fun toast(msg: String) {
@@ -354,8 +482,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        softphone?.dispose()
-        softphone = null
+        sessionListener?.let { CallSession.removeListener(it) }
+        sessionListener = null
+        stopCallSounds()
+        // لا نُلغي Softphone هنا — الخدمة تبقيه حياً في الخلفية
+        if (isFinishing) {
+            sounds.release()
+        }
         super.onDestroy()
     }
 
@@ -363,10 +496,10 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQ_MIC = 1001
+        private const val REQ_NOTIFY = 1002
     }
 }
 
-/** مستمع بسيط لاختيار العنصر بدون الحاجة لكل دوال AdapterView */
 private fun android.widget.Spinner.setOnItemSelectedListenerSoft(onSelect: (Int) -> Unit) {
     onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
         override fun onItemSelected(

@@ -1,6 +1,7 @@
 package live.zerolag.match.calltest.sip
 
 import android.content.Context
+import android.util.Log
 import live.zerolag.match.calltest.webrtc.WebRtcSession
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -22,7 +23,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 enum class RegState { Idle, Connecting, Registered, Failed }
-enum class CallState { Idle, Dialing, Ringing, Active, Ended }
+enum class CallState { Idle, Dialing, Ringing, Incoming, Active, Ended }
 
 class Softphone(
     context: Context,
@@ -35,7 +36,9 @@ class Softphone(
 ) {
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .pingInterval(20, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
     private val webrtc = WebRtcSession(appContext)
     private val cseq = AtomicInteger(1)
     private var socket: WebSocket? = null
@@ -48,12 +51,18 @@ class Softphone(
     private var activeInvite: SipMessage? = null
     private val waiters = ConcurrentHashMap<String, (SipMessage) -> Unit>()
 
+    val currentExtension: String get() = extension
+    val isRegistered: Boolean get() = socket != null && extension.isNotEmpty()
+
     fun register(ext: String, pass: String) {
         extension = ext.trim()
         password = pass
         onReg(RegState.Connecting, null)
-        disconnectSocket()
-        val req = Request.Builder().url(wsUrl).header("Sec-WebSocket-Protocol", "sip").build()
+        disconnectSocket(clearExtension = false)
+        val req = Request.Builder()
+            .url(wsUrl)
+            .header("Sec-WebSocket-Protocol", "sip")
+            .build()
         socket = client.newWebSocket(req, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 onLog("WS مفتوح")
@@ -61,7 +70,11 @@ class Softphone(
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                scope.launch { handleIncoming(text) }
+                // قد تصل أكثر من رسالة SIP في إطار واحد
+                val chunks = splitSipMessages(text)
+                for (chunk in chunks) {
+                    scope.launch { handleIncoming(chunk) }
+                }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -84,8 +97,7 @@ class Softphone(
                 }
             } catch (_: Exception) {
             }
-            disconnectSocket()
-            extension = ""
+            disconnectSocket(clearExtension = true)
             onReg(RegState.Idle, null)
         }
     }
@@ -104,13 +116,15 @@ class Softphone(
                 val sdp = local.description
                 val msg = buildInvite(destination, callId, branch, seq, sdp, auth = null)
                 val resp = sendAndWaitFinal(msg, callId) { code ->
-                    if (code in 100..199) onCall(CallState.Ringing, destination)
+                    if (code in 180..189) onCall(CallState.Ringing, destination)
                 }
                 handleInviteFinal(destination, callId, resp, sdp)
             } catch (e: Exception) {
+                Log.e(TAG, "فشل الاتصال", e)
                 onLog("فشل الاتصال: ${e.message}")
                 onCall(CallState.Ended, e.message)
                 webrtc.closePeer()
+                activeCallId = null
             }
         }
     }
@@ -119,52 +133,51 @@ class Softphone(
         scope.launch {
             val invite = activeInvite ?: return@launch
             try {
-                webrtc.createPeer()
                 val remoteSdp = invite.body
+                if (remoteSdp.isBlank()) error("SDP الوارد فارغ")
+                webrtc.createPeer()
                 webrtc.setRemoteDescription(
                     SessionDescription(SessionDescription.Type.OFFER, remoteSdp),
                 )
                 val answer = webrtc.createAnswer()
-                val callId = invite.header("Call-ID") ?: return@launch
+                val callId = invite.header("Call-ID") ?: error("لا Call-ID")
                 activeCallId = callId
-                val to = invite.header("To") ?: ""
-                val from = invite.header("From") ?: ""
-                val via = invite.header("Via") ?: ""
-                val cseqH = invite.header("CSeq") ?: "1 INVITE"
-                fromTag = newTag()
+                activeToTag = fromTag.ifBlank { newTag() }.also { fromTag = it }
                 val body = answer.description
-                val headers = linkedMapOf(
-                    "Via" to via,
-                    "From" to from,
-                    "To" to "$to;tag=$fromTag",
-                    "Call-ID" to callId,
-                    "CSeq" to cseqH,
-                    "Contact" to contactUri(),
-                    "Content-Type" to "application/sdp",
-                    "Content-Length" to body.toByteArray().size.toString(),
-                )
+                val headers = linkedMapOf<String, String>()
+                // انسخ كل Via كما وصلت
+                invite.headers("Via").forEachIndexed { i, v ->
+                    headers[if (i == 0) "Via" else "Via.$i"] = v
+                }
+                if (!headers.containsKey("Via")) {
+                    headers["Via"] = invite.header("Via") ?: ""
+                }
+                headers["From"] = invite.header("From") ?: ""
+                headers["To"] = withLocalTag(invite.header("To"), fromTag)
+                headers["Call-ID"] = callId
+                headers["CSeq"] = invite.header("CSeq") ?: "1 INVITE"
+                headers["Contact"] = contactUri()
+                headers["Content-Type"] = "application/sdp"
+                headers["Content-Length"] = body.toByteArray(Charsets.UTF_8).size.toString()
                 sendRaw(SipMessage("SIP/2.0 200 OK", headers, body).toWire())
-                onCall(CallState.Active, invite.header("From"))
+                onCall(CallState.Active, extractUser(invite.header("From")))
             } catch (e: Exception) {
+                Log.e(TAG, "فشل القبول", e)
                 onLog("فشل القبول: ${e.message}")
-                reject()
+                try {
+                    reject()
+                } catch (_: Exception) {
+                }
+                onCall(CallState.Ended, e.message)
             }
         }
     }
 
     fun reject() {
         val invite = activeInvite ?: return
-        val callId = invite.header("Call-ID") ?: return
-        val headers = linkedMapOf(
-            "Via" to (invite.header("Via") ?: ""),
-            "From" to (invite.header("From") ?: ""),
-            "To" to (invite.header("To") ?: ""),
-            "Call-ID" to callId,
-            "CSeq" to (invite.header("CSeq") ?: "1 INVITE"),
-            "Content-Length" to "0",
-        )
-        sendRaw(SipMessage("SIP/2.0 486 Busy Here", headers).toWire())
+        replyToInvite(invite, "486 Busy Here")
         activeInvite = null
+        activeCallId = null
         webrtc.closePeer()
         onCall(CallState.Ended, null)
     }
@@ -172,21 +185,23 @@ class Softphone(
     fun hangup() {
         scope.launch {
             val callId = activeCallId
+            val invite = activeInvite
             if (callId != null && extension.isNotEmpty()) {
                 try {
                     val branch = "z9hG4bK${UUID.randomUUID().toString().take(8)}"
                     val seq = cseq.getAndIncrement()
-                    val toUri = "sip:${extractUser(activeInvite?.header("From"))}@$sipDomain"
+                    val peerUser = extractUser(invite?.header("From") ?: invite?.header("To"))
+                    val requestUri = "sip:$peerUser@$sipDomain"
                     val headers = linkedMapOf(
                         "Via" to "SIP/2.0/WS $sipDomain;branch=$branch",
                         "From" to "<sip:$extension@$sipDomain>;tag=$fromTag",
-                        "To" to "<$toUri>${activeToTag?.let { ";tag=$it" } ?: ""}",
+                        "To" to "<sip:$peerUser@$sipDomain>${activeToTag?.let { ";tag=$it" } ?: ""}",
                         "Call-ID" to callId,
                         "CSeq" to "$seq BYE",
                         "Max-Forwards" to "70",
                         "Content-Length" to "0",
                     )
-                    sendRaw(SipMessage("BYE sip:$extension@$sipDomain SIP/2.0", headers).toWire())
+                    sendRaw(SipMessage("BYE $requestUri SIP/2.0", headers).toWire())
                 } catch (_: Exception) {
                 }
             }
@@ -201,10 +216,30 @@ class Softphone(
     fun isMuted(): Boolean = webrtc.isMuted()
 
     fun dispose() {
-        unregister()
+        try {
+            if (socket != null && extension.isNotEmpty()) {
+                // إلغاء تسجيل متزامن قدر الإمكان قبل إغلاق السوكيت
+                scope.launch {
+                    try {
+                        sendRegister(authHeader = null, expires = 0)
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+        } catch (_: Exception) {
+        }
+        disconnectSocket(clearExtension = true)
         webrtc.dispose()
         scope.cancel()
-        client.dispatcher.executorService.shutdown()
+        try {
+            client.dispatcher.executorService.shutdown()
+        } catch (_: Exception) {
+        }
+    }
+
+    /** إبقاء الاتصال دون إلغاء التسجيل — عند مغادرة الواجهة فقط */
+    fun detachUi() {
+        // لا شيء: السوكيت يبقى عبر الخدمة
     }
 
     private suspend fun handleInviteFinal(
@@ -229,7 +264,7 @@ class Softphone(
             val seq = cseq.getAndIncrement()
             val msg = buildInvite(destination, callId, branch, seq, sdp, auth = auth)
             resp = sendAndWaitFinal(msg, callId) { code ->
-                if (code in 100..199) onCall(CallState.Ringing, destination)
+                if (code in 180..189) onCall(CallState.Ringing, destination)
             }
         }
         when (resp.statusCode) {
@@ -251,12 +286,17 @@ class Softphone(
                     "Max-Forwards" to "70",
                     "Content-Length" to "0",
                 )
-                sendRaw(SipMessage("ACK sip:$destination@$sipDomain SIP/2.0", ack).toWire())
+                val contact = resp.header("Contact")
+                val ackUri = contact?.let {
+                    Regex("""<(sip:[^>]+)>""").find(it)?.groupValues?.getOrNull(1)
+                } ?: "sip:$destination@$sipDomain"
+                sendRaw(SipMessage("ACK $ackUri SIP/2.0", ack).toWire())
                 onCall(CallState.Active, destination)
             }
             else -> {
                 onCall(CallState.Ended, resp.startLine)
                 webrtc.closePeer()
+                activeCallId = null
             }
         }
     }
@@ -277,7 +317,7 @@ class Softphone(
             "Expires" to expires.toString(),
             "Allow" to "INVITE,ACK,CANCEL,BYE,OPTIONS,MESSAGE,NOTIFY",
             "Max-Forwards" to "70",
-            "User-Agent" to "MatchCallTest/1.0",
+            "User-Agent" to "MatchCall/1.1",
             "Content-Length" to "0",
         )
         if (authHeader != null) headers["Authorization"] = authHeader
@@ -308,20 +348,33 @@ class Softphone(
     private suspend fun handleIncoming(text: String) {
         val msg = SipMessage.parse(text) ?: return
         onLog("← ${msg.startLine}")
-        val callId = msg.header("Call-ID")
+        val callId = msg.header("Call-ID") ?: msg.header("Call-Id")
+
         if (!msg.isRequest && callId != null) {
-            waiters.remove(callId)?.invoke(msg)
+            val waiter = waiters[callId] ?: return
+            val code = msg.statusCode ?: return
+            // لا تُزل المنتظر على الردود المؤقتة (100/180) وإلا يضيع 200 OK
+            if (code < 200) {
+                waiter.invoke(msg)
+                return
+            }
+            waiters.remove(callId)
+            waiter.invoke(msg)
             return
         }
+
         when (msg.method) {
             "INVITE" -> {
+                // إعادة INVITE / تحديث — تجاهل إن كانت مكالمة نشطة بنفس Call-ID
                 activeInvite = msg
+                activeCallId = callId
                 val from = extractUser(msg.header("From"))
+                val localTag = newTag()
+                fromTag = localTag
+                replyToInvite(msg, "100 Trying", addToTag = false)
+                replyToInvite(msg, "180 Ringing", addToTag = true, localTag = localTag)
                 onIncoming(from)
-                onCall(CallState.Ringing, from)
-                // 100 Trying + 180 Ringing
-                replySimple(msg, "100 Trying")
-                replySimple(msg, "180 Ringing")
+                onCall(CallState.Incoming, from)
             }
             "BYE" -> {
                 replySimple(msg, "200 OK")
@@ -331,24 +384,51 @@ class Softphone(
                 onCall(CallState.Ended, null)
             }
             "ACK" -> { /* ignore */ }
-            "OPTIONS", "NOTIFY" -> replySimple(msg, "200 OK")
+            "OPTIONS", "NOTIFY", "INFO" -> replySimple(msg, "200 OK")
             "CANCEL" -> {
                 replySimple(msg, "200 OK")
+                if (activeInvite != null) {
+                    replyToInvite(activeInvite!!, "487 Request Terminated")
+                }
                 activeInvite = null
+                activeCallId = null
+                webrtc.closePeer()
                 onCall(CallState.Ended, null)
             }
         }
     }
 
+    private fun replyToInvite(
+        req: SipMessage,
+        status: String,
+        addToTag: Boolean = false,
+        localTag: String = fromTag,
+    ) {
+        val headers = linkedMapOf<String, String>()
+        req.headers("Via").forEachIndexed { i, v ->
+            headers[if (i == 0) "Via" else "Via.$i"] = v
+        }
+        if (!headers.containsKey("Via")) headers["Via"] = req.header("Via") ?: ""
+        headers["From"] = req.header("From") ?: ""
+        val to = req.header("To") ?: ""
+        headers["To"] = if (addToTag) withLocalTag(to, localTag) else to
+        headers["Call-ID"] = req.header("Call-ID") ?: ""
+        headers["CSeq"] = req.header("CSeq") ?: ""
+        headers["Content-Length"] = "0"
+        sendRaw(SipMessage("SIP/2.0 $status", headers).toWire())
+    }
+
     private fun replySimple(req: SipMessage, status: String) {
-        val headers = linkedMapOf(
-            "Via" to (req.header("Via") ?: ""),
-            "From" to (req.header("From") ?: ""),
-            "To" to (req.header("To") ?: ""),
-            "Call-ID" to (req.header("Call-ID") ?: ""),
-            "CSeq" to (req.header("CSeq") ?: ""),
-            "Content-Length" to "0",
-        )
+        val headers = linkedMapOf<String, String>()
+        req.headers("Via").forEachIndexed { i, v ->
+            headers[if (i == 0) "Via" else "Via.$i"] = v
+        }
+        if (!headers.containsKey("Via")) headers["Via"] = req.header("Via") ?: ""
+        headers["From"] = req.header("From") ?: ""
+        headers["To"] = req.header("To") ?: ""
+        headers["Call-ID"] = req.header("Call-ID") ?: ""
+        headers["CSeq"] = req.header("CSeq") ?: ""
+        headers["Content-Length"] = "0"
         sendRaw(SipMessage("SIP/2.0 $status", headers).toWire())
     }
 
@@ -369,8 +449,8 @@ class Softphone(
             "Contact" to contactUri(),
             "Content-Type" to "application/sdp",
             "Max-Forwards" to "70",
-            "User-Agent" to "MatchCallTest/1.0",
-            "Content-Length" to sdp.toByteArray().size.toString(),
+            "User-Agent" to "MatchCall/1.1",
+            "Content-Length" to sdp.toByteArray(Charsets.UTF_8).size.toString(),
         )
         if (auth != null) headers["Authorization"] = auth
         return SipMessage("INVITE sip:$destination@$sipDomain SIP/2.0", headers, sdp)
@@ -392,10 +472,7 @@ class Softphone(
                         onProvisional(code)
                         return@handler
                     }
-                    if (cont.isActive) {
-                        waiters.remove(callId)
-                        cont.resume(response)
-                    }
+                    if (cont.isActive) cont.resume(response)
                 }
                 cont.invokeOnCancellation { waiters.remove(callId) }
                 try {
@@ -413,24 +490,48 @@ class Softphone(
         if (!ok) throw IllegalStateException("تعذر الإرسال عبر WebSocket")
     }
 
-    private fun disconnectSocket() {
-        socket?.close(1000, "bye")
+    private fun disconnectSocket(clearExtension: Boolean) {
+        try {
+            socket?.close(1000, "bye")
+        } catch (_: Exception) {
+        }
         socket = null
         waiters.clear()
+        if (clearExtension) extension = ""
     }
 
-    private fun newCallId() = UUID.randomUUID().toString()
-    private fun newTag() = UUID.randomUUID().toString().take(8)
+    private fun withLocalTag(toHeader: String?, tag: String): String {
+        val to = toHeader ?: return ";tag=$tag"
+        return if (to.contains("tag=", ignoreCase = true)) {
+            to.replace(Regex("""tag=[^;>\s]+"""), "tag=$tag")
+        } else {
+            "$to;tag=$tag"
+        }
+    }
+
+    private fun newCallId() = "${UUID.randomUUID()}@$sipDomain"
+    private fun newTag() = UUID.randomUUID().toString().replace("-", "").take(10)
 
     private fun extractTag(toHeader: String?): String? {
         if (toHeader == null) return null
-        val m = Regex("""tag=([^;>\s]+)""").find(toHeader)
-        return m?.groupValues?.getOrNull(1)
+        return Regex("""tag=([^;>\s]+)""").find(toHeader)?.groupValues?.getOrNull(1)
     }
 
     private fun extractUser(fromHeader: String?): String {
         if (fromHeader.isNullOrBlank()) return "?"
-        val m = Regex("""sip:([^@>;]+)""").find(fromHeader)
-        return m?.groupValues?.getOrNull(1) ?: fromHeader
+        return Regex("""sip:([^@>;]+)""").find(fromHeader)?.groupValues?.getOrNull(1)
+            ?: fromHeader
+    }
+
+    private fun splitSipMessages(text: String): List<String> {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return emptyList()
+        // رسائل مفصولة بسطر فارغ مزدوج عند لصقها
+        val parts = trimmed.split(Regex("""\r?\n\r?\n(?=(?:SIP/2\.0|[A-Z]+ sip:))"""))
+        return if (parts.size <= 1) listOf(trimmed) else parts.map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    companion object {
+        private const val TAG = "Softphone"
     }
 }
