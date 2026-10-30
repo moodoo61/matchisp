@@ -2,13 +2,11 @@
 
 import { deleteAgent, updateAgent } from '@/features/partners/api';
 import type { Agent } from '@/features/partners/types';
-import { agentMapsUrl } from '@/features/partners/types';
 import {
   DataTable,
   IconButton,
   IconEdit,
-  IconEye,
-  IconEyeOff,
+  IconInfo,
   IconTrash,
   notifyMutation,
   useToast,
@@ -20,6 +18,7 @@ type Props = {
   canUpdate: boolean;
   canDelete: boolean;
   onEdit: (agent: Agent) => void;
+  onDetails: (agent: Agent) => void;
   onChanged: () => Promise<void>;
 };
 
@@ -28,10 +27,10 @@ export function AgentsTable({
   canUpdate,
   canDelete,
   onEdit,
+  onDetails,
   onChanged,
 }: Props) {
   const toast = useToast();
-  const showActions = canUpdate || canDelete;
 
   const columns: Column<Agent>[] = [
     {
@@ -45,58 +44,18 @@ export function AgentsTable({
       render: (row) => row.shopName,
     },
     {
-      key: 'region',
-      header: 'المنطقة',
-      render: (row) => row.region || '—',
-    },
-    {
-      key: 'address',
-      header: 'العنوان',
-      render: (row) => row.address,
-    },
-    {
       key: 'phone',
       header: 'رقم الهاتف',
       render: (row) => row.phone,
     },
     {
-      key: 'order',
-      header: 'الترتيب',
-      render: (row) => row.sortOrder,
-    },
-    {
-      key: 'api',
-      header: 'API',
-      render: (row) => (
-        <span className={`badge ${row.isPublic ? 'ok' : ''}`}>
-          {row.isPublic ? 'ظاهر' : 'مخفي'}
-        </span>
-      ),
-    },
-    {
-      key: 'location',
-      header: 'الموقع',
-      render: (row) =>
-        row.latitude != null && row.longitude != null ? (
-          <a
-            href={agentMapsUrl(row.latitude, row.longitude)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            خريطة
-          </a>
-        ) : (
-          '—'
-        ),
-    },
-  ];
-
-  if (showActions) {
-    columns.push({
       key: 'actions',
       header: '',
       render: (row) => (
         <div className="row-actions">
+          <IconButton label="تفاصيل" onClick={() => onDetails(row)}>
+            <IconInfo />
+          </IconButton>
           {canUpdate ? (
             <IconButton label="تعديل" onClick={() => onEdit(row)}>
               <IconEdit />
@@ -126,7 +85,9 @@ export function AgentsTable({
                 })();
               }}
             >
-              {row.isPublic ? <IconEye /> : <IconEyeOff />}
+              <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+                api
+              </span>
             </IconButton>
           ) : null}
           {canDelete ? (
@@ -154,8 +115,8 @@ export function AgentsTable({
           ) : null}
         </div>
       ),
-    });
-  }
+    },
+  ];
 
   return <DataTable columns={columns} rows={agents} rowKey={(r) => r.id} />;
 }

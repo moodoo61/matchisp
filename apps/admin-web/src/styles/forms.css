@@ -178,6 +178,12 @@
   font-size: 0.85rem;
 }
 
+.field-warn {
+  margin: 0;
+  color: #f0c674;
+  font-size: 0.85rem;
+}
+
 .image-upload-field {
   display: grid;
   gap: 0.55rem;

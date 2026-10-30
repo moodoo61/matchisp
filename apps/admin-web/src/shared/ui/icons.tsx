@@ -199,3 +199,14 @@ export function IconBell(props: IconProps) {
     </svg>
   );
 }
+
+/** معلومات / تفاصيل */
+export function IconInfo(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 10v6" />
+      <path d="M12 7h.01" />
+    </svg>
+  );
+}

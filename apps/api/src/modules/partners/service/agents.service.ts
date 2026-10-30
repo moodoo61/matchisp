@@ -27,11 +27,12 @@ export class AgentsService {
   }
 
   async create(dto: CreateAgentDto, actorId: string) {
+    const region = await this.ensureRegionName(dto.region);
     const agent = await this.prisma.agent.create({
       data: {
         name: dto.name.trim(),
         shopName: dto.shopName.trim(),
-        region: (dto.region ?? 'أخرى').trim() || 'أخرى',
+        region,
         address: dto.address.trim(),
         phone: dto.phone.trim(),
         latitude: dto.latitude ?? null,
@@ -60,15 +61,17 @@ export class AgentsService {
   async update(id: string, dto: UpdateAgentDto, actorId: string) {
     await this.get(id);
 
+    const region =
+      dto.region !== undefined
+        ? await this.ensureRegionName(dto.region)
+        : undefined;
+
     const agent = await this.prisma.agent.update({
       where: { id },
       data: {
         name: dto.name?.trim(),
         shopName: dto.shopName?.trim(),
-        region:
-          dto.region !== undefined
-            ? dto.region.trim() || 'أخرى'
-            : undefined,
+        region,
         address: dto.address?.trim(),
         phone: dto.phone?.trim(),
         ...(dto.latitude !== undefined ? { latitude: dto.latitude } : {}),
@@ -117,6 +120,16 @@ export class AgentsService {
     return items
       .filter((agent) => agent.name.trim() !== '')
       .map((agent) => mapPublicAgent(agent, settings.fields));
+  }
+
+  private async ensureRegionName(raw: string | undefined) {
+    const name = (raw ?? 'أخرى').trim() || 'أخرى';
+    await this.prisma.region.upsert({
+      where: { name },
+      create: { name, sortOrder: name === 'أخرى' ? 9999 : 0 },
+      update: {},
+    });
+    return name;
   }
 }
 

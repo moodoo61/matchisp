@@ -6,6 +6,7 @@ import { listAgents } from '@/features/partners/api';
 import type { Agent } from '@/features/partners/types';
 import { usePermissions } from '@/lib/usePermissions';
 import { IconButton, IconPlus, TaskCard } from '@/shared/ui';
+import { AgentDetailsModal } from './AgentDetailsModal';
 import { AgentModal, type AgentModalState } from './AgentModal';
 import { AgentsTable } from './AgentsTable';
 
@@ -13,6 +14,7 @@ export function AgentsCard() {
   const [items, setItems] = useState<Agent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<AgentModalState>(null);
+  const [details, setDetails] = useState<Agent | null>(null);
   const { can } = usePermissions();
   const canRead = can(PERMISSIONS.PARTNERS_READ);
   const canCreate = can(PERMISSIONS.PARTNERS_CREATE);
@@ -53,6 +55,7 @@ export function AgentsCard() {
             canUpdate={canUpdate}
             canDelete={canDelete}
             onEdit={setModal}
+            onDetails={setDetails}
             onChanged={reload}
           />
         ) : (
@@ -62,10 +65,17 @@ export function AgentsCard() {
       {canCreate || canUpdate ? (
         <AgentModal
           state={modal}
+          agents={items}
           onClose={() => setModal(null)}
           onSaved={reload}
         />
       ) : null}
+      <AgentDetailsModal
+        agent={details}
+        onClose={() => setDetails(null)}
+        canUpdate={canUpdate}
+        onEdit={setModal}
+      />
     </>
   );
 }

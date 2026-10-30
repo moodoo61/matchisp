@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { readDeviceLocation } from '@/features/partners/hooks/readDeviceLocation';
+import { LocationMapModal } from '@/features/partners/components/LocationMapModal';
+import type { MapCoords } from '@/features/partners/components/MapLocationPicker';
 import { agentMapsUrl } from '@/features/partners/types';
 
 type Props = {
   latitude: number | null | undefined;
   longitude: number | null | undefined;
+  /** مركز الخريطة من إحداثيات المنطقة المختارة */
+  regionCenter: MapCoords | null;
+  regionName?: string;
   onChange: (coords: {
     latitude: number | null;
     longitude: number | null;
@@ -17,50 +21,39 @@ function formatCoord(value: number) {
   return value.toFixed(6);
 }
 
-export function AgentLocationField({ latitude, longitude, onChange }: Props) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [accuracy, setAccuracy] = useState<number | null>(null);
+export function AgentLocationField({
+  latitude,
+  longitude,
+  regionCenter,
+  regionName,
+  onChange,
+}: Props) {
+  const [mapOpen, setMapOpen] = useState(false);
+
   const hasLocation =
     typeof latitude === 'number' && typeof longitude === 'number';
 
-  async function capture() {
-    setBusy(true);
-    setError(null);
-    try {
-      const loc = await readDeviceLocation();
-      onChange({ latitude: loc.latitude, longitude: loc.longitude });
-      setAccuracy(loc.accuracyMeters);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تعذر تحديد الموقع');
-    } finally {
-      setBusy(false);
-    }
-  }
+  const value: MapCoords | null = hasLocation
+    ? { latitude, longitude }
+    : null;
 
   return (
     <div className="form-field-block">
       <div className="toolbar" style={{ marginBottom: 0, gap: '0.5rem' }}>
-        <span>الموقع (لوكيشن الجهاز)</span>
+        <span>الموقع</span>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button
             className="btn secondary"
             type="button"
-            disabled={busy}
-            onClick={() => void capture()}
+            onClick={() => setMapOpen(true)}
           >
-            {busy ? 'جاري التحديد…' : hasLocation ? 'إعادة التحديد' : 'تحديد موقعي'}
+            {hasLocation ? 'تعديل على الخريطة' : 'فتح الخريطة'}
           </button>
           {hasLocation ? (
             <button
               className="btn secondary"
               type="button"
-              disabled={busy}
-              onClick={() => {
-                onChange({ latitude: null, longitude: null });
-                setAccuracy(null);
-                setError(null);
-              }}
+              onClick={() => onChange({ latitude: null, longitude: null })}
             >
               مسح الموقع
             </button>
@@ -68,26 +61,46 @@ export function AgentLocationField({ latitude, longitude, onChange }: Props) {
         </div>
       </div>
 
-      {error ? <p className="error">{error}</p> : null}
-
       {hasLocation ? (
         <p className="muted" style={{ marginTop: '0.5rem' }}>
           {formatCoord(latitude)} ، {formatCoord(longitude)}
-          {accuracy != null ? ` · دقة تقريبية ${Math.round(accuracy)} م` : ''}
           {' · '}
           <a
             href={agentMapsUrl(latitude, longitude)}
             target="_blank"
             rel="noreferrer"
           >
-            فتح في الخريطة
+            فتح في Google Maps
           </a>
         </p>
       ) : (
         <p className="muted" style={{ marginTop: '0.5rem' }}>
-          اختياري — اضغط «تحديد موقعي» والسماح للمتصفح بقراءة موقع الهاتف.
+          اختياري — افتح الخريطة
+          {regionName ? ` حول منطقة «${regionName}»` : ''} وحدد موقع الوكيل؛
+          تُحفظ الإحداثيات تلقائياً.
+          {!regionCenter
+            ? ' (حدّد موقع المنطقة أولاً من تبويب المناطق لفتح الخريطة على مركزها)'
+            : ''}
         </p>
       )}
+
+      <LocationMapModal
+        open={mapOpen}
+        title={
+          regionName
+            ? `تحديد موقع الوكيل — ${regionName}`
+            : 'تحديد موقع الوكيل'
+        }
+        center={regionCenter ?? value}
+        value={value}
+        onClose={() => setMapOpen(false)}
+        onConfirm={(coords) =>
+          onChange({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          })
+        }
+      />
     </div>
   );
 }

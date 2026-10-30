@@ -3,10 +3,11 @@
 import { usePathname } from 'next/navigation';
 import { SectionTabs } from '@/shared/ui';
 
-/** تبويبات الوكلاء: القائمة | ضبط */
+/** تبويبات الوكلاء: القائمة | المناطق | ضبط */
 export function PartnersTabs() {
   const pathname = usePathname();
   const isSettings = pathname.startsWith('/partners/settings');
+  const isRegions = pathname.startsWith('/partners/regions');
 
   return (
     <SectionTabs
@@ -14,7 +15,12 @@ export function PartnersTabs() {
         {
           href: '/partners',
           label: 'الوكلاء',
-          active: !isSettings,
+          active: !isSettings && !isRegions,
+        },
+        {
+          href: '/partners/regions',
+          label: 'المناطق',
+          active: isRegions,
         },
         {
           href: '/partners/settings',
